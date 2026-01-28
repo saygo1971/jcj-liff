@@ -3,122 +3,103 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JCJ Passport</title>
+  <title>JCJ Check-in</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body{font-family:system-ui,-apple-system; padding:16px; line-height:1.5}
-    .title{font-size:22px; font-weight:700; margin:6px 0 10px}
-    .card{border:1px solid #eee; border-radius:14px; padding:12px; margin:12px 0}
-    .muted{color:#666; font-size:13px}
-    .ok{color:#0a7}
-    .ng{color:#c33}
-    code{background:#f6f6f6; padding:2px 6px; border-radius:6px}
-    .small{font-size:12px}
+    body{font-family:system-ui,-apple-system; padding:16px; line-height:1.55}
+    .title{font-size:20px;font-weight:700;margin:6px 0 10px}
+    .card{border:1px solid #e5e5e5;border-radius:12px;padding:12px;margin:10px 0}
+    button{padding:12px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;width:100%;font-size:16px}
+    .muted{color:#666;font-size:12px;word-break:break-all}
+    code{background:#f6f6f6;padding:2px 6px;border-radius:6px}
   </style>
 </head>
 <body>
-  <div class="title" id="h">JCJ パスポート</div>
+  <div class="title">JCJ チェックイン（テスト復旧版）</div>
 
   <div class="card">
-    <div class="muted" id="env">環境確認中…</div>
-    <div class="muted small" id="debug"></div>
+    <div id="status">起動中…</div>
+    <div class="muted" id="debug"></div>
   </div>
 
-  <div class="card">
-    <div id="status" class="muted">起動中…</div>
-  </div>
+  <button id="btn" disabled>LINEにお礼を送る</button>
 
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
 
-  // roasterID → 表示名（必要に応じて追加）
-  const ROASTER_NAME = {
-    "shizuoka_nomad": "静岡｜NOMAD"
-  };
+  function getSpotFromAnyUrl() {
+    // 1) 通常クエリ ?spot=
+    const q = new URLSearchParams(location.search);
+    const direct = q.get("spot");
+    if (direct) return direct;
 
-  function getRoaster(){
-    const u = new URL(location.href);
-    return u.searchParams.get("roaster");
-  }
-  function getVersion(){
-    const u = new URL(location.href);
-    return u.searchParams.get("v");
-  }
-  function sentKey(roaster){
-    return `jcj_sent_${roaster || "none"}`;
+    // 2) LIFF が渡す liff.state の中に "?spot=xxx" が入るケース
+    const stateRaw = q.get("liff.state");
+    if (stateRaw) {
+      // stateRawは既にデコード済み/未デコード両方ありえるので両対応
+      const decoded = (() => {
+        try { return decodeURIComponent(stateRaw); } catch(e) { return stateRaw; }
+      })();
+      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+      const fromState = new URLSearchParams(s).get("spot");
+      if (fromState) return fromState;
+    }
+
+    // 3) #?spot=xxx や #spot=xxx みたいにhashに来るケース
+    if (location.hash) {
+      const h = location.hash.replace(/^#\??/, ""); // "#?a=b" も "#a=b" も対応
+      const fromHash = new URLSearchParams(h).get("spot");
+      if (fromHash) return fromHash;
+    }
+
+    return null;
   }
 
-  async function main(){
+  async function main() {
     await liff.init({ liffId: LIFF_ID });
 
-    const roaster = getRoaster();
-    const roasterLabel = roaster ? (ROASTER_NAME[roaster] || roaster) : null;
-    const v = getVersion();
+    const spot = getSpotFromAnyUrl();
 
-    // 画面タイトル
-    document.getElementById("h").textContent = roasterLabel
-      ? `チェックイン：${roasterLabel}`
-      : "JCJ パスポート";
+    const info =
+      `LIFF OK / inClient=${liff.isInClient()} / loggedIn=${liff.isLoggedIn()} / spot=${spot ?? "NONE"}`;
+    document.getElementById("status").textContent = info;
 
-    // 環境表示（ここが今回の切り分けで超重要）
-    const inClient = liff.isInClient();
-    const loggedIn = liff.isLoggedIn();
-    document.getElementById("env").innerHTML =
-      `LIFF OK / inClient=<code>${inClient}</code> / loggedIn=<code>${loggedIn}</code>` +
-      (roaster ? ` / roaster=<code>${roaster}</code>` : "") +
-      (v ? ` / v=<code>${v}</code>` : "");
+    // デバッグ表示（今どこからspotを取れてないか一発でわかる）
+    const q = new URLSearchParams(location.search);
+    document.getElementById("debug").innerHTML =
+      `<div>href: <code>${location.href}</code></div>` +
+      `<div>search: <code>${location.search || "(empty)"}</code></div>` +
+      `<div>liff.state: <code>${q.get("liff.state") || "(none)"}</code></div>` +
+      `<div>hash: <code>${location.hash || "(empty)"}</code></div>`;
 
-    // roaster指定がない場合は何もしない
-    if (!roasterLabel) {
-      document.getElementById("status").textContent = "ロースター指定がないため送信しません。";
-      return;
-    }
+    const btn = document.getElementById("btn");
+    btn.disabled = !spot;
 
-    // 連投防止（必要なければこのブロックをコメントアウトしてOK）
-    if (localStorage.getItem(sentKey(roaster)) === "1") {
-      document.getElementById("status").innerHTML = `<span class="ok">✅ 受付済み（すでにチェックイン済み）</span>`;
-      return;
-    }
-
-    document.getElementById("status").textContent = "送信中…";
-
-    try{
-      // 自動送信（トーク文脈がないと失敗するケースがあるので、エラーを必ず表示）
-      await liff.sendMessages([{
-        type:"text",
-        text:`ありがとうございます！\n${roasterLabel} にチェックインしました。`
-      }]);
-
-      localStorage.setItem(sentKey(roaster), "1");
-      document.getElementById("status").innerHTML = `<span class="ok">✅ 送信しました！トークを確認してください。</span>`;
-
-      // 送信後に閉じたい場合（LINE内だけ有効）
-      // if (liff.isInClient()) setTimeout(()=>liff.closeWindow(), 800);
-
-    }catch(e){
-      const msg = e?.message || "";
-      const raw = (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
-
-      document.getElementById("status").innerHTML =
-        `<span class="ng">❌ 送信失敗</span><br>` +
-        `<span class="muted small">message: ${escapeHtml(msg)}</span><br>` +
-        `<span class="muted small">raw: ${escapeHtml(raw)}</span>`;
-
-      // 失敗理由のヒント
-      let hint = "";
-      if (!inClient) hint = "この画面はLINEアプリ外（外部ブラウザ）で開かれている可能性が高いです。LINE内で開くと成功率が上がります。";
-      else hint = "LINE内でも失敗する場合は、トーク文脈が無い/権限/OS挙動が原因のことがあります。エラー文をそのまま送ってください。";
-      document.getElementById("debug").textContent = hint;
-    }
+    btn.addEventListener("click", async () => {
+      if (!spot) {
+        alert("spotがありません");
+        return;
+      }
+      if (!liff.isInClient()) {
+        alert("LINE内で開いてください（inClient=false）");
+        return;
+      }
+      try {
+        await liff.sendMessages([{
+          type: "text",
+          text: `ありがとうございます！\nチェックイン：${spot}`
+        }]);
+        document.getElementById("status").textContent = `✅ 送信しました / spot=${spot}`;
+      } catch (e) {
+        document.getElementById("status").textContent =
+          "❌ 送信失敗: " + (e?.message || JSON.stringify(e));
+      }
+    });
   }
 
-  function escapeHtml(s){
-    return (s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  main().catch(e=>{
-    document.getElementById("status").innerHTML =
-      `<span class="ng">❌ 初期化エラー</span><br><span class="muted small">${escapeHtml(e?.message || String(e))}</span>`;
+  main().catch(e => {
+    document.getElementById("status").textContent =
+      "エラー: " + (e?.message || JSON.stringify(e));
   });
 </script>
 </body>
