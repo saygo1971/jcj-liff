@@ -8,18 +8,14 @@
   <style>
     body{font-family:system-ui,-apple-system; padding:16px; line-height:1.5}
     .title{font-size:22px; font-weight:700; margin:6px 0 10px}
-    button{padding:12px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; width:100%; margin:10px 0; font-size:16px}
     .muted{color:#666; font-size:13px}
     .card{border:1px solid #eee; border-radius:14px; padding:12px; margin:12px 0}
   </style>
 </head>
 <body>
   <div class="title" id="h">JCJ パスポート</div>
-  <div class="muted" id="status">起動中…</div>
-
   <div class="card">
-    <button id="btn">LINEにお礼を送る</button>
-    <div class="muted">※テスト中：本番は「自動送信」にもできます</div>
+    <div class="muted" id="status">起動中…</div>
   </div>
 
 <script>
@@ -35,6 +31,10 @@
     return u.searchParams.get("roaster");
   }
 
+  function sentKey(roaster){
+    return `jcj_sent_${roaster || "none"}`;
+  }
+
   async function main(){
     await liff.init({ liffId: LIFF_ID });
 
@@ -43,24 +43,36 @@
 
     document.getElementById("h").textContent = roasterLabel
       ? `チェックイン：${roasterLabel}`
-      : "JCJ パスポート（テスト）";
+      : "JCJ パスポート";
 
-    document.getElementById("status").textContent =
-      `LIFF OK / inClient=${liff.isInClient()} / loggedIn=${liff.isLoggedIn()}` +
-      (roaster ? ` / roaster=${roaster}` : "");
+    // 二重送信防止（同じroasterは一度送ったら、次は送らない）
+    // ※テスト中は下の行をコメントアウトすると毎回送れる
+    if (roaster && localStorage.getItem(sentKey(roaster)) === "1") {
+      document.getElementById("status").textContent = "✅ 受付済み（すでにチェックイン済み）";
+      return;
+    }
 
-    document.getElementById("btn").addEventListener("click", async ()=>{
-      const msg = roasterLabel
-        ? `ありがとうございます！\n${roasterLabel} にチェックインしました。`
-        : "JCJ LIFF テスト送信です。";
+    // roaster が無い場合は何もしない（登録画面などに使える）
+    if (!roasterLabel) {
+      document.getElementById("status").textContent = "ロースター指定がないため送信しません。";
+      return;
+    }
 
-      try{
-        await liff.sendMessages([{ type:"text", text: msg }]);
-        document.getElementById("status").textContent = "✅ 送信しました！トークを見てね";
-      }catch(e){
-        document.getElementById("status").textContent = "❌ 送信失敗: " + (e?.message || JSON.stringify(e));
-      }
-    });
+    document.getElementById("status").textContent = "送信中…";
+
+    try{
+      await liff.sendMessages([{
+        type:"text",
+        text:`ありがとうございます！\n${roasterLabel} にチェックインしました。`
+      }]);
+
+      if (roaster) localStorage.setItem(sentKey(roaster), "1");
+      document.getElementById("status").textContent = "✅ 送信しました！トークを見てね";
+      // すぐ閉じたい場合（LINE内のみ有効）
+      // if (liff.isInClient()) liff.closeWindow();
+    }catch(e){
+      document.getElementById("status").textContent = "❌ 送信失敗: " + (e?.message || JSON.stringify(e));
+    }
   }
 
   main().catch(e=>{
