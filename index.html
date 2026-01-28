@@ -7,31 +7,64 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body{font-family:system-ui,-apple-system; padding:16px; line-height:1.5}
-    button{padding:12px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; width:100%; margin:8px 0; font-size:16px}
+    .title{font-size:22px; font-weight:700; margin:6px 0 10px}
+    button{padding:12px 14px; border-radius:10px; border:1px solid #ddd; background:#fff; width:100%; margin:10px 0; font-size:16px}
     .muted{color:#666; font-size:13px}
+    .card{border:1px solid #eee; border-radius:14px; padding:12px; margin:12px 0}
   </style>
 </head>
 <body>
-  <h2>JCJ パスポート（サンプル）</h2>
+  <div class="title" id="h">JCJ パスポート</div>
   <div class="muted" id="status">起動中…</div>
 
-  <button id="sendBtn">LINEに「テスト送信」</button>
+  <div class="card">
+    <button id="btn">LINEにお礼を送る</button>
+    <div class="muted">※テスト中：本番は「自動送信」にもできます</div>
+  </div>
 
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
 
+  // roasterID → 表示名（増やしていけばOK）
+  const ROASTER_NAME = {
+    "shizuoka_nomad": "静岡｜NOMAD"
+  };
+
+  function getRoaster(){
+    const u = new URL(location.href);
+    return u.searchParams.get("roaster");
+  }
+
   async function main(){
     await liff.init({ liffId: LIFF_ID });
-    document.getElementById("status").textContent =
-      `LIFF OK / inClient=${liff.isInClient()} / loggedIn=${liff.isLoggedIn()}`;
 
-    document.getElementById("sendBtn").addEventListener("click", async ()=>{
-      await liff.sendMessages([{ type:"text", text:"JCJ LIFFからテスト送信できました！" }]);
-      document.getElementById("status").textContent = "送信しました！トークを見てね";
+    const roaster = getRoaster();
+    const roasterLabel = roaster ? (ROASTER_NAME[roaster] || roaster) : null;
+
+    document.getElementById("h").textContent = roasterLabel
+      ? `チェックイン：${roasterLabel}`
+      : "JCJ パスポート（テスト）";
+
+    document.getElementById("status").textContent =
+      `LIFF OK / inClient=${liff.isInClient()} / loggedIn=${liff.isLoggedIn()}` +
+      (roaster ? ` / roaster=${roaster}` : "");
+
+    document.getElementById("btn").addEventListener("click", async ()=>{
+      const msg = roasterLabel
+        ? `ありがとうございます！\n${roasterLabel} にチェックインしました。`
+        : "JCJ LIFF テスト送信です。";
+
+      try{
+        await liff.sendMessages([{ type:"text", text: msg }]);
+        document.getElementById("status").textContent = "✅ 送信しました！トークを見てね";
+      }catch(e){
+        document.getElementById("status").textContent = "❌ 送信失敗: " + (e?.message || JSON.stringify(e));
+      }
     });
   }
+
   main().catch(e=>{
-    document.getElementById("status").textContent = "エラー: " + e;
+    document.getElementById("status").textContent = "エラー: " + (e?.message || e);
   });
 </script>
 </body>
