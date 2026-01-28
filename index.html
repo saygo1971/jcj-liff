@@ -8,20 +8,30 @@
   <style>
     body{font-family:system-ui,-apple-system; padding:16px; line-height:1.5}
     .title{font-size:22px; font-weight:700; margin:6px 0 10px}
-    .muted{color:#666; font-size:13px}
     .card{border:1px solid #eee; border-radius:14px; padding:12px; margin:12px 0}
+    .muted{color:#666; font-size:13px}
+    .ok{color:#0a7}
+    .ng{color:#c33}
+    code{background:#f6f6f6; padding:2px 6px; border-radius:6px}
+    .small{font-size:12px}
   </style>
 </head>
 <body>
   <div class="title" id="h">JCJ パスポート</div>
+
   <div class="card">
-    <div class="muted" id="status">起動中…</div>
+    <div class="muted" id="env">環境確認中…</div>
+    <div class="muted small" id="debug"></div>
+  </div>
+
+  <div class="card">
+    <div id="status" class="muted">起動中…</div>
   </div>
 
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
 
-  // roasterID → 表示名（増やしていけばOK）
+  // roasterID → 表示名（必要に応じて追加）
   const ROASTER_NAME = {
     "shizuoka_nomad": "静岡｜NOMAD"
   };
@@ -30,7 +40,10 @@
     const u = new URL(location.href);
     return u.searchParams.get("roaster");
   }
-
+  function getVersion(){
+    const u = new URL(location.href);
+    return u.searchParams.get("v");
+  }
   function sentKey(roaster){
     return `jcj_sent_${roaster || "none"}`;
   }
@@ -40,43 +53,72 @@
 
     const roaster = getRoaster();
     const roasterLabel = roaster ? (ROASTER_NAME[roaster] || roaster) : null;
+    const v = getVersion();
 
+    // 画面タイトル
     document.getElementById("h").textContent = roasterLabel
       ? `チェックイン：${roasterLabel}`
       : "JCJ パスポート";
 
-    // 二重送信防止（同じroasterは一度送ったら、次は送らない）
-    // ※テスト中は下の行をコメントアウトすると毎回送れる
-    if (roaster && localStorage.getItem(sentKey(roaster)) === "1") {
-      document.getElementById("status").textContent = "✅ 受付済み（すでにチェックイン済み）";
+    // 環境表示（ここが今回の切り分けで超重要）
+    const inClient = liff.isInClient();
+    const loggedIn = liff.isLoggedIn();
+    document.getElementById("env").innerHTML =
+      `LIFF OK / inClient=<code>${inClient}</code> / loggedIn=<code>${loggedIn}</code>` +
+      (roaster ? ` / roaster=<code>${roaster}</code>` : "") +
+      (v ? ` / v=<code>${v}</code>` : "");
+
+    // roaster指定がない場合は何もしない
+    if (!roasterLabel) {
+      document.getElementById("status").textContent = "ロースター指定がないため送信しません。";
       return;
     }
 
-    // roaster が無い場合は何もしない（登録画面などに使える）
-    if (!roasterLabel) {
-      document.getElementById("status").textContent = "ロースター指定がないため送信しません。";
+    // 連投防止（必要なければこのブロックをコメントアウトしてOK）
+    if (localStorage.getItem(sentKey(roaster)) === "1") {
+      document.getElementById("status").innerHTML = `<span class="ok">✅ 受付済み（すでにチェックイン済み）</span>`;
       return;
     }
 
     document.getElementById("status").textContent = "送信中…";
 
     try{
+      // 自動送信（トーク文脈がないと失敗するケースがあるので、エラーを必ず表示）
       await liff.sendMessages([{
         type:"text",
         text:`ありがとうございます！\n${roasterLabel} にチェックインしました。`
       }]);
 
-      if (roaster) localStorage.setItem(sentKey(roaster), "1");
-      document.getElementById("status").textContent = "✅ 送信しました！トークを見てね";
-      // すぐ閉じたい場合（LINE内のみ有効）
-      // if (liff.isInClient()) liff.closeWindow();
+      localStorage.setItem(sentKey(roaster), "1");
+      document.getElementById("status").innerHTML = `<span class="ok">✅ 送信しました！トークを確認してください。</span>`;
+
+      // 送信後に閉じたい場合（LINE内だけ有効）
+      // if (liff.isInClient()) setTimeout(()=>liff.closeWindow(), 800);
+
     }catch(e){
-      document.getElementById("status").textContent = "❌ 送信失敗: " + (e?.message || JSON.stringify(e));
+      const msg = e?.message || "";
+      const raw = (() => { try { return JSON.stringify(e); } catch { return String(e); } })();
+
+      document.getElementById("status").innerHTML =
+        `<span class="ng">❌ 送信失敗</span><br>` +
+        `<span class="muted small">message: ${escapeHtml(msg)}</span><br>` +
+        `<span class="muted small">raw: ${escapeHtml(raw)}</span>`;
+
+      // 失敗理由のヒント
+      let hint = "";
+      if (!inClient) hint = "この画面はLINEアプリ外（外部ブラウザ）で開かれている可能性が高いです。LINE内で開くと成功率が上がります。";
+      else hint = "LINE内でも失敗する場合は、トーク文脈が無い/権限/OS挙動が原因のことがあります。エラー文をそのまま送ってください。";
+      document.getElementById("debug").textContent = hint;
     }
   }
 
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
   main().catch(e=>{
-    document.getElementById("status").textContent = "エラー: " + (e?.message || e);
+    document.getElementById("status").innerHTML =
+      `<span class="ng">❌ 初期化エラー</span><br><span class="muted small">${escapeHtml(e?.message || String(e))}</span>`;
   });
 </script>
 </body>
