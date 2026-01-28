@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JCJ Log</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <div id="msg">起動中…</div>
+
+<script>
+  const LIFF_ID = "2008851980-yhGytJRd";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbynJH3Y3t4OLiN-536B-VZdXko0abSYuvdoVSg5KvtVwq6-S-LGmP0OM9tfKL4g5aBMfA/exec";
+
+  function getSpot() {
+    const q = new URLSearchParams(location.search);
+    const direct = q.get("spot");
+    if (direct) return direct;
+
+    const stateRaw = q.get("liff.state");
+    if (stateRaw) {
+      let decoded = stateRaw;
+      try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
+      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+      return new URLSearchParams(s).get("spot");
+    }
+    return null;
+  }
+
+  async function main() {
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    if (!liff.isInClient()) {
+      document.getElementById("msg").textContent = "LINE内で開いてください";
+      return;
+    }
+
+    const spot = getSpot();
+    if (!spot) {
+      document.getElementById("msg").textContent = "spotがありません";
+      return;
+    }
+
+    // userId取得（profile scope が必要）
+    const profile = await liff.getProfile();
+    const userId = profile.userId;
+
+    // CORSで詰まらないよう、まずは no-cors で“送るだけ”
+    await fetch(GAS_WEBAPP_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        spot,
+        ua: navigator.userAgent
+      })
+    });
+
+    document.getElementById("msg").textContent = `ログ送信しました：${spot}`;
+  }
+
+  main().catch(e => {
+    document.getElementById("msg").textContent = "エラー：" + (e?.message || e);
+  });
+</script>
+</body>
+</html>
