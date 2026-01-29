@@ -5,70 +5,130 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Log</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; padding: 16px; }
+    .card { border: 1px solid #eee; border-radius: 12px; padding: 12px; margin: 12px 0; }
+    .muted { color: #666; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #0a7; font-weight: 700; }
+    .ng { color: #c33; font-weight: 700; }
+  </style>
 </head>
+
 <body>
-  <div id="msg">起動中…</div>
+  <h2>JCJ Log</h2>
 
-<script>
-  const LIFF_ID = "2008851980-yhGytJRd";
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbynJH3Y3t4OLiN-536B-VZdXko0abSYuvdoVSg5KvtVwq6-S-LGmP0OM9tfKL4g5aBMfA/exec";
+  <div class="card">
+    <div id="status">起動中...</div>
+    <div class="muted" id="debug"></div>
+  </div>
 
-  function getSpot() {
-    const q = new URLSearchParams(location.search);
-    const direct = q.get("spot");
-    if (direct) return direct;
+  <div class="card">
+    <div class="muted" id="result">-</div>
+  </div>
 
-    const stateRaw = q.get("liff.state");
-    if (stateRaw) {
-      let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
-      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
-      return new URLSearchParams(s).get("spot");
-    }
-    return null;
-  }
+  <script>
+    // ▼▼ ここだけあなたの値にする ▼▼
+    const LIFF_ID = "2008851980-yhGytJRd";
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbynJH3Y3t4OLiN-536B-VZdXko0abSYuvdoVSg5KvtVwq6-s-LGmP0OM9tfKL4g5aBMfA/exec";
+    // ▲▲ ここだけ ▲▲
 
-  async function main() {
-    await liff.init({ liffId: LIFF_ID });
+    function getSpot() {
+      const q = new URLSearchParams(location.search);
+      const direct = q.get("spot");
+      if (direct) return direct;
 
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
-      return;
-    }
-
-    if (!liff.isInClient()) {
-      document.getElementById("msg").textContent = "LINE内で開いてください";
-      return;
+      const stateRaw = q.get("liff.state");
+      if (stateRaw) {
+        let decoded = stateRaw;
+        try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
+        const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+        return new URLSearchParams(s).get("spot");
+      }
+      return "";
     }
 
-    const spot = getSpot();
-    if (!spot) {
-      document.getElementById("msg").textContent = "spotがありません";
-      return;
+    function setText(id, txt) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
     }
 
-    // userId取得（profile scope が必要）
-    const profile = await liff.getProfile();
-    const userId = profile.userId;
+    async function main() {
+      const spot = (getSpot() || "").trim();
 
-    // CORSで詰まらないよう、まずは no-cors で“送るだけ”
-    await fetch(GAS_WEBAPP_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        spot,
-        ua: navigator.userAgent
-      })
-    });
+      // デバッグ表示（先に）
+      setText("debug",
+        "href: " + location.href + "\n" +
+        "search: " + location.search + "\n" +
+        "spot: " + (spot || "(empty)") + "\n"
+      );
 
-    document.getElementById("msg").textContent = `ログ送信しました：${spot}`;
-  }
+      // LIFF init
+      await liff.init({ liffId: LIFF_ID });
 
-  main().catch(e => {
-    document.getElementById("msg").textContent = "エラー：" + (e?.message || e);
-  });
-</script>
+      const inClient = liff.isInClient();
+      const loggedIn = liff.isLoggedIn();
+
+      setText("status",
+        "LIFF OK / inClient=" + inClient + " / loggedIn=" + loggedIn + " / spot=" + (spot || "(empty)")
+      );
+
+      // LINE内で開いてないなら終了（ログも取らない）
+      if (!inClient) {
+        setText("result", "LINE内で開いてください（外部ブラウザではログ取得しません）");
+        return;
+      }
+
+      // 未ログインならログインへ
+      if (!loggedIn) {
+        setText("result", "LINEログインに移動します...");
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+
+      // spotが無いなら終了（誤ログ防止）
+      if (!spot) {
+        setText("result", "spot が指定されていません。URLに ?spot=tokyo_roca のように付けてください。");
+        return;
+      }
+
+      // プロフィール取得
+      const profile = await liff.getProfile();
+      const userId = profile.userId || "";
+      const displayName = profile.displayName || "";
+
+      // GASへ送信（GET）
+      const url =
+        GAS_WEBAPP_URL +
+        "?spot=" + encodeURIComponent(spot) +
+        "&userId=" + encodeURIComponent(userId) +
+        "&name=" + encodeURIComponent(displayName) +
+        "&source=" + encodeURIComponent("liff");
+
+      setText("result", "送信中...\n" + url);
+
+      const res = await fetch(url, { method: "GET" });
+      const text = await res.text();
+
+      setText("result",
+        "送信完了: " + text + "\n\n" +
+        "spot=" + spot + "\n" +
+        "userId=" + userId + "\n" +
+        "name=" + displayName
+      );
+    }
+
+    (async () => {
+      try {
+        await main();
+      } catch (e) {
+        setText("status", "エラー");
+        setText("result", "ERROR: " + (e && e.message ? e.message : String(e)));
+        // 追加デバッグ
+        try {
+          setText("debug", (document.getElementById("debug").textContent || "") + "\n\n" + (e && e.stack ? e.stack : ""));
+        } catch (_) {}
+      }
+    })();
+  </script>
 </body>
 </html>
