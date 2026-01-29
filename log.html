@@ -110,14 +110,17 @@ ${extra}`.trim();
     const profile = await liff.getProfile();
 
     status.textContent = "ログ送信中…";
-    sendToGAS({
-      spot,
-      userId: profile.userId || "",
-      name: profile.displayName || "",
-      source: "liff"
-    });
+sendToGAS({
+  spot,
+  userId: profile.userId || "",
+  name: profile.displayName || "",
+  source: "liff"
+});
 
-    status.textContent = "完了";
+// ★ここ追加（自動でトークに送る）
+await liff.sendMessages([{ type: "text", text: `チェックインありがとう！ #${spot}` }]);
+
+status.textContent = "完了";
     result.textContent = `送信しました：spot=${spot}\nuserId=${profile.userId}\nname=${profile.displayName}`;
     setDebug("OK");
   }
