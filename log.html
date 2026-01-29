@@ -117,8 +117,6 @@ sendToGAS({
   source: "liff"
 });
 
-// ★ここ追加（自動でトークに送る）
-await liff.sendMessages([{ type: "text", text: `チェックインありがとう！ #${spot}` }]);
 
 status.textContent = "完了";
     result.textContent = `送信しました：spot=${spot}\nuserId=${profile.userId}\nname=${profile.displayName}`;
