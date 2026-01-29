@@ -6,20 +6,26 @@
   <title>JCJ Log</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 20px; }
-    .muted { color: #666; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
-    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
-    .btn { width: 100%; padding: 12px 14px; border-radius: 10px; border: 0; background: #06c755; color: #fff; font-size: 16px; }
+    /* ここがポイント：最初から何も描画しない */
+    body { display:none; margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
+
+    /* エラー時だけ表示する簡易UI */
+    .wrap { padding:16px; }
+    .card { border:1px solid #eee; border-radius:12px; padding:14px; }
+    .muted { color:#666; font-size:13px; white-space:pre-wrap; word-break:break-all; }
+    .btn { width:100%; padding:12px 14px; border-radius:10px; border:0; background:#06c755; color:#fff; font-size:16px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div id="status" class="muted">起動中…</div>
-    <div id="debug" class="muted" style="display:none;"></div>
-  </div>
-
-  <div class="card" id="actionCard" style="display:none;">
-    <button class="btn" id="openLineBtn">LINEで開く</button>
+  <!-- 通常は一切出さない。エラー/外部ブラウザ時だけ出す -->
+  <div class="wrap" id="fallback" style="display:none;">
+    <div class="card">
+      <div id="msg" class="muted"></div>
+      <div id="dbg" class="muted" style="margin-top:10px;"></div>
+    </div>
+    <div class="card" id="openLineCard" style="display:none; margin-top:12px;">
+      <button class="btn" id="openLineBtn">LINEで開く</button>
+    </div>
   </div>
 
 <script>
@@ -51,41 +57,52 @@
     img.src = `${GAS_WEBAPP_URL}?${qs}&_=${Date.now()}`;
   }
 
-  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+  function showFallback(message, extra = "", showOpenLine = false, spot = "") {
+    document.body.style.display = "block";
+    const fb = document.getElementById("fallback");
+    fb.style.display = "block";
 
-  async function safeClose() {
-    // closeWindowはLINE内でのみ動く。失敗しても落ちないように握りつぶす
-    try { liff.closeWindow(); } catch(e) {}
+    document.getElementById("msg").textContent = message;
+    document.getElementById("dbg").textContent =
+`href: ${location.href}
+search: ${location.search}
+${extra}`.trim();
+
+    const card = document.getElementById("openLineCard");
+    const btn = document.getElementById("openLineBtn");
+    if (showOpenLine) {
+      card.style.display = "block";
+      btn.onclick = () => openInLine(spot);
+    } else {
+      card.style.display = "none";
+      btn.onclick = null;
+    }
   }
 
   async function main() {
-    const status = document.getElementById("status");
-    const actionCard = document.getElementById("actionCard");
-    const openLineBtn = document.getElementById("openLineBtn");
-
     const spot = getSpot();
-    if (!spot) { status.textContent = "spotがありません"; return; }
-
-    await liff.init({ liffId: LIFF_ID });
-
-    if (!liff.isInClient()) {
-      status.textContent = "外部ブラウザです。LINEで開いてください。";
-      actionCard.style.display = "block";
-      openLineBtn.onclick = () => openInLine(spot);
+    if (!spot) {
+      showFallback("spotがありません（URLに ?spot=xxx が必要）");
       return;
     }
 
+    await liff.init({ liffId: LIFF_ID });
+
+    // 外部ブラウザなら案内だけ出す（ここだけ表示）
+    if (!liff.isInClient()) {
+      showFallback("LINE内で開いてください（外部ブラウザでは動きません）", "inClient=false", true, spot);
+      return;
+    }
+
+    // 未ログインならログイン（この時も表示しない）
     if (!liff.isLoggedIn()) {
-      status.textContent = "LINEログイン中…";
       liff.login({ redirectUri: location.href });
       return;
     }
 
-    // ここまで来たら userId 取れる
-    status.textContent = "チェックイン中…";
     const profile = await liff.getProfile();
 
-    // ログ送信（GAS→スプシ） ※LINEへのメッセージはGAS側がPushする
+    // 1) スプシに記録
     sendToGAS({
       spot,
       userId: profile.userId || "",
@@ -93,18 +110,26 @@
       source: "liff"
     });
 
-    // 送信が飛ぶのを少し待ってから閉じる（完了画面を見せない）
-    await sleep(250);
-    await safeClose();
-    return;
+    // 2) LINEに1通送る（失敗しても閉じる）
+    try {
+      await liff.sendMessages([{
+        type: "text",
+        text: `チェックイン完了！\nSPOT: ${spot}\nNAME: ${profile.displayName || ""}`
+      }]);
+    } catch (e) {
+      // 送信失敗でも運用上は閉じる（必要ならここでfallback表示に変える）
+    }
+
+    // 3) 即クローズ（表示なし）
+    liff.closeWindow();
   }
 
-  main().catch(async (err) => {
-    // どんなエラーでも閉じる（ユーザーに見せない）
-    try {
-      await sleep(200);
-      await safeClose();
-    } catch(e) {}
+  main().catch(err => {
+    const spot = getSpot();
+    showFallback("エラー: " + (err?.message || String(err)),
+      `inClient=${(typeof liff !== "undefined" && liff.isInClient) ? liff.isInClient() : "?"}
+loggedIn=${(typeof liff !== "undefined" && liff.isLoggedIn) ? liff.isLoggedIn() : "?"}
+spot=${spot}`, false, spot);
   });
 </script>
 </body>
