@@ -3,177 +3,40 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JCJ Check-in</title>
-
-  <!-- LIFF SDK -->
+  <title>JCJ</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; }
-    .title { font-size: 20px; font-weight: 700; margin: 6px 0 12px; }
-    .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; margin: 12px 0; }
-    .row { margin: 6px 0; }
-    .label { color: #666; font-size: 12px; }
-    .value { font-size: 16px; font-weight: 600; word-break: break-word; }
-    button {
-      width: 100%;
-      padding: 14px 14px;
-      border-radius: 14px;
-      border: 1px solid #ddd;
-      background: #fff;
-      font-size: 16px;
-      font-weight: 650;
-      cursor: pointer;
-    }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-    .muted { color:#666; font-size: 12px; word-break: break-all; }
-    .ok { color: #0a7a25; font-weight: 700; }
-    .ng { color: #b00020; font-weight: 700; }
-    code { background: #f6f6f6; padding: 2px 6px; border-radius: 8px; }
-  </style>
 </head>
-
 <body>
-  <div class="title">JCJ チェックイン</div>
-
-  <div class="card">
-    <div class="row">
-      <div class="label">スポット</div>
-      <div class="value" id="spotName">読み込み中…</div>
-    </div>
-
-    <div class="row">
-      <div class="label">送信されるキーワード（LINEの完全一致用）</div>
-      <div class="value"><code id="keyword">#---</code></div>
-    </div>
-
-    <div class="row muted" id="status">起動中…</div>
-  </div>
-
-  <button id="btn" disabled>チェックインを送信する</button>
-
-  <!-- デバッグ（必要なければ後で消してOK） -->
-  <div class="card">
-    <div class="label">Debug</div>
-    <div class="muted" id="debug"></div>
-  </div>
-
 <script>
-  // ★あなたのLIFF ID
   const LIFF_ID = "2008851980-yhGytJRd";
 
-  // spot -> 表示名（増やしてOK）
-  const SPOT_NAME = {
-    tokyo_roca: "ROCA COFFEE ROASTERS（東京）",
-    shizuoka_nomad: "NOMAD COFFEE（静岡）",
-    aichi_101: "COFFEE ROASTERY 101（愛知）",
-  };
-
-  function getSpotFromAnyUrl() {
-    // 1) 普通の ?spot=
+  function getSpot() {
     const q = new URLSearchParams(location.search);
-    const direct = q.get("spot");
+    const direct = (q.get("spot") || "").trim();
     if (direct) return direct;
 
-    // 2) ?liff.state= の中に "?spot=xxx" が入るケース
     const stateRaw = q.get("liff.state");
     if (stateRaw) {
       let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
+      try { decoded = decodeURIComponent(stateRaw); } catch(e){}
       const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
-      const fromState = new URLSearchParams(s).get("spot");
-      if (fromState) return fromState;
+      return (new URLSearchParams(s).get("spot") || "").trim();
     }
-
-    // 3) #?spot=xxx / #spot=xxx のようにhashに来るケース
-    if (location.hash) {
-      const h = location.hash.replace(/^#\??/, "");
-      const fromHash = new URLSearchParams(h).get("spot");
-      if (fromHash) return fromHash;
-    }
-
-    return null;
-  }
-
-  function setStatus(text, ok = true) {
-    const el = document.getElementById("status");
-    el.innerHTML = `${ok ? '<span class="ok">✅</span>' : '<span class="ng">❌</span>'} ${text}`;
+    return "";
   }
 
   async function main() {
     await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) return liff.login({ redirectUri: location.href });
 
-    // ログインしてなければログイン（通常はLINE内ならloggedIn=true）
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
-      return;
-    }
+    const spot = getSpot();
+    if (!spot) return;
 
-    const spot = getSpotFromAnyUrl();
-
-    // 表示
-    const name = spot ? (SPOT_NAME[spot] || spot) : "（スポット未指定）";
-    document.getElementById("spotName").textContent = name;
-    document.getElementById("keyword").textContent = spot ? `#${spot}` : "#---";
-
-    // デバッグ表示
-    const q = new URLSearchParams(location.search);
-    document.getElementById("debug").innerHTML =
-      `<div>inClient: <code>${liff.isInClient()}</code> / loggedIn: <code>${liff.isLoggedIn()}</code></div>` +
-      `<div>href: <code>${location.href}</code></div>` +
-      `<div>search: <code>${location.search || "(empty)"}</code></div>` +
-      `<div>liff.state: <code>${q.get("liff.state") || "(none)"}</code></div>` +
-      `<div>hash: <code>${location.hash || "(empty)"}</code></div>` +
-      `<div>spot: <code>${spot || "(none)"}</code></div>`;
-
-    const btn = document.getElementById("btn");
-    btn.disabled = !spot;
-
-    if (!spot) {
-      setStatus("スポット（spot）がURLにありません。?spot=xxx を付けて開いてください。", false);
-      return;
-    }
-
-    // ここ重要：QR/NFCで開くと sendMessages が失敗しやすいので、
-    // まずは「LINE内で開けているか」をチェック（必要ならこの判定は外してもOK）
-    if (!liff.isInClient()) {
-      setStatus("LINE内で開いてください（inClient=false）。", false);
-      return;
-    }
-
-    setStatus("準備OK。ボタンを押すと2通送信します（2通目が #spot 単体）。", true);
-
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-
-      const shopName = SPOT_NAME[spot] || spot;
-
-      // ★送信する2通：
-      // 1通目：自然文（長くてもOK）
-      // 2通目：キーワード応答用（完全一致させるため #spot 単体）
-      const msg1 = `${shopName}にチェックインしました`;
-      const msg2 = `#${spot}`;
-
-      try {
-        await liff.sendMessages([
-          { type: "text", text: msg1 },
-          { type: "text", text: msg2 }
-        ]);
-        setStatus(`送信しました。キーワードは「${msg2}」です。`, true);
-      } catch (e) {
-        setStatus("送信に失敗しました。QR/NFC起動だと失敗する場合があります。", false);
-        document.getElementById("debug").innerHTML +=
-          `<div class="ng">sendMessages error: <code>${(e && e.message) ? e.message : JSON.stringify(e)}</code></div>`;
-      } finally {
-        btn.disabled = false;
-      }
-    });
+    await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
+    liff.closeWindow(); // 送ったら閉じる
   }
 
-  main().catch(e => {
-    setStatus("起動エラー：" + ((e && e.message) ? e.message : JSON.stringify(e)), false);
-  });
+  main().catch(()=>{});
 </script>
-
 </body>
 </html>
