@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JCJ Passport 登録</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 18px; }
+    h1 { font-size: 18px; margin: 0 0 12px; }
+    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
+    label { display:block; font-size: 13px; color:#444; margin: 10px 0 6px; }
+    select, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
+    .row { display:flex; gap:10px; }
+    .btn { background:#06c755; color:#fff; border:0; }
+    .btn:disabled { opacity:.5; }
+    .muted { color:#666; font-size: 13px; white-space: pre-wrap; }
+    .radio { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+    .radio label{ display:flex; align-items:center; gap:8px; margin:0; }
+  </style>
+</head>
+<body>
+  <h1>JCJ パスポート登録</h1>
+
+  <div class="card">
+    <div id="status" class="muted">起動中…</div>
+
+    <label>お住まいの都道府県</label>
+    <select id="pref">
+      <option value="">選択してください</option>
+      <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
+      <option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option>
+      <option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option>
+      <option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option>
+      <option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option>
+      <option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option>
+      <option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+    </select>
+
+    <label>好きな味</label>
+    <div class="radio" id="taste">
+      <label><input type="radio" name="taste" value="fruity"> フルーティー（浅煎り）</label>
+      <label><input type="radio" name="taste" value="balanced"> バランス（中深煎り）</label>
+      <label><input type="radio" name="taste" value="bold"> コク（深煎り）</label>
+    </div>
+
+    <div style="height:12px"></div>
+    <button class="btn" id="submitBtn" disabled>登録する</button>
+  </div>
+
+  <div class="card">
+    <div id="debug" class="muted"></div>
+  </div>
+
+<script>
+  const LIFF_ID = "2008851980-yhGytJRd";
+  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec"; // あなたのURLのまま
+
+  let profile = null;
+
+  function qs(name){ return new URLSearchParams(location.search).get(name); }
+
+  function setDebug(extra=""){
+    document.getElementById("debug").textContent =
+`inClient=${liff?.isInClient?.()} loggedIn=${liff?.isLoggedIn?.()}
+href=${location.href}
+${extra}`.trim();
+  }
+
+  function sendToGAS(params){
+    const query = new URLSearchParams(params).toString();
+    const img = new Image();
+    img.src = `${GAS_WEBAPP_URL}?${query}&_=${Date.now()}`;
+  }
+
+  function canSubmit(){
+    const pref = document.getElementById("pref").value.trim();
+    const taste = document.querySelector('input[name="taste"]:checked')?.value || "";
+    return !!pref && !!taste && !!profile?.userId;
+  }
+
+  function refreshBtn(){
+    document.getElementById("submitBtn").disabled = !canSubmit();
+  }
+
+  async function main(){
+    const status = document.getElementById("status");
+
+    await liff.init({ liffId: LIFF_ID });
+
+    // LINE内で開かれてなければ案内
+    if (!liff.isInClient()){
+      status.textContent = "LINE内で開いてください（この画面は閉じてOK）";
+      setDebug("NOT IN CLIENT");
+      return;
+    }
+
+    if (!liff.isLoggedIn()){
+      status.textContent = "ログイン中…";
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    profile = await liff.getProfile();
+    status.textContent = "都道府県と好みを選んで登録してください";
+    setDebug(`userId=${profile.userId}\nname=${profile.displayName}`);
+
+    // 入力変化でボタン有効化
+    document.getElementById("pref").addEventListener("change", refreshBtn);
+    document.getElementById("taste").addEventListener("change", refreshBtn);
+
+    const btn = document.getElementById("submitBtn");
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      status.textContent = "登録中…";
+
+      const pref = document.getElementById("pref").value.trim();
+      const taste = document.querySelector('input[name="taste"]:checked')?.value || "";
+
+      sendToGAS({
+        mode: "profile",
+        userId: profile.userId || "",
+        name: profile.displayName || "",
+        pref,
+        taste
+      });
+
+      status.textContent = "登録完了！この画面は自動で閉じます。";
+      setDebug("SENT");
+
+      // すぐ閉じる（LINE内のみ）
+      setTimeout(() => {
+        try { liff.closeWindow(); } catch(e) {}
+      }, 700);
+    });
+
+    refreshBtn();
+  }
+
+  main().catch(err => {
+    document.getElementById("status").textContent = "エラー";
+    document.getElementById("debug").textContent = "ERROR: " + (err?.message || String(err));
+  });
+</script>
+</body>
+</html>
