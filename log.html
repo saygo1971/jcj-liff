@@ -116,7 +116,14 @@ sendToGAS({
   name: profile.displayName || "",
   source: "liff"
 });
+// ここ追加（LINEにメッセージ）
+await liff.sendMessages([
+  { type: "text", text: `チェックイン完了！\nSPOT: ${spot}\nNAME: ${profile.displayName || ""}` }
+]);
 
+// ここ追加（画面を見せず閉じる）
+setTimeout(() => liff.closeWindow(), 200);
+return;
 
 status.textContent = "完了";
     result.textContent = `送信しました：spot=${spot}\nuserId=${profile.userId}\nname=${profile.displayName}`;
