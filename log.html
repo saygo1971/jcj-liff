@@ -7,42 +7,30 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 20px; }
-    h1 { margin: 8px 0 16px; }
-    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
     .muted { color: #666; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
     .btn { width: 100%; padding: 12px 14px; border-radius: 10px; border: 0; background: #06c755; color: #fff; font-size: 16px; }
-    .btn:disabled { background: #b7e8c7; }
   </style>
 </head>
 <body>
-  <h1>JCJ Log</h1>
-
   <div class="card">
     <div id="status" class="muted">起動中…</div>
-    <div id="debug" class="muted"></div>
+    <div id="debug" class="muted" style="display:none;"></div>
   </div>
 
   <div class="card" id="actionCard" style="display:none;">
     <button class="btn" id="openLineBtn">LINEで開く</button>
   </div>
 
-  <div class="card">
-    <div id="result" class="muted"></div>
-  </div>
-
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
-
-  // ここはあなたのGAS WebアプリURLに置き換え
   const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
   function getSpot() {
-    // 1) 直接 spot= がある
     const q = new URLSearchParams(location.search);
     const direct = (q.get("spot") || "").trim();
     if (direct) return direct;
 
-    // 2) LIFF経由だと liff.state に入る場合がある
     const stateRaw = q.get("liff.state");
     if (stateRaw) {
       let decoded = stateRaw;
@@ -53,87 +41,70 @@
     return "";
   }
 
-  function setDebug(extra = "") {
-    const spot = getSpot();
-    document.getElementById("debug").textContent =
-`LIFF OK / inClient=${liff.isInClient()} / loggedIn=${liff.isLoggedIn()} / spot=${spot}
-href: ${location.href}
-search: ${location.search}
-${extra}`.trim();
-  }
-
   function openInLine(spot) {
-    const url = `line://app/${LIFF_ID}?spot=${encodeURIComponent(spot)}`;
-    location.href = url;
+    location.href = `line://app/${LIFF_ID}?spot=${encodeURIComponent(spot)}`;
   }
 
   function sendToGAS(params) {
     const qs = new URLSearchParams(params).toString();
     const img = new Image();
-    img.onload = () => {};      // 200が返っても見えないことがあるので気にしない
-    img.onerror = () => {};     // それでもスプシに入ることはある
-    img.src = `${GAS_WEBAPP_URL}?${qs}&_=${Date.now()}`; // キャッシュ回避
+    img.src = `${GAS_WEBAPP_URL}?${qs}&_=${Date.now()}`;
+  }
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function safeClose() {
+    // closeWindowはLINE内でのみ動く。失敗しても落ちないように握りつぶす
+    try { liff.closeWindow(); } catch(e) {}
   }
 
   async function main() {
     const status = document.getElementById("status");
-    const result = document.getElementById("result");
     const actionCard = document.getElementById("actionCard");
     const openLineBtn = document.getElementById("openLineBtn");
 
     const spot = getSpot();
-    if (!spot) {
-      status.textContent = "spotがありません（URLに ?spot=xxx が必要）";
-      setDebug();
-      return;
-    }
+    if (!spot) { status.textContent = "spotがありません"; return; }
 
     await liff.init({ liffId: LIFF_ID });
-    setDebug();
 
-    // 外部ブラウザで開かれた可能性が高い
     if (!liff.isInClient()) {
-      status.textContent = "外部ブラウザで開かれています。LINEで開く必要があります。";
+      status.textContent = "外部ブラウザです。LINEで開いてください。";
       actionCard.style.display = "block";
       openLineBtn.onclick = () => openInLine(spot);
       return;
     }
 
-    // LINE内だけど未ログインならログイン
     if (!liff.isLoggedIn()) {
       status.textContent = "LINEログイン中…";
       liff.login({ redirectUri: location.href });
       return;
     }
 
-    status.textContent = "プロフィール取得中…";
+    // ここまで来たら userId 取れる
+    status.textContent = "チェックイン中…";
     const profile = await liff.getProfile();
 
-    status.textContent = "ログ送信中…";
-sendToGAS({
-  spot,
-  userId: profile.userId || "",
-  name: profile.displayName || "",
-  source: "liff"
-});
-// ここ追加（LINEにメッセージ）
-await liff.sendMessages([
-  { type: "text", text: `チェックイン完了！\nSPOT: ${spot}\nNAME: ${profile.displayName || ""}` }
-]);
+    // ログ送信（GAS→スプシ） ※LINEへのメッセージはGAS側がPushする
+    sendToGAS({
+      spot,
+      userId: profile.userId || "",
+      name: profile.displayName || "",
+      source: "liff"
+    });
 
-// ここ追加（画面を見せず閉じる）
-setTimeout(() => liff.closeWindow(), 200);
-return;
-
-status.textContent = "完了";
-    result.textContent = `送信しました：spot=${spot}\nuserId=${profile.userId}\nname=${profile.displayName}`;
-    setDebug("OK");
+    // 送信が飛ぶのを少し待ってから閉じる（完了画面を見せない）
+    await sleep(250);
+    await safeClose();
+    return;
   }
 
-  main().catch(err => {
-    document.getElementById("status").textContent = "エラー";
-    document.getElementById("result").textContent = "ERROR: " + (err?.message || String(err));
-    try { setDebug("ERROR"); } catch(e) {}
+  main().catch(async (err) => {
+    // どんなエラーでも閉じる（ユーザーに見せない）
+    try {
+      await sleep(200);
+      await safeClose();
+    } catch(e) {}
   });
 </script>
 </body>
