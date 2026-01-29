@@ -1,136 +1,188 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JCJ Log</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    /* ここがポイント：最初から何も描画しない */
-    body { display:none; margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; }
+/***** 設定ここだけ埋める *****/
+const SHEET_ID   = "19p3ncXe_XtKy-g2J8Eq-qFPLyBmUH4y6d4DdbMrzKVY"; // スプシID
+const SHEET_LOG  = "checkin_log";   // チェックインログ
+const SHEET_SPOT = "spots";         // 店舗マスタ
+const SHEET_ACT  = "spots_action";  // 追加送信の定義
+const SHEET_PROFILE = "profile";    // 住まい/好みの登録
+const LINE_TOKEN = "4+mcx1NFmWXMYG+Dwl8rO2mkf8qSC0ULHr02HoKkFFrgqZOpjXXisTGwXrjvYuKpWiNrOkbZ5NHoLojbSC9zLkipxuDXvEcdAYUTE+SXGrTLHhfNaH+s3yOHrQMG0tY0e8rJ3SIxxoGZdWczefRi8wdB04t89/1O/w1cDnyilFU="; // Messaging API 長期トークン
+/********************************/
 
-    /* エラー時だけ表示する簡易UI */
-    .wrap { padding:16px; }
-    .card { border:1px solid #eee; border-radius:12px; padding:14px; }
-    .muted { color:#666; font-size:13px; white-space:pre-wrap; word-break:break-all; }
-    .btn { width:100%; padding:12px 14px; border-radius:10px; border:0; background:#06c755; color:#fff; font-size:16px; }
-  </style>
-</head>
-<body>
-  <!-- 通常は一切出さない。エラー/外部ブラウザ時だけ出す -->
-  <div class="wrap" id="fallback" style="display:none;">
-    <div class="card">
-      <div id="msg" class="muted"></div>
-      <div id="dbg" class="muted" style="margin-top:10px;"></div>
-    </div>
-    <div class="card" id="openLineCard" style="display:none; margin-top:12px;">
-      <button class="btn" id="openLineBtn">LINEで開く</button>
-    </div>
-  </div>
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const mode = (e.parameter.mode || "").trim().toLowerCase();
 
-<script>
-  const LIFF_ID = "2008851980-yhGytJRd";
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+    // ===== プロフィール登録（register.html から）=====
+    if (mode === "profile") {
+      const userId = (e.parameter.userId || "").trim();
+      const pref   = (e.parameter.pref || "").trim();
+      const taste  = (e.parameter.taste || "").trim();
+      const name   = (e.parameter.name || "").trim(); // displayName（任意）
 
-  function getSpot() {
-    const q = new URLSearchParams(location.search);
-    const direct = (q.get("spot") || "").trim();
-    if (direct) return direct;
+      if (!userId) return text_("NG: userId required");
+      if (!pref || !taste) return text_("NG: pref/taste required");
 
-    const stateRaw = q.get("liff.state");
-    if (stateRaw) {
-      let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
-      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
-      return (new URLSearchParams(s).get("spot") || "").trim();
+      upsertProfile_(ss, userId, pref, taste, name);
+      return text_("OK_PROFILE");
     }
-    return "";
-  }
 
-  function openInLine(spot) {
-    location.href = `line://app/${LIFF_ID}?spot=${encodeURIComponent(spot)}`;
-  }
+    // ===== チェックイン（log.html から）=====
+    const spot   = (e.parameter.spot   || "").trim();
+    const userId = (e.parameter.userId || "").trim();
+    const name   = (e.parameter.name   || "").trim();
+    const source = (e.parameter.source || "manual").trim();
 
-  function sendToGAS(params) {
-    const qs = new URLSearchParams(params).toString();
-    const img = new Image();
-    img.src = `${GAS_WEBAPP_URL}?${qs}&_=${Date.now()}`;
-  }
+    if (!spot) return text_("NG: spot required");
 
-  function showFallback(message, extra = "", showOpenLine = false, spot = "") {
-    document.body.style.display = "block";
-    const fb = document.getElementById("fallback");
-    fb.style.display = "block";
+    // 1) ログ記録
+    appendLog_(ss, spot, userId, name, source);
 
-    document.getElementById("msg").textContent = message;
-    document.getElementById("dbg").textContent =
-`href: ${location.href}
-search: ${location.search}
-${extra}`.trim();
+    // 2) 店名
+    const shopName = getShopName_(ss, spot) || spot;
 
-    const card = document.getElementById("openLineCard");
-    const btn = document.getElementById("openLineBtn");
-    if (showOpenLine) {
-      card.style.display = "block";
-      btn.onclick = () => openInLine(spot);
-    } else {
-      card.style.display = "none";
-      btn.onclick = null;
+    // 3) 追加アクション
+    const actions = getActionsForSpot_(ss, spot);
+
+    // 4) 送信（userIdがある時だけ）
+    if (userId) {
+      const baseMsg = { type: "text", text: `チェックイン完了！\n${shopName}` };
+      const extraMsgs = buildMessages_(actions, spot, shopName);
+      pushMessages_(userId, [baseMsg, ...extraMsgs]);
     }
+
+    return text_("OK");
+  } catch (err) {
+    return text_("ERROR: " + (err && err.message ? err.message : String(err)));
+  }
+}
+
+/** ========== profile（userIdで上書き保存） ========== */
+function upsertProfile_(ss, userId, pref, taste, displayName) {
+  const sh = ss.getSheetByName(SHEET_PROFILE) || ss.insertSheet(SHEET_PROFILE);
+
+  if (sh.getLastRow() === 0) {
+    sh.appendRow(["TIMESTAMP","USER_ID","PREFECTURE","TASTE","DISPLAYNAME"]);
   }
 
-  async function main() {
-    const spot = getSpot();
-    if (!spot) {
-      showFallback("spotがありません（URLに ?spot=xxx が必要）");
+  const last = sh.getLastRow();
+  if (last === 1) {
+    sh.appendRow([new Date(), userId, pref, taste, displayName || ""]);
+    return;
+  }
+
+  // USER_ID列（B）を探す
+  const ids = sh.getRange(2, 2, last - 1, 1).getValues(); // B2:B
+  for (let i = 0; i < ids.length; i++) {
+    if (String(ids[i][0] || "").trim() === userId) {
+      const row = i + 2;
+      // A:timestamp, C:pref, D:taste, E:displayName
+      sh.getRange(row, 1, 1, 5).setValues([[new Date(), userId, pref, taste, displayName || ""]]);
       return;
     }
+  }
 
-    await liff.init({ liffId: LIFF_ID });
+  // 無ければ追加
+  sh.appendRow([new Date(), userId, pref, taste, displayName || ""]);
+}
 
-    // 外部ブラウザなら案内だけ出す（ここだけ表示）
-    if (!liff.isInClient()) {
-      showFallback("LINE内で開いてください（外部ブラウザでは動きません）", "inClient=false", true, spot);
-      return;
+/** ========== spots_action ========== */
+function getActionsForSpot_(ss, spot) {
+  const sh = ss.getSheetByName(SHEET_ACT);
+  if (!sh) return [];
+
+  const values = sh.getDataRange().getValues();
+  if (values.length <= 1) return [];
+
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const rSpot  = String(row[0] || "").trim();
+    const type   = String(row[1] || "").trim().toLowerCase();
+    const value  = String(row[2] || "").trim();
+    const order  = Number(row[3] || 0);
+    const active = String(row[4] || "").trim().toLowerCase();
+
+    if (!rSpot || rSpot !== spot) continue;
+    if (!type || !value) continue;
+    if (!(active === "true" || active === "1" || active === "yes" || active === "on")) continue;
+
+    out.push({ type, value, order: isNaN(order) ? 0 : order });
+  }
+  out.sort((a,b) => a.order - b.order);
+  return out;
+}
+
+function buildMessages_(actions, spot, shopName) {
+  const messages = [];
+
+  actions.forEach(a => {
+    if (a.type === "text") {
+      const text = a.value.replaceAll("{spot}", spot).replaceAll("{shop}", shopName);
+      messages.push({ type: "text", text });
     }
-
-    // 未ログインならログイン（この時も表示しない）
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
-      return;
+    if (a.type === "image") {
+      if (/^https:\/\/.+/i.test(a.value)) {
+        messages.push({
+          type: "image",
+          originalContentUrl: a.value,
+          previewImageUrl: a.value
+        });
+      }
     }
+    if (a.type === "url") {
+      messages.push({ type: "text", text: a.value });
+    }
+  });
 
-    const profile = await liff.getProfile();
+  return messages;
+}
 
-    // 1) スプシに記録
-    sendToGAS({
-      spot,
-      userId: profile.userId || "",
-      name: profile.displayName || "",
-      source: "liff"
+/** ========== spots（店名） ========== */
+function getShopName_(ss, spot) {
+  const sh = ss.getSheetByName(SHEET_SPOT);
+  if (!sh) return "";
+
+  const values = sh.getDataRange().getValues();
+  if (values.length <= 1) return "";
+
+  for (let i = 1; i < values.length; i++) {
+    const rSpot = String(values[i][3] || "").trim(); // D列
+    if (rSpot === spot) return String(values[i][2] || "").trim(); // C列
+  }
+  return "";
+}
+
+/** ========== log ========== */
+function appendLog_(ss, spot, userId, name, source) {
+  const sh = ss.getSheetByName(SHEET_LOG) || ss.insertSheet(SHEET_LOG);
+  if (sh.getLastRow() === 0) sh.appendRow(["TIMESTAMP","SPOT","USER_ID","DISPLAYNAME","SOURCE"]);
+  sh.appendRow([new Date(), spot, userId, name, source]);
+}
+
+/** ========== LINE push ========== */
+function pushMessages_(userId, messages) {
+  if (!userId) return;
+  if (!LINE_TOKEN || LINE_TOKEN.includes("ここに")) throw new Error("LINE_TOKEN not set");
+
+  for (let i = 0; i < messages.length; i += 5) {
+    const chunk = messages.slice(i, i + 5);
+    const payload = { to: userId, messages: chunk };
+
+    const res = UrlFetchApp.fetch("https://api.line.me/v2/bot/message/push", {
+      method: "post",
+      contentType: "application/json",
+      headers: { Authorization: "Bearer " + LINE_TOKEN },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
     });
 
-    // 2) LINEに1通送る（失敗しても閉じる）
-    try {
-      await liff.sendMessages([{
-        type: "text",
-        text: `チェックイン完了！\nSPOT: ${spot}\nNAME: ${profile.displayName || ""}`
-      }]);
-    } catch (e) {
-      // 送信失敗でも運用上は閉じる（必要ならここでfallback表示に変える）
+    const code = res.getResponseCode();
+    if (code < 200 || code >= 300) {
+      throw new Error("LINE push failed: " + code + " / " + res.getContentText());
     }
-
-    // 3) 即クローズ（表示なし）
-    liff.closeWindow();
   }
+}
 
-  main().catch(err => {
-    const spot = getSpot();
-    showFallback("エラー: " + (err?.message || String(err)),
-      `inClient=${(typeof liff !== "undefined" && liff.isInClient) ? liff.isInClient() : "?"}
-loggedIn=${(typeof liff !== "undefined" && liff.isLoggedIn) ? liff.isLoggedIn() : "?"}
-spot=${spot}`, false, spot);
-  });
-</script>
-</body>
-</html>
+function text_(s) {
+  return ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.TEXT);
+}
