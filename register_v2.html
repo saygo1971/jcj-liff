@@ -2,30 +2,54 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Passport 登録</title>
+
+  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 18px; }
-    h1 { font-size: 18px; margin: 0 0 12px; }
-    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
-    label { display:block; font-size: 13px; color:#444; margin: 10px 0 6px; }
-    select, button { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
-    .row { display:flex; gap:10px; }
-    .btn { background:#06c755; color:#fff; border:0; }
-    .btn:disabled { opacity:.5; }
-    .muted { color:#666; font-size: 13px; white-space: pre-wrap; }
-    .radio { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
-    .radio label{ display:flex; align-items:center; gap:8px; margin:0; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; background:#fff; }
+    h1 { font-size: 22px; margin: 8px 0 12px; }
+    .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; margin: 12px 0; }
+    label { display:block; margin: 10px 0 6px; font-weight: 700; }
+    select, button { width: 100%; }
+    select {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      background: #fff;
+    }
+    .radio { margin: 10px 0; }
+    .radio label { font-weight: 600; margin: 0; display:flex; align-items:center; gap:10px; }
+    .radio input { transform: scale(1.1); }
+    button {
+      padding: 14px;
+      border-radius: 14px;
+      border: 0;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #7bd59d;
+      color: #fff;
+      margin-top: 12px;
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .muted { color:#666; font-size: 12px; }
+    .ok { color:#0a7a25; font-weight: 800; }
+    .ng { color:#b00020; font-weight: 800; }
+    .msg { margin-top: 8px; }
   </style>
 </head>
+
 <body>
   <h1>JCJ パスポート登録</h1>
 
   <div class="card">
-    <div id="status" class="muted">起動中…</div>
+    <div class="muted">都道府県と好みを選んで登録してください</div>
 
-    <label>お住まいの都道府県</label>
+    <label for="pref">お住まいの都道府県</label>
     <select id="pref">
       <option value="">選択してください</option>
       <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option>
@@ -38,106 +62,121 @@
     </select>
 
     <label>好きな味</label>
-    <div class="radio" id="taste">
-      <label><input type="radio" name="taste" value="fruity"> フルーティー（浅煎り）</label>
-      <label><input type="radio" name="taste" value="balanced"> バランス（中深煎り）</label>
-      <label><input type="radio" name="taste" value="bold"> コク（深煎り）</label>
+    <div class="radio">
+      <label><input type="radio" name="taste" value="FRUITY"> フルーティー（浅煎り）</label>
+    </div>
+    <div class="radio">
+      <label><input type="radio" name="taste" value="BALANCED"> バランス（中深煎り）</label>
+    </div>
+    <div class="radio">
+      <label><input type="radio" name="taste" value="BOLD"> コク（深煎り）</label>
     </div>
 
-    <div style="height:12px"></div>
-    <button class="btn" id="submitBtn" disabled>登録する</button>
+    <button id="submit" disabled>登録する</button>
+    <div id="status" class="msg muted"></div>
   </div>
 
 <script>
-  const LIFF_ID = "2008851980-dSkB8ttU";
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec"; // あなたのURLのまま
+  // ✅ ここだけあなたの値に合わせて
+  const LIFF_ID = "2008851980-dSkB8ttU"; // 例：登録用LIFF ID
+  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec"; // あなたのGAS WebApp URL
 
-  let profile = null;
+  const elPref = document.getElementById("pref");
+  const elBtn  = document.getElementById("submit");
+  const elStatus = document.getElementById("status");
 
-  function qs(name){ return new URLSearchParams(location.search).get(name); }
-
-  function setDebug(extra=""){
-    document.getElementById("debug").textContent =
-`inClient=${liff?.isInClient?.()} loggedIn=${liff?.isLoggedIn?.()}
-href=${location.href}
-${extra}`.trim();
+  function setStatus(text, ok=null) {
+    if (ok === true) elStatus.innerHTML = `<span class="ok">✅</span> ${text}`;
+    else if (ok === false) elStatus.innerHTML = `<span class="ng">❌</span> ${text}`;
+    else elStatus.textContent = text;
   }
 
-  function sendToGAS(params){
-    const query = new URLSearchParams(params).toString();
-    const img = new Image();
-    img.src = `${GAS_WEBAPP_URL}?${query}&_=${Date.now()}`;
+  function getTaste() {
+    const r = document.querySelector('input[name="taste"]:checked');
+    return r ? r.value : "";
   }
 
-  function canSubmit(){
-    const pref = document.getElementById("pref").value.trim();
-    const taste = document.querySelector('input[name="taste"]:checked')?.value || "";
-    return !!pref && !!taste && !!profile?.userId;
+  function validate() {
+    const pref = elPref.value.trim();
+    const taste = getTaste();
+    elBtn.disabled = !(pref && taste);
   }
 
-  function refreshBtn(){
-    document.getElementById("submitBtn").disabled = !canSubmit();
-  }
+  elPref.addEventListener("change", validate);
+  document.querySelectorAll('input[name="taste"]').forEach(r => r.addEventListener("change", validate));
 
-  async function main(){
-    const status = document.getElementById("status");
-
+  async function main() {
+    setStatus("起動中…");
     await liff.init({ liffId: LIFF_ID });
 
-    // LINE内で開かれてなければ案内
-    if (!liff.isInClient()){
-      status.textContent = "LINE内で開いてください（この画面は閉じてOK）";
-      setDebug("NOT IN CLIENT");
-      return;
-    }
-
-    if (!liff.isLoggedIn()){
-      status.textContent = "ログイン中…";
+    if (!liff.isLoggedIn()) {
+      // LINE内なら基本ログイン済み。未ログイン時はログインへ。
       liff.login({ redirectUri: location.href });
       return;
     }
 
-    profile = await liff.getProfile();
-    status.textContent = "都道府県と好みを選んで登録してください";
-    setDebug(`userId=${profile.userId}\nname=${profile.displayName}`);
+    if (!liff.isInClient()) {
+      // ブラウザで開いてしまった時の保険（運用上はLINE内前提）
+      setStatus("LINE内で開いてください。", false);
+      elBtn.disabled = true;
+      return;
+    }
 
-    // 入力変化でボタン有効化
-    document.getElementById("pref").addEventListener("change", refreshBtn);
-    document.getElementById("taste").addEventListener("change", refreshBtn);
+    setStatus("入力してください。");
+    validate();
 
-    const btn = document.getElementById("submitBtn");
-    btn.addEventListener("click", () => {
-      btn.disabled = true;
-      status.textContent = "登録中…";
+    elBtn.addEventListener("click", async () => {
+      const pref = elPref.value.trim();
+      const taste = getTaste();
 
-      const pref = document.getElementById("pref").value.trim();
-      const taste = document.querySelector('input[name="taste"]:checked')?.value || "";
+      if (!pref || !taste) {
+        setStatus("都道府県と好みを選んでください。", false);
+        return;
+      }
 
-      sendToGAS({
-        mode: "profile",
-        userId: profile.userId || "",
-        name: profile.displayName || "",
-        pref,
-        taste
-      });
+      elBtn.disabled = true;
+      setStatus("送信中…");
 
-      status.textContent = "登録完了！この画面は自動で閉じます。";
-      setDebug("SENT");
+      try {
+        const profile = await liff.getProfile(); // { userId, displayName, ... }
 
-      // すぐ閉じる（LINE内のみ）
-      setTimeout(() => {
-        try { liff.closeWindow(); } catch(e) {}
-      }, 700);
+        const payload = {
+          action: "register",
+          userId: profile.userId,
+          name: profile.displayName || "",
+          prefecture: pref,
+          taste: taste,
+          ts: new Date().toISOString()
+        };
+
+        const res = await fetch(GAS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await res.text();
+
+        if (!res.ok) throw new Error(text || "GAS error");
+
+        setStatus("登録しました！この画面は閉じてOKです。", true);
+
+        // ちょい待って閉じる（閉じたくなければ次の2行を消す）
+        setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 800);
+
+      } catch (e) {
+        setStatus("送信に失敗しました。GAS_ENDPOINTや権限設定を確認してください。", false);
+        // ここで詳細表示したくないなら何も出さない
+        console.log(e);
+      } finally {
+        elBtn.disabled = false;
+      }
     });
-
-    refreshBtn();
   }
 
-  main().catch(err => {
-    document.getElementById("status").textContent = "エラー";
-    document.getElementById("debug").textContent = "ERROR: " + (err?.message || String(err));
+  main().catch(e => {
+    setStatus("起動エラー：" + (e?.message || String(e)), false);
   });
 </script>
 </body>
 </html>
-
