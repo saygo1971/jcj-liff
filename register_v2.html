@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Passport 登録</title>
-
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
@@ -13,33 +12,17 @@
     .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; margin: 12px 0; }
     label { display:block; margin: 10px 0 6px; font-weight: 700; }
     select, button { width: 100%; }
-    select {
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-      font-size: 16px;
-      background: #fff;
-    }
+    select { padding: 12px; border-radius: 12px; border: 1px solid #ddd; font-size: 16px; background: #fff; }
     .radio { margin: 10px 0; }
     .radio label { font-weight: 600; margin: 0; display:flex; align-items:center; gap:10px; }
     .radio input { transform: scale(1.1); }
 
     button{
-      padding:14px;
-      border-radius:14px;
-      border:0;
-      font-size:16px;
-      font-weight:800;
-      cursor:pointer;
-      background:#06c755; /* 濃い緑 */
-      color:#fff;
-      margin-top:12px;
+      padding:14px; border-radius:14px; border:0;
+      font-size:16px; font-weight:800; cursor:pointer;
+      background:#06c755; color:#fff; margin-top:12px;
     }
-    button:disabled{
-      background:#b7e8c7;
-      opacity:1;
-      cursor:not-allowed;
-    }
+    button:disabled{ background:#b7e8c7; opacity:1; cursor:not-allowed; }
 
     .muted { color:#666; font-size: 12px; }
     .ok { color:#0a7a25; font-weight: 800; }
@@ -67,19 +50,11 @@
     </select>
 
     <label>好きな味</label>
-    <div class="radio">
-      <label><input type="radio" name="taste" value="FRUITY"> フルーティー（浅煎り）</label>
-    </div>
-    <div class="radio">
-      <label><input type="radio" name="taste" value="BALANCED"> バランス（中深煎り）</label>
-    </div>
-    <div class="radio">
-      <label><input type="radio" name="taste" value="BOLD"> コク（深煎り）</label>
-    </div>
+    <div class="radio"><label><input type="radio" name="taste" value="FRUITY"> フルーティー（浅煎り）</label></div>
+    <div class="radio"><label><input type="radio" name="taste" value="BALANCED"> バランス（中深煎り）</label></div>
+    <div class="radio"><label><input type="radio" name="taste" value="BOLD"> コク（深煎り）</label></div>
 
     <button id="submit" disabled>登録する</button>
-
-    <!-- 普段は非表示：押した時だけ表示 -->
     <div id="status" class="msg muted" style="display:none;"></div>
   </div>
 
@@ -97,34 +72,42 @@
     else if (ok === false) elStatus.innerHTML = `<span class="ng">❌</span> ${text}`;
     else elStatus.textContent = text;
   }
-
-  function hideStatus() {
-    elStatus.style.display = "none";
-    elStatus.textContent = "";
-  }
+  function hideStatus() { elStatus.style.display="none"; elStatus.textContent=""; }
 
   function getTaste() {
     const r = document.querySelector('input[name="taste"]:checked');
     return r ? r.value : "";
   }
-
   function validate() {
     const pref = elPref.value.trim();
     const taste = getTaste();
     elBtn.disabled = !(pref && taste);
     if (elBtn.disabled) hideStatus();
   }
-
   elPref.addEventListener("change", validate);
   document.querySelectorAll('input[name="taste"]').forEach(r => r.addEventListener("change", validate));
 
-  // Imageビーコンで doGet を叩く（CORS回避・安定）
-  function pingGAS(url) {
+  // JSONP（CORS回避）
+  function callGASJsonp(paramsObj) {
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(true);
-      img.onerror = () => reject(new Error("GAS request failed"));
-      img.src = url;
+      const cbName = "cb_" + Math.random().toString(36).slice(2);
+      paramsObj.callback = cbName;
+
+      window[cbName] = (data) => {
+        cleanup();
+        resolve(data);
+      };
+
+      const cleanup = () => {
+        try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      };
+
+      const qs = new URLSearchParams(paramsObj).toString();
+      const script = document.createElement("script");
+      script.src = `${GAS_ENDPOINT}?${qs}&_=${Date.now()}`;
+      script.onerror = () => { cleanup(); reject(new Error("GAS request failed")); };
+      document.body.appendChild(script);
     });
   }
 
@@ -135,7 +118,6 @@
       liff.login({ redirectUri: location.href });
       return;
     }
-
     if (!liff.isInClient()) {
       setStatus("LINE内で開いてください。", false);
       elBtn.disabled = true;
@@ -148,11 +130,7 @@
     elBtn.addEventListener("click", async () => {
       const pref = elPref.value.trim();
       const taste = getTaste();
-
-      if (!pref || !taste) {
-        setStatus("都道府県と好みを選んでください。", false);
-        return;
-      }
+      if (!pref || !taste) { setStatus("都道府県と好みを選んでください。", false); return; }
 
       elBtn.disabled = true;
       setStatus("送信中…");
@@ -160,23 +138,21 @@
       try {
         const profile = await liff.getProfile();
 
-        const params = new URLSearchParams({
+        const data = await callGASJsonp({
           mode: "profile",
           userId: profile.userId,
           name: profile.displayName || "",
           pref: pref,
           taste: taste
-        }).toString();
+        });
 
-        const url = `${GAS_ENDPOINT}?${params}&_=${Date.now()}`; // キャッシュ回避
-        await pingGAS(url);
+        if (!data || data.ok !== true) {
+          throw new Error((data && data.error) ? data.error : "GAS error");
+        }
 
         setStatus("登録しました！この画面は閉じてOKです。", true);
 
-        await liff.sendMessages([
-          { type: "text", text: "JCJパスポート登録ありがとう！" }
-        ]);
-
+        await liff.sendMessages([{ type: "text", text: "JCJパスポート登録ありがとう！" }]);
         setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 800);
 
       } catch (e) {
@@ -188,9 +164,7 @@
     });
   }
 
-  main().catch(e => {
-    setStatus("起動エラー：" + (e?.message || String(e)), false);
-  });
+  main().catch(e => setStatus("起動エラー：" + (e?.message || String(e)), false));
 </script>
 </body>
 </html>
