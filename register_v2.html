@@ -30,11 +30,11 @@
       font-size: 16px;
       font-weight: 800;
       cursor: pointer;
-      background: #7bd59d;
+      background: #06c755; /* ←濃くした */
       color: #fff;
       margin-top: 12px;
     }
-    button:disabled { opacity: .45; cursor: not-allowed; }
+    button:disabled { background:#b7e8c7; opacity: 1; cursor: not-allowed; }
     .muted { color:#666; font-size: 12px; }
     .ok { color:#0a7a25; font-weight: 800; }
     .ng { color:#b00020; font-weight: 800; }
@@ -73,7 +73,7 @@
 
     <button id="submit" disabled>登録する</button>
 
-    <!-- ★普段は非表示：押した時だけ表示 -->
+    <!-- 普段は非表示：押した時だけ表示 -->
     <div id="status" class="msg muted" style="display:none;"></div>
   </div>
 
@@ -86,12 +86,11 @@
   const elStatus = document.getElementById("status");
 
   function setStatus(text, ok=null) {
-    elStatus.style.display = "block"; // ←表示が必要な時だけ出す
+    elStatus.style.display = "block";
     if (ok === true) elStatus.innerHTML = `<span class="ok">✅</span> ${text}`;
     else if (ok === false) elStatus.innerHTML = `<span class="ng">❌</span> ${text}`;
     else elStatus.textContent = text;
   }
-
   function hideStatus() {
     elStatus.style.display = "none";
     elStatus.textContent = "";
@@ -106,8 +105,6 @@
     const pref = elPref.value.trim();
     const taste = getTaste();
     elBtn.disabled = !(pref && taste);
-
-    // 入力途中に余計な表示はしない
     if (elBtn.disabled) hideStatus();
   }
 
@@ -128,7 +125,6 @@
       return;
     }
 
-    // ★起動時は何も表示しない
     hideStatus();
     validate();
 
@@ -147,23 +143,22 @@
       try {
         const profile = await liff.getProfile();
 
-        const payload = {
-          action: "register",
+        // ✅ GASの doGet(mode=profile) に合わせて GET で送る
+        const params = new URLSearchParams({
+          mode: "profile",
           userId: profile.userId,
           name: profile.displayName || "",
-          prefecture: pref,
-          taste: taste,
-          ts: new Date().toISOString()
-        };
+          pref: pref,
+          taste: taste
+        }).toString();
 
-        const res = await fetch(GAS_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-        });
-
+        const url = `${GAS_ENDPOINT}?${params}&_=${Date.now()}`; // キャッシュ回避
+        const res = await fetch(url, { method: "GET" });
         const text = await res.text();
-        if (!res.ok) throw new Error(text || "GAS error");
+
+        if (!res.ok || !(text || "").startsWith("OK")) {
+          throw new Error(text || "GAS error");
+        }
 
         setStatus("登録しました！この画面は閉じてOKです。", true);
 
@@ -174,7 +169,7 @@
         setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 800);
 
       } catch (e) {
-        setStatus("送信に失敗しました。GAS_ENDPOINTや権限設定を確認してください。", false);
+        setStatus("送信に失敗しました。GASのデプロイ設定（全員アクセス）とURLを確認してください。", false);
         console.log(e);
       } finally {
         elBtn.disabled = false;
