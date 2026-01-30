@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Passport 登録</title>
 
-  <!-- LIFF SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
@@ -73,22 +72,29 @@
     </div>
 
     <button id="submit" disabled>登録する</button>
-    <div id="status" class="msg muted"></div>
+
+    <!-- ★普段は非表示：押した時だけ表示 -->
+    <div id="status" class="msg muted" style="display:none;"></div>
   </div>
 
 <script>
-  // ✅ ここだけあなたの値に合わせて
-  const LIFF_ID = "2008851980-dSkB8ttU"; // 例：登録用LIFF ID
-  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec"; // あなたのGAS WebApp URL
+  const LIFF_ID = "2008851980-dSkB8ttU";
+  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
   const elPref = document.getElementById("pref");
   const elBtn  = document.getElementById("submit");
   const elStatus = document.getElementById("status");
 
   function setStatus(text, ok=null) {
+    elStatus.style.display = "block"; // ←表示が必要な時だけ出す
     if (ok === true) elStatus.innerHTML = `<span class="ok">✅</span> ${text}`;
     else if (ok === false) elStatus.innerHTML = `<span class="ng">❌</span> ${text}`;
     else elStatus.textContent = text;
+  }
+
+  function hideStatus() {
+    elStatus.style.display = "none";
+    elStatus.textContent = "";
   }
 
   function getTaste() {
@@ -100,28 +106,30 @@
     const pref = elPref.value.trim();
     const taste = getTaste();
     elBtn.disabled = !(pref && taste);
+
+    // 入力途中に余計な表示はしない
+    if (elBtn.disabled) hideStatus();
   }
 
   elPref.addEventListener("change", validate);
   document.querySelectorAll('input[name="taste"]').forEach(r => r.addEventListener("change", validate));
 
   async function main() {
-    setStatus("起動中…");
     await liff.init({ liffId: LIFF_ID });
 
     if (!liff.isLoggedIn()) {
-      // LINE内なら基本ログイン済み。未ログイン時はログインへ。
       liff.login({ redirectUri: location.href });
       return;
     }
 
     if (!liff.isInClient()) {
-      // ブラウザで開いてしまった時の保険（運用上はLINE内前提）
       setStatus("LINE内で開いてください。", false);
       elBtn.disabled = true;
       return;
     }
 
+    // ★起動時は何も表示しない
+    hideStatus();
     validate();
 
     elBtn.addEventListener("click", async () => {
@@ -137,7 +145,7 @@
       setStatus("送信中…");
 
       try {
-        const profile = await liff.getProfile(); // { userId, displayName, ... }
+        const profile = await liff.getProfile();
 
         const payload = {
           action: "register",
@@ -155,17 +163,18 @@
         });
 
         const text = await res.text();
-
         if (!res.ok) throw new Error(text || "GAS error");
 
         setStatus("登録しました！この画面は閉じてOKです。", true);
 
-        // ちょい待って閉じる（閉じたくなければ次の2行を消す）
+        await liff.sendMessages([
+          { type: "text", text: "JCJパスポート登録ありがとう！" }
+        ]);
+
         setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 800);
 
       } catch (e) {
         setStatus("送信に失敗しました。GAS_ENDPOINTや権限設定を確認してください。", false);
-        // ここで詳細表示したくないなら何も出さない
         console.log(e);
       } finally {
         elBtn.disabled = false;
