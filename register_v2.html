@@ -23,18 +23,24 @@
     .radio { margin: 10px 0; }
     .radio label { font-weight: 600; margin: 0; display:flex; align-items:center; gap:10px; }
     .radio input { transform: scale(1.1); }
-    button {
-      padding: 14px;
-      border-radius: 14px;
-      border: 0;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      background: #06c755; /* ←濃くした */
-      color: #fff;
-      margin-top: 12px;
+
+    button{
+      padding:14px;
+      border-radius:14px;
+      border:0;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+      background:#06c755; /* 濃い緑 */
+      color:#fff;
+      margin-top:12px;
     }
-    button:disabled { background:#b7e8c7; opacity: 1; cursor: not-allowed; }
+    button:disabled{
+      background:#b7e8c7;
+      opacity:1;
+      cursor:not-allowed;
+    }
+
     .muted { color:#666; font-size: 12px; }
     .ok { color:#0a7a25; font-weight: 800; }
     .ng { color:#b00020; font-weight: 800; }
@@ -91,6 +97,7 @@
     else if (ok === false) elStatus.innerHTML = `<span class="ng">❌</span> ${text}`;
     else elStatus.textContent = text;
   }
+
   function hideStatus() {
     elStatus.style.display = "none";
     elStatus.textContent = "";
@@ -110,6 +117,16 @@
 
   elPref.addEventListener("change", validate);
   document.querySelectorAll('input[name="taste"]').forEach(r => r.addEventListener("change", validate));
+
+  // Imageビーコンで doGet を叩く（CORS回避・安定）
+  function pingGAS(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => reject(new Error("GAS request failed"));
+      img.src = url;
+    });
+  }
 
   async function main() {
     await liff.init({ liffId: LIFF_ID });
@@ -143,7 +160,6 @@
       try {
         const profile = await liff.getProfile();
 
-        // ✅ GASの doGet(mode=profile) に合わせて GET で送る
         const params = new URLSearchParams({
           mode: "profile",
           userId: profile.userId,
@@ -153,12 +169,7 @@
         }).toString();
 
         const url = `${GAS_ENDPOINT}?${params}&_=${Date.now()}`; // キャッシュ回避
-        const res = await fetch(url, { method: "GET" });
-        const text = await res.text();
-
-        if (!res.ok || !(text || "").startsWith("OK")) {
-          throw new Error(text || "GAS error");
-        }
+        await pingGAS(url);
 
         setStatus("登録しました！この画面は閉じてOKです。", true);
 
