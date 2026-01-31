@@ -6,7 +6,7 @@
   <title>JCJ Check-in</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; background:#fff; }
     .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; }
     .ok { color:#0a7a25; font-weight: 800; }
     .ng { color:#b00020; font-weight: 800; }
@@ -19,8 +19,7 @@
   </div>
 
 <script>
-  // ★ここだけ合わせる
-  const LIFF_ID = "2008851980-yhGytJRd"; // ←チェックイン用LIFF ID
+  const LIFF_ID = "2008851980-yhGytJRd"; // チェックイン用
   const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
   const el = document.getElementById("status");
@@ -31,14 +30,24 @@
     else el.textContent = text;
   }
 
-  // spot= を直接 or liff.state から取る（NFC対策のキモ）
+  // ★ spot= を直 or liff.state から取得（liff.stateが「パス付き」でも取れるように強化）
   function getParam(name) {
     const u = new URL(location.href);
+
+    // 1) まず直クエリ
     const direct = u.searchParams.get(name);
     if (direct) return direct;
 
-    const state = u.searchParams.get("liff.state");
+    // 2) liff.state
+    let state = u.searchParams.get("liff.state") || "";
     if (!state) return "";
+
+    // state が "/path?spot=xxx" 形式の時は ? 以降だけ使う
+    const qIndex = state.indexOf("?");
+    if (qIndex >= 0) state = state.slice(qIndex + 1);
+    // state が "?spot=xxx" なら先頭?を除去（URLSearchParamsでもOKだけど念のため）
+    if (state.startsWith("?")) state = state.slice(1);
+
     const sp = new URLSearchParams(state);
     return sp.get(name) || "";
   }
@@ -50,6 +59,7 @@
       liff.login({ redirectUri: location.href });
       return;
     }
+
     if (!liff.isInClient()) {
       setStatus("LINE内で開いてください。", false);
       return;
@@ -59,13 +69,14 @@
     const source = (getParam("source") || "nfc").trim();
 
     if (!spot) {
-      setStatus("spotが取得できませんでした（NFCのURLに ?spot=xxxx を付けてください）", false);
+      setStatus("spotが取得できませんでした（NFCのURL/LIFF設定を確認してください）", false);
       return;
     }
 
     setStatus("チェックイン送信中…");
 
     const profile = await liff.getProfile();
+
     const url = `${GAS_ENDPOINT}?` + new URLSearchParams({
       spot,
       userId: profile.userId,
@@ -73,7 +84,7 @@
       source
     }).toString() + `&_=${Date.now()}`;
 
-    const res = await fetch(url, { method:"GET" });
+    const res = await fetch(url, { method: "GET" });
     const text = await res.text();
 
     if (!res.ok || !String(text).startsWith("OK")) {
@@ -81,10 +92,6 @@
     }
 
     setStatus(`チェックイン完了！\n${spot}`, true);
-
-    // GAS側でpushしてるならここは無くてもOK（残してもOK）
-    // await liff.sendMessages([{ type:"text", text:`チェックイン完了！\n${spot}` }]);
-
     setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 600);
   }
 
