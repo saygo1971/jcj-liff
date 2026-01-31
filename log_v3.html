@@ -67,7 +67,8 @@
 
     const spot = (getParam("spot") || "").trim();
     const source = (getParam("source") || "nfc").trim();
-
+    const type = (getParam("type") || "shop").trim(); 
+　　
     if (!spot) {
       setStatus("spotが取得できませんでした（NFCのURL/LIFF設定を確認してください）", false);
       return;
