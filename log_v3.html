@@ -82,7 +82,8 @@
       spot,
       userId: profile.userId,
       name: profile.displayName || "",
-      source
+      source,
+      type
     }).toString() + `&_=${Date.now()}`;
 
     const res = await fetch(url, { method: "GET" });
