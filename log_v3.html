@@ -2,161 +2,95 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JCJ</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JCJ Check-in</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif; margin: 18px; }
-    .muted { color:#666; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
-    .card { border: 1px solid #eee; border-radius: 12px; padding: 14px; margin: 12px 0; }
-    .btn { width: 100%; padding: 12px 14px; border-radius: 10px; border: 0; background: #06c755; color: #fff; font-size: 16px; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; }
+    .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; }
+    .ok { color:#0a7a25; font-weight: 800; }
+    .ng { color:#b00020; font-weight: 800; }
+    .muted { color:#666; font-size:12px; }
   </style>
 </head>
 <body>
   <div class="card">
     <div id="status" class="muted">起動中…</div>
-    <div id="debug" class="muted" style="display:none;"></div>
-  </div>
-
-  <div class="card" id="actionCard" style="display:none;">
-    <button class="btn" id="openLineBtn">LINEで開く</button>
   </div>
 
 <script>
-  const LIFF_ID = "2008851980-yhGytJRd";
+  // ★ここだけ合わせる
+  const LIFF_ID = "2008851980-yhGytJRd"; // ←チェックイン用LIFF ID
+  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
-  // あなたのGAS WebアプリURL（/exec）
-  const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  const el = document.getElementById("status");
 
-  const statusEl = document.getElementById("status");
-  const debugEl  = document.getElementById("debug");
-  const actionCard = document.getElementById("actionCard");
-  const openLineBtn = document.getElementById("openLineBtn");
+  function setStatus(text, ok=null) {
+    if (ok === true) el.innerHTML = `<span class="ok">✅</span> ${text}`;
+    else if (ok === false) el.innerHTML = `<span class="ng">❌</span> ${text}`;
+    else el.textContent = text;
+  }
 
-  // ========== ルーティング（page=register は register.html へ） ==========
-  (function routeByPage(){
-    const q = new URLSearchParams(location.search);
-
-    // 直接 page= がある
-    const page = (q.get("page") || "").trim();
-    if (page === "register") {
-      // そのまま register.html へ（クエリは引き継がなくてOK）
-      location.replace("./register.html");
-      return;
-    }
-
-    // liff.state に page=register が入るケース
-    const stateRaw = q.get("liff.state");
-    if (stateRaw) {
-      let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch(e) {}
-      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
-      const page2 = (new URLSearchParams(s).get("page") || "").trim();
-      if (page2 === "register") {
-        location.replace("./register.html");
-        return;
-      }
-    }
-  })();
-
-  // ========== spot 取得 ==========
-  function getSpot() {
-    const q = new URLSearchParams(location.search);
-
-    // 1) 直接 spot=
-    const direct = (q.get("spot") || "").trim();
+  // spot= を直接 or liff.state から取る（NFC対策のキモ）
+  function getParam(name) {
+    const u = new URL(location.href);
+    const direct = u.searchParams.get(name);
     if (direct) return direct;
 
-    // 2) liff.state 経由
-    const stateRaw = q.get("liff.state");
-    if (stateRaw) {
-      let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch (e) {}
-      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
-      return (new URLSearchParams(s).get("spot") || "").trim();
-    }
-    return "";
-  }
-
-  function setDebug(extra="") {
-    // デバッグ出したい時は display:block にしてね
-    debugEl.textContent =
-`inClient=${liff.isInClient()} loggedIn=${liff.isLoggedIn()}
-spot=${getSpot()}
-href=${location.href}
-search=${location.search}
-${extra}`.trim();
-  }
-
-  function openInLine() {
-    // LINEアプリ内で開き直す
-    const spot = getSpot();
-    const url = `line://app/${LIFF_ID}?spot=${encodeURIComponent(spot)}`;
-    location.href = url;
-  }
-
-  // GASへ送信（画像ビーコンでOK）
-  function sendToGAS(params) {
-    const qs = new URLSearchParams(params).toString();
-    const img = new Image();
-    img.onload = () => {};
-    img.onerror = () => {};
-    img.src = `${GAS_WEBAPP_URL}?${qs}&_=${Date.now()}`;
+    const state = u.searchParams.get("liff.state");
+    if (!state) return "";
+    const sp = new URLSearchParams(state);
+    return sp.get(name) || "";
   }
 
   async function main() {
-    const spot = getSpot();
-    if (!spot) {
-      statusEl.textContent = "spotがありません（URLに ?spot=xxx が必要）";
-      return;
-    }
-
     await liff.init({ liffId: LIFF_ID });
 
-    // LINE内で開かれていないなら、開き直しボタンを出す
-    if (!liff.isInClient()) {
-      statusEl.textContent = "外部ブラウザで開かれています。LINEで開いてください。";
-      actionCard.style.display = "block";
-      openLineBtn.onclick = openInLine;
-      setDebug("NOT IN CLIENT");
-      return;
-    }
-
-    // LINE内だけど未ログインならログイン
     if (!liff.isLoggedIn()) {
-      statusEl.textContent = "ログイン中…";
       liff.login({ redirectUri: location.href });
       return;
     }
+    if (!liff.isInClient()) {
+      setStatus("LINE内で開いてください。", false);
+      return;
+    }
 
-    statusEl.textContent = "チェックイン中…";
+    const spot = (getParam("spot") || "").trim();
+    const source = (getParam("source") || "nfc").trim();
+
+    if (!spot) {
+      setStatus("spotが取得できませんでした（NFCのURLに ?spot=xxxx を付けてください）", false);
+      return;
+    }
+
+    setStatus("チェックイン送信中…");
 
     const profile = await liff.getProfile();
-
-    // GASへ送信（mode指定なし＝チェックイン処理に入る想定）
-    sendToGAS({
+    const url = `${GAS_ENDPOINT}?` + new URLSearchParams({
       spot,
-      userId: profile.userId || "",
+      userId: profile.userId,
       name: profile.displayName || "",
-      source: "liff"
-    });
+      source
+    }).toString() + `&_=${Date.now()}`;
 
-    statusEl.textContent = "完了";
+    const res = await fetch(url, { method:"GET" });
+    const text = await res.text();
 
-    // すぐ閉じる（LINE内のみ）
-    setTimeout(() => {
-      try { liff.closeWindow(); } catch(e) {}
-    }, 450);
+    if (!res.ok || !String(text).startsWith("OK")) {
+      throw new Error(text || "GAS error");
+    }
 
-    setDebug("SENT");
+    setStatus(`チェックイン完了！\n${spot}`, true);
+
+    // GAS側でpushしてるならここは無くてもOK（残してもOK）
+    // await liff.sendMessages([{ type:"text", text:`チェックイン完了！\n${spot}` }]);
+
+    setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 600);
   }
 
-  main().catch(err => {
-    statusEl.textContent = "エラー";
-    // 一瞬出ても閉じたいなら、ここも閉じる
-    setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 800);
-    debugEl.style.display = "block";
-    debugEl.textContent = "ERROR: " + (err?.message || String(err));
+  main().catch(e => {
+    setStatus("チェックインでエラー：" + (e?.message || String(e)), false);
+    console.log(e);
   });
 </script>
 </body>
