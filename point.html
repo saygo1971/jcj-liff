@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JCJ ポイント</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding:16px; background:#fff; }
+    h1 { margin: 6px 0 14px; font-size: 20px; }
+    .card { border:1px solid #eee; border-radius:14px; padding:14px; margin:12px 0; }
+    .big { font-size: 34px; font-weight: 900; line-height: 1.1; }
+    .row { display:flex; justify-content:space-between; margin:10px 0; }
+    .muted { color:#666; font-size:12px; }
+    .ok { color:#0a7a25; font-weight: 800; }
+    .ng { color:#b00020; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <h1>JCJ ポイント</h1>
+
+  <div class="card">
+    <div class="muted" id="status">起動中…</div>
+  </div>
+
+  <div class="card" id="main" style="display:none;">
+    <div class="muted">合計</div>
+    <div class="big"><span id="totalPt">0</span> pt</div>
+    <div class="muted">（チェックイン <span id="totalCnt">0</span> 回）</div>
+  </div>
+
+  <div class="card" id="breakdown" style="display:none;">
+    <div class="row"><div>同エリア</div><div><b><span id="sameCnt">0</span></b>回 / <b><span id="samePt">0</span></b>pt</div></div>
+    <div class="row"><div>隣エリア</div><div><b><span id="adjCnt">0</span></b>回 / <b><span id="adjPt">0</span></b>pt</div></div>
+    <div class="row"><div>その隣</div><div><b><span id="nextCnt">0</span></b>回 / <b><span id="nextPt">0</span></b>pt</div></div>
+    <div class="muted" id="note"></div>
+  </div>
+
+<script>
+  // ✅ここだけ合わせる
+  const LIFF_ID = "ここにポイント用LIFF_ID";
+  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+
+  const statusEl = document.getElementById("status");
+  const mainEl = document.getElementById("main");
+  const bdEl = document.getElementById("breakdown");
+
+  function setStatus(text, ok=null) {
+    if (ok === true) statusEl.innerHTML = `<span class="ok">✅</span> ${text}`;
+    else if (ok === false) statusEl.innerHTML = `<span class="ng">❌</span> ${text}`;
+    else statusEl.textContent = text;
+  }
+
+  async function main() {
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+    if (!liff.isInClient()) {
+      setStatus("LINE内で開いてください。", false);
+      return;
+    }
+
+    setStatus("読み込み中…");
+
+    const profile = await liff.getProfile();
+    const url = `${GAS_ENDPOINT}?` + new URLSearchParams({
+      mode: "point_summary",
+      userId: profile.userId
+    }).toString() + `&_=${Date.now()}`;
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) throw new Error(data.error || "GAS error");
+
+    document.getElementById("totalPt").textContent = data.total.pt || 0;
+    document.getElementById("totalCnt").textContent = data.total.count || 0;
+
+    document.getElementById("sameCnt").textContent = data.same.count || 0;
+    document.getElementById("samePt").textContent = data.same.pt || 0;
+
+    document.getElementById("adjCnt").textContent = data.adjacent.count || 0;
+    document.getElementById("adjPt").textContent = data.adjacent.pt || 0;
+
+    document.getElementById("nextCnt").textContent = data.next.count || 0;
+    document.getElementById("nextPt").textContent = data.next.pt || 0;
+
+    document.getElementById("note").textContent = data.note ? `note: ${data.note}` : "";
+
+    mainEl.style.display = "block";
+    bdEl.style.display = "block";
+    setStatus("表示しました。");
+  }
+
+  main().catch(e => {
+    setStatus("エラー：" + (e?.message || String(e)), false);
+    console.log(e);
+  });
+</script>
+</body>
+</html>
