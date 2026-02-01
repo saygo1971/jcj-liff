@@ -4,105 +4,94 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Check-in</title>
-  <style>
-    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:24px}
-    .ok{color:#0a7} .ng{color:#c00} pre{background:#f6f6f6;padding:12px;border-radius:8px;white-space:pre-wrap}
-  </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px;line-height:1.6}
+    .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px}
+    .ok{color:#0a7a25;font-weight:800}
+    .ng{color:#b00020;font-weight:800}
+    .muted{color:#666;font-size:12px}
+  </style>
 </head>
 <body>
-  <h2>JCJ Check-in</h2>
-  <div id="status">起動中…</div>
-  <pre id="debug"></pre>
+  <div class="card">
+    <div id="status" class="muted">起動中…</div>
+  </div>
 
 <script>
-  // ★ここだけ設定
-  const LIFF_ID  = "2008851980-yhGytJRd";
-  const GAS_URL  = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  // ===== 設定ここだけ =====
+  const LIFF_ID = "2008851980-yhGytJRd";
+  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  // =======================
 
-  const $ = (id)=>document.getElementById(id);
-
-  function setStatus(ok, msg){
-    $("status").innerHTML = `<span class="${ok?'ok':'ng'}">${msg}</span>`;
-  }
-  function setDebug(obj){
-    $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj,null,2);
-  }
-
-  // URLパラメータ：通常query or liff.state の両対応
-  function getParams(){
-    const p1 = new URLSearchParams(location.search);
-    let spot = (p1.get("spot") || "").trim();
-    let type = (p1.get("type") || "shop").trim();
-
-    // LIFFが spot/type を liff.state に押し込むケース
-    const st = (p1.get("liff.state") || "").trim();
-    if ((!spot || !type) && st.startsWith("?")){
-      const p2 = new URLSearchParams(st);
-      spot = spot || (p2.get("spot") || "").trim();
-      type = (type || p2.get("type") || "shop").trim();
-    }
-    return { spot, type, liffState: st || "(none)" };
+  const el = document.getElementById("status");
+  function setStatus(text, ok=null){
+    if(ok===true) el.innerHTML = `<span class="ok">✅</span> ${text}`;
+    else if(ok===false) el.innerHTML = `<span class="ng">❌</span> ${text}`;
+    else el.textContent = text;
   }
 
-  // 二重送信防止（同spot/typeは10秒は送らない）
-  function isRecentSubmit(spot, type){
-    const key = `sent:${spot}:${type}`;
-    const last = Number(sessionStorage.getItem(key) || 0);
-    const now  = Date.now();
-    if (now - last < 10000) return true;
-    sessionStorage.setItem(key, String(now));
-    return false;
+  // NFCやLIFF経由でクエリが liff.state に入ることがあるので拾う
+  function getParam(name){
+    const u = new URL(location.href);
+    const direct = u.searchParams.get(name);
+    if(direct) return direct;
+
+    const state = u.searchParams.get("liff.state");
+    if(!state) return "";
+    const sp = new URLSearchParams(state);
+    return sp.get(name) || "";
   }
 
   async function main(){
-    const { spot, type, liffState } = getParams();
-    setDebug({href:location.href, spot, type, liffState});
-
-    if (!spot){
-      setStatus(false, "spotがありません（URLに ?spot=xxx&type=shop を付けてください）");
-      return;
-    }
-
     await liff.init({ liffId: LIFF_ID });
 
-    // 外部ブラウザはここで止める（迷子防止）
-    if (!liff.isInClient()){
-      setStatus(false, "LINE内で開いてください（inClient=false）");
+    // LINE内前提
+    if(!liff.isLoggedIn()){
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+    if(!liff.isInClient()){
+      setStatus("LINE内で開いてください。", false);
       return;
     }
 
-    if (!liff.isLoggedIn()){
-      liff.login();
+    const spot   = (getParam("spot") || "").trim();
+    const type   = (getParam("type") || "shop").trim(); // shop|event
+    const source = (getParam("source") || "nfc").trim();
+
+    if(!spot){
+      setStatus("spotが取得できませんでした（NFC URLに ?spot=xxx&type=shop を付けてください）", false);
       return;
     }
 
-    if (isRecentSubmit(spot, type)){
-      setStatus(true, "送信済み（連打防止）");
-      return;
-    }
+    setStatus("チェックイン送信中…");
 
     const profile = await liff.getProfile();
-    const userId = profile.userId || "";
-    const name   = profile.displayName || "";
-    const source = "liff";
 
-    // GASへ送信
-    const url = `${GAS_URL}?spot=${encodeURIComponent(spot)}&type=${encodeURIComponent(type)}`
-      + `&userId=${encodeURIComponent(userId)}&name=${encodeURIComponent(name)}&source=${encodeURIComponent(source)}`;
+    const qs = new URLSearchParams({
+      spot,
+      type,
+      userId: profile.userId,
+      name: profile.displayName || "",
+      source
+    });
 
-    const res  = await fetch(url, { method:"GET" });
+    const url = `${GAS_ENDPOINT}?${qs.toString()}&_=${Date.now()}`; // キャッシュ回避
+    const res = await fetch(url, { method:"GET" });
     const text = await res.text();
 
-    setStatus(true, "送信完了");
-    setDebug({spot,type,userId,name,gasResult:text});
+    if(!res.ok || !String(text).startsWith("OK")){
+      throw new Error(text || "GAS error");
+    }
 
-    setTimeout(()=>liff.closeWindow(), 900);
+    setStatus(`チェックイン完了！`, true);
+    setTimeout(()=>{ try{ liff.closeWindow(); }catch(e){} }, 700);
   }
 
-  main().catch(err=>{
-    setStatus(false, "エラー: " + (err && err.message ? err.message : String(err)));
-    setDebug(err);
+  main().catch(e=>{
+    setStatus("チェックインでエラー：" + (e?.message || String(e)), false);
+    console.log(e);
   });
 </script>
 </body>
