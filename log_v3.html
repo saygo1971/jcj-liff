@@ -6,99 +6,111 @@
   <title>JCJ Check-in</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:24px;line-height:1.6}
+    body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:20px;line-height:1.6}
     .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px}
     .ok{color:#0a7a25;font-weight:800}
     .ng{color:#b00020;font-weight:800}
-    pre{background:#f6f6f6;padding:12px;border-radius:10px;white-space:pre-wrap}
+    .muted{color:#666;font-size:12px;word-break:break-all}
   </style>
 </head>
 <body>
   <div class="card">
-    <div id="status">起動中…</div>
-    <pre id="debug"></pre>
+    <div id="status" class="muted">起動中…</div>
+    <div id="hint" class="muted"></div>
   </div>
 
 <script>
-  // ★ここだけ確認
   const LIFF_ID = "2008851980-yhGytJRd";
-  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
-  const elS = document.getElementById("status");
-  const elD = document.getElementById("debug");
+  const el = (id)=>document.getElementById(id);
 
-  function setStatus(ok, msg){
-    elS.innerHTML = `<span class="${ok ? "ok":"ng"}">${msg}</span>`;
+  function setStatus(text, ok=null){
+    el("status").innerHTML =
+      ok===true  ? `<span class="ok">✅</span> ${text}` :
+      ok===false ? `<span class="ng">❌</span> ${text}` :
+      text;
   }
-  function setDebug(obj){
-    elD.textContent = (typeof obj === "string") ? obj : JSON.stringify(obj, null, 2);
-  }
 
-  // NFC/QRで liff.state に入るケースがあるので両対応
+  // NFC/QRで liff.state 側に入るケースも拾う
   function getParam(name){
     const u = new URL(location.href);
     const direct = u.searchParams.get(name);
     if (direct) return direct;
 
-    const state = u.searchParams.get("liff.state");
-    if (!state) return "";
-    const sp = new URLSearchParams(state);
-    return sp.get(name) || "";
+    const st = u.searchParams.get("liff.state");
+    if (st){
+      try {
+        const s = st.startsWith("?") ? st.slice(1) : st;
+        const p = new URLSearchParams(s).get(name);
+        if (p) return p;
+      } catch(e){}
+    }
+
+    if (location.hash){
+      const h = location.hash.replace(/^#\??/, "");
+      const p = new URLSearchParams(h).get(name);
+      if (p) return p;
+    }
+    return "";
   }
 
   async function main(){
-    const spot   = (getParam("spot") || "").trim();
-    const type   = (getParam("type") || "shop").trim();
+    const spot = (getParam("spot") || "").trim();
+    const type = (getParam("type") || "shop").trim();
     const source = (getParam("source") || "nfc").trim();
 
-    setDebug({ href: location.href, spot, type, source });
+    el("hint").textContent = `spot=${spot || "(none)"} / type=${type} / source=${source}`;
 
     if (!spot){
-      setStatus(false, "spotがありません。URLに ?spot=xxx&type=shop を付けてください");
+      setStatus("spotがありません。URLに ?spot=xxx&type=shop を付けてください。", false);
       return;
     }
 
     await liff.init({ liffId: LIFF_ID });
 
-    // LINE外で開くと userId が取れず、pushもできない
+    // ★ここが最重要：LINE内以外は送らない（userIdが取れないと全部ズレる）
     if (!liff.isInClient()){
-      setStatus(false, "LINE内で開いてください（外部ブラウザ/PCだと動きません）");
+      setStatus("LINE内で開いてください（外部ブラウザではポイント計算できません）。", false);
       return;
     }
+
     if (!liff.isLoggedIn()){
       liff.login({ redirectUri: location.href });
       return;
     }
 
-    setStatus(true, "チェックイン送信中…");
-
     const profile = await liff.getProfile();
-    const url = GAS_ENDPOINT + "?" + new URLSearchParams({
-      spot,
-      type,
-      userId: profile.userId,
-      name: profile.displayName || "",
-      source
-    }).toString() + "&_=" + Date.now();
+    const userId = (profile.userId || "").trim();
+    const name   = (profile.displayName || "").trim();
 
-    const res  = await fetch(url, { method:"GET" });
-    const text = await res.text();
-
-    setDebug({ gasUrl: url, gasResult: text });
-
-    if (!res.ok || !String(text).startsWith("OK")){
-      setStatus(false, "GASエラー: " + text);
+    // userIdが取れないなら送らない
+    if (!/^U[0-9a-fA-F]{32}$/.test(userId)){
+      setStatus("userIdが取得できません（LIFF設定/権限）。", false);
       return;
     }
 
-    setStatus(true, "チェックイン完了！この画面は閉じてOK");
+    setStatus("チェックイン送信中…");
+
+    const url = GAS_URL + "?" + new URLSearchParams({
+      spot, type, userId, name, source, _: String(Date.now())
+    }).toString();
+
+    const res = await fetch(url, { method:"GET" });
+    const text = await res.text();
+
+    if (!res.ok || !String(text).startsWith("OK")){
+      setStatus("GASエラー: " + text, false);
+      return;
+    }
+
+    setStatus("チェックイン完了！", true);
 
     setTimeout(()=>{ try{ liff.closeWindow(); }catch(e){} }, 700);
   }
 
-  main().catch(err=>{
-    setStatus(false, "JSエラー: " + (err?.message || String(err)));
-    setDebug(err);
+  main().catch(e=>{
+    setStatus("エラー: " + (e?.message || String(e)), false);
   });
 </script>
 </body>
