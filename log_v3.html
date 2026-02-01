@@ -4,121 +4,136 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Check-in</title>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; line-height: 1.6; background:#fff; }
     .card { border: 1px solid #e6e6e6; border-radius: 14px; padding: 14px; }
     .ok { color:#0a7a25; font-weight: 800; }
     .ng { color:#b00020; font-weight: 800; }
-    .muted { color:#666; font-size:12px; white-space: pre-wrap; word-break: break-word; }
-    code { background:#f5f5f5; padding:2px 6px; border-radius:8px; }
+    .muted { color:#666; font-size:12px; }
+    .hide { display:none; }
   </style>
 </head>
+
 <body>
-  <!-- ここが出てないなら「HTMLが読めてない」 -->
   <div class="card">
-    <div class="muted">✅ log_v3.html を読み込みました</div>
-    <div id="status" class="muted" style="margin-top:8px;">起動中…</div>
-    <div id="debug" class="muted" style="margin-top:8px;"></div>
+    <div id="status" class="muted">起動中…</div>
   </div>
 
 <script>
-  const LIFF_ID = "2008851980-yhGytJRd"; // チェックイン用LIFF
+  /************ ここだけ確認 ************/
+  const LIFF_ID = "2008851980-yhGytJRd"; // チェックイン用 LIFF
   const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  /*************************************/
 
   const el = document.getElementById("status");
-  const dbg = document.getElementById("debug");
 
   function setStatus(text, ok=null) {
-    if (ok === true) el.innerHTML = `<span class="ok">✅</span> ${text}`;
-    else if (ok === false) el.innerHTML = `<span class="ng">❌</span> ${text}`;
+    if (ok === true) el.innerHTML = `<span class="ok">✅</span> ${escapeHtml(text).replace(/\n/g,"<br>")}`;
+    else if (ok === false) el.innerHTML = `<span class="ng">❌</span> ${escapeHtml(text).replace(/\n/g,"<br>")}`;
     else el.textContent = text;
   }
 
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#39;");
+  }
+
+  // --- URLから param を拾う（直param / liff.state / hash まで対応）---
   function getParam(name) {
-    const u = new URL(location.href);
-    const direct = u.searchParams.get(name);
+    // 1) 通常の ?spot=xxx&type=shop
+    const q1 = new URLSearchParams(location.search);
+    const direct = (q1.get(name) || "").trim();
     if (direct) return direct;
 
-    const state = u.searchParams.get("liff.state");
-    if (!state) return "";
-    // liff.state は "?spot=xxx&type=shop" の形で入ることがある
-    const s = state.startsWith("?") ? state.slice(1) : state;
-    return (new URLSearchParams(s).get(name) || "");
-  }
+    // 2) LIFF経由で ?liff.state=?spot=xxx&type=shop
+    const stateRaw = q1.get("liff.state");
+    if (stateRaw) {
+      let decoded = stateRaw;
+      try { decoded = decodeURIComponent(stateRaw); } catch(e) {}
+      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+      const q2 = new URLSearchParams(s);
+      const v2 = (q2.get(name) || "").trim();
+      if (v2) return v2;
+    }
 
-  function setDebug(extra="") {
-    dbg.textContent =
-`href: ${location.href}
-search: ${location.search}
-hash: ${location.hash}
-liff.state: ${(new URL(location.href)).searchParams.get("liff.state") || "(none)"}
-spot: ${getParam("spot") || "(none)"}
-type: ${getParam("type") || "(none)"}
-${extra}`.trim();
-  }
+    // 3) #?spot=xxx のようにhashに入るケース
+    if (location.hash) {
+      const h = location.hash.replace(/^#\??/, "");
+      const q3 = new URLSearchParams(h);
+      const v3 = (q3.get(name) || "").trim();
+      if (v3) return v3;
+    }
 
-  // どんなJSエラーでも画面に出す（白回避）
-  window.addEventListener("error", (e) => {
-    setStatus("JSエラー: " + (e.message || "unknown"), false);
-    setDebug("FILE OK / JS ERROR");
-  });
+    return "";
+  }
 
   async function main() {
-    setDebug("FILE OK");
+    setStatus("LIFF初期化中…");
 
     await liff.init({ liffId: LIFF_ID });
 
-    // LINE外で開いた場合でも白くならないように表示する
+    // 外部ブラウザで開かれた場合（NFCやQRの設定ミスで起きる）
+    if (!liff.isInClient()) {
+      setStatus("LINE内で開いてください（inClient=false）", false);
+      return;
+    }
+
+    // 未ログインならログインへ
     if (!liff.isLoggedIn()) {
-      setStatus("未ログイン → loginへ", false);
-      setDebug("loggedIn=false");
+      setStatus("ログイン中…");
       liff.login({ redirectUri: location.href });
       return;
     }
 
-    if (!liff.isInClient()) {
-      setStatus("LINE内で開いてください（inClient=false）", false);
-      setDebug("inClient=false");
-      return;
-    }
-
+    // 必須パラメータ
     const spot = (getParam("spot") || "").trim();
-    const type = (getParam("type") || "shop").trim();
     const source = (getParam("source") || "nfc").trim();
+    const type = (getParam("type") || "shop").trim(); // shop / event
 
     if (!spot) {
-      setStatus("spot がありません（URLに ?spot=xxx が必要）", false);
-      setDebug("spot missing");
+      setStatus("spot が取得できませんでした。\nURLに ?spot=xxxx を入れてください。", false);
       return;
     }
 
-    setStatus("チェックイン送信中…");
+    setStatus("プロフィール取得中…");
     const profile = await liff.getProfile();
 
+    setStatus("チェックイン送信中…");
+
+    // GASにGETで送る（doGet(e) 側で受ける）
     const url = `${GAS_ENDPOINT}?` + new URLSearchParams({
       spot,
-      type,
       userId: profile.userId,
       name: profile.displayName || "",
-      source
+      source,
+      type
     }).toString() + `&_=${Date.now()}`;
 
-    const res = await fetch(url, { method:"GET" });
+    const res = await fetch(url, { method: "GET" });
     const text = await res.text();
 
     if (!res.ok || !String(text).startsWith("OK")) {
       throw new Error(text || "GAS error");
     }
 
-    setStatus(`チェックイン完了！\n${spot} / ${type}`, true);
-    setDebug("OK");
-    setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 600);
+    // 画面は一瞬だけ出して閉じる（体感を軽くする）
+    setStatus("チェックイン完了！", true);
+
+    setTimeout(() => {
+      try { liff.closeWindow(); } catch(e) {}
+    }, 450);
   }
 
   main().catch(e => {
-    setStatus("チェックインでエラー: " + (e?.message || String(e)), false);
-    setDebug("catch");
+    setStatus("チェックインでエラー:\n" + (e?.message || String(e)), false);
+    console.log(e);
   });
 </script>
 </body>
