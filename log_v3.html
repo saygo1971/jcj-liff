@@ -21,9 +21,6 @@
   const GAS_URL  = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
   const $ = (id)=>document.getElementById(id);
-  const params = new URLSearchParams(location.search);
-  const spot = (params.get("spot") || "").trim();
-  const type = (params.get("type") || "shop").trim();
 
   function setStatus(ok, msg){
     $("status").innerHTML = `<span class="${ok?'ok':'ng'}">${msg}</span>`;
@@ -32,8 +29,24 @@
     $("debug").textContent = typeof obj === "string" ? obj : JSON.stringify(obj,null,2);
   }
 
+  // URLパラメータ：通常query or liff.state の両対応
+  function getParams(){
+    const p1 = new URLSearchParams(location.search);
+    let spot = (p1.get("spot") || "").trim();
+    let type = (p1.get("type") || "shop").trim();
+
+    // LIFFが spot/type を liff.state に押し込むケース
+    const st = (p1.get("liff.state") || "").trim();
+    if ((!spot || !type) && st.startsWith("?")){
+      const p2 = new URLSearchParams(st);
+      spot = spot || (p2.get("spot") || "").trim();
+      type = (type || p2.get("type") || "shop").trim();
+    }
+    return { spot, type, liffState: st || "(none)" };
+  }
+
   // 二重送信防止（同spot/typeは10秒は送らない）
-  function isRecentSubmit(){
+  function isRecentSubmit(spot, type){
     const key = `sent:${spot}:${type}`;
     const last = Number(sessionStorage.getItem(key) || 0);
     const now  = Date.now();
@@ -43,7 +56,8 @@
   }
 
   async function main(){
-    setDebug({href:location.href, spot, type});
+    const { spot, type, liffState } = getParams();
+    setDebug({href:location.href, spot, type, liffState});
 
     if (!spot){
       setStatus(false, "spotがありません（URLに ?spot=xxx&type=shop を付けてください）");
@@ -52,18 +66,18 @@
 
     await liff.init({ liffId: LIFF_ID });
 
-    // LINE内で開いてないと userId が取れない → pushできない
-    if (!liff.isInClient() && !liff.isLoggedIn()){
-      setStatus(false, "LINE内で開いてください（外部ブラウザでは userId が取れません）");
+    // 外部ブラウザはここで止める（迷子防止）
+    if (!liff.isInClient()){
+      setStatus(false, "LINE内で開いてください（inClient=false）");
       return;
     }
 
     if (!liff.isLoggedIn()){
-      liff.login(); // ここで戻ってくる
+      liff.login();
       return;
     }
 
-    if (isRecentSubmit()){
+    if (isRecentSubmit(spot, type)){
       setStatus(true, "送信済み（連打防止）");
       return;
     }
@@ -83,10 +97,7 @@
     setStatus(true, "送信完了");
     setDebug({spot,type,userId,name,gasResult:text});
 
-    // 画面を閉じたいなら（LINE内だけ）
-    if (liff.isInClient()){
-      setTimeout(()=>liff.closeWindow(), 900);
-    }
+    setTimeout(()=>liff.closeWindow(), 900);
   }
 
   main().catch(err=>{
