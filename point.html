@@ -3,101 +3,124 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JCJ ポイント</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <title>JCJ Point</title>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding:16px; background:#fff; }
-    h1 { margin: 6px 0 14px; font-size: 20px; }
-    .card { border:1px solid #eee; border-radius:14px; padding:14px; margin:12px 0; }
-    .big { font-size: 34px; font-weight: 900; line-height: 1.1; }
-    .row { display:flex; justify-content:space-between; margin:10px 0; }
-    .muted { color:#666; font-size:12px; }
-    .ok { color:#0a7a25; font-weight: 800; }
-    .ng { color:#b00020; font-weight: 800; }
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:24px;line-height:1.6}
+    .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;margin:12px 0}
+    .muted{color:#666;font-size:12px}
+    .ok{color:#0a7;font-weight:700}
+    .ng{color:#c00;font-weight:700}
+    .big{font-size:44px;font-weight:900;letter-spacing:1px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row .card{flex:1;min-width:220px}
+    pre{background:#f6f6f6;padding:12px;border-radius:10px;white-space:pre-wrap}
+    button{padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff}
   </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h1>JCJ ポイント</h1>
+  <h2>JCJ Point</h2>
+  <div id="status" class="muted">起動中…</div>
+
+  <div class="row">
+    <div class="card">
+      <div class="muted">合計ポイント</div>
+      <div id="total" class="big">--</div>
+    </div>
+
+    <div class="card">
+      <div class="muted">内訳</div>
+      <div id="breakdown">--</div>
+    </div>
+  </div>
 
   <div class="card">
-    <div class="muted" id="status">起動中…</div>
+    <div class="muted">最終チェックイン</div>
+    <div id="last">--</div>
   </div>
 
-  <div class="card" id="main" style="display:none;">
-    <div class="muted">合計</div>
-    <div class="big"><span id="totalPt">0</span> pt</div>
-    <div class="muted">（チェックイン <span id="totalCnt">0</span> 回）</div>
-  </div>
-
-  <div class="card" id="breakdown" style="display:none;">
-    <div class="row"><div>同エリア</div><div><b><span id="sameCnt">0</span></b>回 / <b><span id="samePt">0</span></b>pt</div></div>
-    <div class="row"><div>隣エリア</div><div><b><span id="adjCnt">0</span></b>回 / <b><span id="adjPt">0</span></b>pt</div></div>
-    <div class="row"><div>その隣</div><div><b><span id="nextCnt">0</span></b>回 / <b><span id="nextPt">0</span></b>pt</div></div>
-    <div class="muted" id="note"></div>
+  <div class="card">
+    <div class="muted">デバッグ（必要な時だけ）</div>
+    <button id="btnDebug">debug=1 で再取得</button>
+    <pre id="debug"></pre>
   </div>
 
 <script>
-  // ✅ここだけ合わせる
-  const LIFF_ID = "2008851980-7muT3neQ";
-  const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  // ★ここだけ設定
+  const LIFF_ID = "2008851980-7muT3neQ"; // 既存のLIFFでも動くが、ポイント用に別LIFFを作るなら差し替え
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
 
-  const statusEl = document.getElementById("status");
-  const mainEl = document.getElementById("main");
-  const bdEl = document.getElementById("breakdown");
+  const $ = (id)=>document.getElementById(id);
 
-  function setStatus(text, ok=null) {
-    if (ok === true) statusEl.innerHTML = `<span class="ok">✅</span> ${text}`;
-    else if (ok === false) statusEl.innerHTML = `<span class="ng">❌</span> ${text}`;
-    else statusEl.textContent = text;
+  function setStatus(ok, msg){
+    $("status").innerHTML = `<span class="${ok?'ok':'ng'}">${msg}</span>`;
   }
 
-  async function main() {
+  function fmtDate(d){
+    if(!d) return "";
+    // GASがDate文字列/数値を返す可能性があるので雑に対応
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return String(d);
+    const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,"0"), dd=String(dt.getDate()).padStart(2,"0");
+    const hh=String(dt.getHours()).padStart(2,"0"), mm=String(dt.getMinutes()).padStart(2,"0");
+    return `${y}-${m}-${dd} ${hh}:${mm}`;
+  }
+
+  async function fetchPoint(userId, debug=false){
+    const url = `${GAS_URL}?mode=point&userId=${encodeURIComponent(userId)}${debug?'&debug=1':''}`;
+    const res = await fetch(url, { method:"GET" });
+    const data = await res.json();
+    if(!res.ok || !data || data.ok !== true){
+      throw new Error(JSON.stringify(data || {status:res.status}));
+    }
+    return data;
+  }
+
+  async function main(debug=false){
+    $("debug").textContent = "";
+    setStatus(true, "起動中…");
+
     await liff.init({ liffId: LIFF_ID });
 
-    if (!liff.isLoggedIn()) {
+    if (!liff.isLoggedIn()){
+      // 外部ブラウザで開かれてる場合もあるので login で戻す
       liff.login({ redirectUri: location.href });
       return;
     }
-    if (!liff.isInClient()) {
-      setStatus("LINE内で開いてください。", false);
+
+    const profile = await liff.getProfile();
+    const userId = profile.userId || "";
+    if(!userId){
+      setStatus(false, "userId が取得できません（LINE内で開いてください）");
       return;
     }
 
-    setStatus("読み込み中…");
+    setStatus(true, "取得中…");
+    const data = await fetchPoint(userId, debug);
 
-    const profile = await liff.getProfile();
-    const url = `${GAS_ENDPOINT}?` + new URLSearchParams({
-      mode: "point_summary",
-      userId: profile.userId
-    }).toString() + `&_=${Date.now()}`;
+    // 表示
+    $("total").textContent = String(data.totalPt ?? 0);
 
-    const res = await fetch(url);
-    const data = await res.json();
+    const b = data.breakdown || {};
+    $("breakdown").innerHTML =
+      `店舗：${b.shopCount ?? 0}回 / ${b.shopPt ?? 0}pt<br>` +
+      `イベント：${b.eventCount ?? 0}回 / ${b.eventPt ?? 0}pt`;
 
-    if (!res.ok || !data.ok) throw new Error(data.error || "GAS error");
+    const last = data.last || {};
+    $("last").innerHTML =
+      `更新：${fmtDate(last.updatedAt)}<br>` +
+      `spot：${last.lastSpot || "-"}<br>` +
+      `type：${last.lastType || "-"}`;
 
-    document.getElementById("totalPt").textContent = data.total.pt || 0;
-    document.getElementById("totalCnt").textContent = data.total.count || 0;
-
-    document.getElementById("sameCnt").textContent = data.same.count || 0;
-    document.getElementById("samePt").textContent = data.same.pt || 0;
-
-    document.getElementById("adjCnt").textContent = data.adjacent.count || 0;
-    document.getElementById("adjPt").textContent = data.adjacent.pt || 0;
-
-    document.getElementById("nextCnt").textContent = data.next.count || 0;
-    document.getElementById("nextPt").textContent = data.next.pt || 0;
-
-    document.getElementById("note").textContent = data.note ? `note: ${data.note}` : "";
-
-    mainEl.style.display = "block";
-    bdEl.style.display = "block";
-    setStatus("表示しました。");
+    setStatus(true, "完了");
+    if(debug) $("debug").textContent = JSON.stringify(data, null, 2);
   }
 
-  main().catch(e => {
-    setStatus("エラー：" + (e?.message || String(e)), false);
-    console.log(e);
+  $("btnDebug").addEventListener("click", ()=>main(true));
+
+  main(false).catch(err=>{
+    setStatus(false, "エラー: " + (err?.message || String(err)));
+    $("debug").textContent = (err?.stack || String(err));
   });
 </script>
 </body>
