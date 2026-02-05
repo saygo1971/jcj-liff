@@ -5,85 +5,85 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Point</title>
   <style>
-    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:24px;line-height:1.6}
-    .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px;margin:12px 0}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:18px}
+    .card{border:1px solid #e6e6e6;border-radius:12px;padding:14px}
     .muted{color:#666;font-size:12px}
-    .ok{color:#0a7;font-weight:700}
+    .big{font-size:28px;font-weight:800;margin:8px 0}
+    .row{display:flex;justify-content:space-between;margin:6px 0}
     .ng{color:#c00;font-weight:700}
-    .big{font-size:44px;font-weight:900;letter-spacing:1px}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .row .card{flex:1;min-width:220px}
-    pre{background:#f6f6f6;padding:12px;border-radius:10px;white-space:pre-wrap}
-    button{padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;white-space:pre-wrap}
+    button{padding:10px 12px;border-radius:10px;border:1px solid #ddd;background:#fff}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <h2>JCJ Point</h2>
-  <div id="status" class="muted">起動中…</div>
+  <div class="card">
+    <div id="status" class="muted">起動中…</div>
 
-  <div class="row">
-    <div class="card">
-      <div class="muted">合計ポイント</div>
-      <div id="total" class="big">--</div>
+    <div id="main" style="display:none;">
+      <div class="muted">現在ポイント</div>
+      <div id="total" class="big">-</div>
+
+      <div class="row"><div>店舗チェックイン回数</div><div id="shopCount">-</div></div>
+      <div class="row"><div>イベント回数</div><div id="eventCount">-</div></div>
+
+      <div class="row"><div>最終チェックイン</div><div id="lastSpot">-</div></div>
+      <div class="row"><div>更新日時</div><div id="updatedAt">-</div></div>
+
+      <div style="margin-top:10px">
+        <button id="refresh">更新</button>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="muted">内訳</div>
-      <div id="breakdown">--</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="muted">最終チェックイン</div>
-    <div id="last">--</div>
-  </div>
-
-  <div class="card">
-    <div class="muted">デバッグ（必要な時だけ）</div>
-    <button id="btnDebug">debug=1 で再取得</button>
-    <pre id="debug"></pre>
+    <pre id="debug" style="display:none;"></pre>
   </div>
 
 <script>
-  // ★ここだけ設定
-  const LIFF_ID = "2008851980-7muT3neQ"; // 既存のLIFFでも動くが、ポイント用に別LIFFを作るなら差し替え
+  // ===== 設定ここだけ =====
+  const LIFF_ID = "2008851980-7muT3neQ";
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzGK5iAQ3RpnzVISfB79BaOlodiMrqEGcGtbxbk5aS1xJuC7QqgGDtVukAq4vZING0GXQ/exec";
+  // =======================
 
-  const $ = (id)=>document.getElementById(id);
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const debugMode = (params.get("debug") || "") === "1";
 
-  function setStatus(ok, msg){
-    $("status").innerHTML = `<span class="${ok?'ok':'ng'}">${msg}</span>`;
+  function setStatus(msg, ok=true){
+    $("status").innerHTML = ok ? msg : `<span class="ng">${msg}</span>`;
+  }
+  function showDebug(obj){
+    if(!debugMode) return;
+    $("debug").style.display = "block";
+    $("debug").textContent = typeof obj==="string" ? obj : JSON.stringify(obj,null,2);
   }
 
-  function fmtDate(d){
-    if(!d) return "";
-    // GASがDate文字列/数値を返す可能性があるので雑に対応
-    const dt = new Date(d);
-    if (isNaN(dt.getTime())) return String(d);
-    const y=dt.getFullYear(), m=String(dt.getMonth()+1).padStart(2,"0"), dd=String(dt.getDate()).padStart(2,"0");
-    const hh=String(dt.getHours()).padStart(2,"0"), mm=String(dt.getMinutes()).padStart(2,"0");
-    return `${y}-${m}-${dd} ${hh}:${mm}`;
-  }
-
-  async function fetchPoint(userId, debug=false){
-    const url = `${GAS_URL}?mode=point&userId=${encodeURIComponent(userId)}${debug?'&debug=1':''}`;
+  async function fetchPoint(userId){
+    const url = `${GAS_URL}?mode=point&userId=${encodeURIComponent(userId)}&_=${Date.now()}`;
     const res = await fetch(url, { method:"GET" });
-    const data = await res.json();
-    if(!res.ok || !data || data.ok !== true){
-      throw new Error(JSON.stringify(data || {status:res.status}));
-    }
-    return data;
+    const json = await res.json();
+    return json;
   }
 
-  async function main(debug=false){
-    $("debug").textContent = "";
-    setStatus(true, "起動中…");
+  function render(data){
+    $("total").textContent = data.totalPt ?? 0;
+    $("shopCount").textContent = data.breakdown?.shopCount ?? 0;
+    $("eventCount").textContent = data.breakdown?.eventCount ?? 0;
+    $("lastSpot").textContent = data.last?.lastSpot || "";
+    $("updatedAt").textContent = data.last?.updatedAt || "";
+    $("main").style.display = "block";
+  }
 
+  async function main(){
+    setStatus("LIFF起動中…");
     await liff.init({ liffId: LIFF_ID });
 
+    // LINE内で開く（重要：userId取得のため）
+    if (!liff.isInClient()){
+      setStatus("LINE内で開いてください（外部ブラウザだとポイント表示できません）", false);
+      return;
+    }
+
     if (!liff.isLoggedIn()){
-      // 外部ブラウザで開かれてる場合もあるので login で戻す
       liff.login({ redirectUri: location.href });
       return;
     }
@@ -91,36 +91,34 @@
     const profile = await liff.getProfile();
     const userId = profile.userId || "";
     if(!userId){
-      setStatus(false, "userId が取得できません（LINE内で開いてください）");
+      setStatus("userIdが取得できませんでした", false);
       return;
     }
 
-    setStatus(true, "取得中…");
-    const data = await fetchPoint(userId, debug);
+    setStatus("取得中…");
+    const data = await fetchPoint(userId);
 
-    // 表示
-    $("total").textContent = String(data.totalPt ?? 0);
+    showDebug({ userId, data });
+    if(!data.ok){
+      setStatus("取得失敗：" + (data.error || "unknown"), false);
+      return;
+    }
 
-    const b = data.breakdown || {};
-    $("breakdown").innerHTML =
-      `店舗：${b.shopCount ?? 0}回 / ${b.shopPt ?? 0}pt<br>` +
-      `イベント：${b.eventCount ?? 0}回 / ${b.eventPt ?? 0}pt`;
+    setStatus("表示中");
+    render(data);
 
-    const last = data.last || {};
-    $("last").innerHTML =
-      `更新：${fmtDate(last.updatedAt)}<br>` +
-      `spot：${last.lastSpot || "-"}<br>` +
-      `type：${last.lastType || "-"}`;
-
-    setStatus(true, "完了");
-    if(debug) $("debug").textContent = JSON.stringify(data, null, 2);
+    $("refresh").onclick = async ()=>{
+      setStatus("更新中…");
+      const d2 = await fetchPoint(userId);
+      showDebug({ userId, d2 });
+      if(d2.ok) { render(d2); setStatus("更新しました"); }
+      else { setStatus("更新失敗：" + (d2.error || "unknown"), false); }
+    };
   }
 
-  $("btnDebug").addEventListener("click", ()=>main(true));
-
-  main(false).catch(err=>{
-    setStatus(false, "エラー: " + (err?.message || String(err)));
-    $("debug").textContent = (err?.stack || String(err));
+  main().catch(err=>{
+    setStatus("エラー: " + (err?.message || String(err)), false);
+    showDebug(err);
   });
 </script>
 </body>
