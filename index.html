@@ -19,11 +19,6 @@
     .container {
       text-align: center;
     }
-    .logo {
-      width: 100px; /* ロゴのサイズ調整 */
-      margin-bottom: 20px;
-      opacity: 0.8;
-    }
     .status-text {
       color: #8b7d6b;
       font-size: 14px;
@@ -57,8 +52,10 @@
 
   async function main() {
     await liff.init({ liffId: LIFF_ID });
+    
     if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
+      // 400エラー対策：redirectUri を確実にGitHubのURLに固定する
+      liff.login({ redirectUri: "https://saygo1971.github.io/jcj-liff/index.html" });
       return;
     }
 
@@ -71,13 +68,13 @@
     // 裏側でメッセージを送信
     try {
       await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
-      // 送信成功後、一瞬だけ間を置いて（0.3秒）パッと閉じる
+      // 成功したら0.3秒だけ余韻を残して閉じる
       setTimeout(() => {
         liff.closeWindow();
       }, 300);
     } catch (error) {
-      // エラー時はメッセージを出す
-      document.querySelector('.status-text').innerText = "エラーが発生しました。";
+      // エラー時は状況を表示（デバッグ用）
+      document.querySelector('.status-text').innerText = "記録に失敗しました。トーク画面で直接送ってください。";
     }
   }
 
