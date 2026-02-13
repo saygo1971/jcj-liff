@@ -6,35 +6,54 @@
   <title>JCJ - Japan Coffee Journey</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
+    /* 旅の始まりを感じさせる落ち着いたデザイン */
     body {
       margin: 0;
-      background-color: #fcfaf5; 
+      background-color: #fcfaf5; /* カフェをイメージした温かい白 */
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      font-family: sans-serif;
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    }
+    .container {
+      text-align: center;
     }
     .status-text {
       color: #8b7d6b;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: bold;
+      letter-spacing: 0.1em;
+    }
+    /* 読み込み中のアニメーション */
+    .loading-dots:after {
+      content: ' .';
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { color: rgba(0,0,0,0); text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
+      40% { color: #8b7d6b; text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
+      60% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 rgba(0,0,0,0); }
+      80%, 100% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 #8b7d6b; }
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="status-text" id="status">旅の記録を更新中...</div>
+  <div class="status-text" id="status-message">旅の記録を更新中<span class="loading-dots"></span></div>
 </div>
 
 <script>
+  // あなたのLIFF ID
   const LIFF_ID = "2008851980-yhGytJRd";
 
+  // URLから店舗IDを取得する関数
   function getSpot() {
     const q = new URLSearchParams(location.search);
     const direct = (q.get("spot") || "").trim();
     if (direct) return direct;
+
     const stateRaw = q.get("liff.state");
     if (stateRaw) {
       let decoded = stateRaw;
@@ -47,38 +66,45 @@
 
   async function main() {
     try {
-      // 1. LIFF初期化
+      // 1. LIFFの初期化
       await liff.init({ liffId: LIFF_ID });
       
       const spot = getSpot();
 
-      // 2. ログインチェック
+      // 2. ログインチェック（未ログインならログイン画面へ飛ばし、戻ってくる）
       if (!liff.isLoggedIn()) {
         liff.login({ redirectUri: location.href });
         return;
       }
 
+      // 3. 店舗IDがない場合
       if (!spot) {
-        document.getElementById('status').innerText = "店舗情報が見つかりません。";
+        document.getElementById('status-message').innerText = "店舗情報が見つかりません。";
         return;
       }
 
-      // 3. メッセージ送信（これが「通信エラー」と言われる部分）
-      // ログイン直後は少し待ってから送ると安定します
+      // 4. メッセージ送信
+      // ログイン直後の安定化のため、少し待機してから送信
       setTimeout(async () => {
         try {
+          // ユーザーに代わって「#店舗ID」をトーク画面に送信
           await liff.sendMessages([{ type: "text", text: `#${spot}` }]);
-          // 送信成功したら即座に閉じる
-          liff.closeWindow();
+          
+          // 成功したら0.3秒だけ余韻を残して画面を閉じる
+          setTimeout(() => {
+            liff.closeWindow();
+          }, 300);
+          
         } catch (err) {
           console.error(err);
-          document.getElementById('status').innerText = "送信に失敗しました。LINEの権限を確認してください。";
+          // 権限(chat_message.write)がない場合などはここに来ます
+          document.getElementById('status-message').innerText = "送信に失敗しました。LINEの権限を確認してください。";
         }
-      }, 500); // 0.5秒のタメを作ることで安定させます
+      }, 600); 
 
     } catch (error) {
       console.error(error);
-      document.getElementById('status').innerText = "初期化エラーが発生しました。";
+      document.getElementById('status-message').innerText = "アプリの起動に失敗しました。";
     }
   }
 
