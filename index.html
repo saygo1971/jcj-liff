@@ -3,112 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JCJ - Japan Coffee Journey</title>
+  <title>JCJ Checkin</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    /* 旅の始まりを感じさせる落ち着いたデザイン */
-    body {
-      margin: 0;
-      background-color: #fcfaf5; /* カフェをイメージした温かい白 */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-    }
-    .container {
-      text-align: center;
-    }
-    .status-text {
-      color: #8b7d6b;
-      font-size: 15px;
-      font-weight: bold;
-      letter-spacing: 0.1em;
-    }
-    /* 読み込み中のアニメーション */
-    .loading-dots:after {
-      content: ' .';
-      animation: dots 1.5s steps(5, end) infinite;
-    }
-    @keyframes dots {
-      0%, 20% { color: rgba(0,0,0,0); text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
-      40% { color: #8b7d6b; text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
-      60% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 rgba(0,0,0,0); }
-      80%, 100% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 #8b7d6b; }
-    }
-  </style>
 </head>
 <body>
-
-<div class="container">
-  <div class="status-text" id="status-message">旅の記録を更新中<span class="loading-dots"></span></div>
-</div>
-
+  <div id="status">チェックイン処理中...</div>
 <script>
-  // あなたのLIFF ID
   const LIFF_ID = "2008851980-yhGytJRd";
 
-  // URLから店舗IDを取得する関数
   function getSpot() {
     const q = new URLSearchParams(location.search);
     const direct = (q.get("spot") || "").trim();
     if (direct) return direct;
-
     const stateRaw = q.get("liff.state");
     if (stateRaw) {
-      let decoded = stateRaw;
-      try { decoded = decodeURIComponent(stateRaw); } catch(e){}
-      const s = decoded.startsWith("?") ? decoded.slice(1) : decoded;
+      const s = stateRaw.startsWith("?") ? stateRaw.slice(1) : stateRaw;
       return (new URLSearchParams(s).get("spot") || "").trim();
     }
     return "";
   }
 
   async function main() {
-    try {
-      // 1. LIFFの初期化
-      await liff.init({ liffId: LIFF_ID });
-      
-      const spot = getSpot();
-
-      // 2. ログインチェック（未ログインならログイン画面へ飛ばし、戻ってくる）
-      if (!liff.isLoggedIn()) {
-        liff.login({ redirectUri: location.href });
-        return;
-      }
-
-      // 3. 店舗IDがない場合
-      if (!spot) {
-        document.getElementById('status-message').innerText = "店舗情報が見つかりません。";
-        return;
-      }
-
-      // 4. メッセージ送信
-      // ログイン直後の安定化のため、少し待機してから送信
-      setTimeout(async () => {
-        try {
-          // ユーザーに代わって「#店舗ID」をトーク画面に送信
-          await liff.sendMessages([{ type: "text", text: `#${spot}` }]);
-          
-          // 成功したら0.3秒だけ余韻を残して画面を閉じる
-          setTimeout(() => {
-            liff.closeWindow();
-          }, 300);
-          
-        } catch (err) {
-          console.error(err);
-          // 権限(chat_message.write)がない場合などはここに来ます
-          document.getElementById('status-message').innerText = "送信に失敗しました。LINEの権限を確認してください。";
-        }
-      }, 600); 
-
-    } catch (error) {
-      console.error(error);
-      document.getElementById('status-message').innerText = "アプリの起動に失敗しました。";
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
     }
+    const spot = getSpot();
+    if (!spot) {
+      document.getElementById('status').innerText = "店舗情報なし";
+      return;
+    }
+    // トークに投稿する（これがスプレッドシートへの合図）
+    await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
+    liff.closeWindow();
   }
-
-  main();
+  main().catch(err => { document.getElementById('status').innerText = "エラー: " + err; });
 </script>
 </body>
 </html>
