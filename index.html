@@ -3,10 +3,40 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JCJ</title>
+  <title>JCJ - Japan Coffee Journey</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    /* 画面を「アプリの起動画面」風に整える */
+    body {
+      margin: 0;
+      background-color: #fcfaf5; /* カフェっぽい温かみのある白 */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    .container {
+      text-align: center;
+    }
+    .logo {
+      width: 100px; /* ロゴのサイズ調整 */
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+    .status-text {
+      color: #8b7d6b;
+      font-size: 14px;
+      letter-spacing: 0.1em;
+    }
+  </style>
 </head>
 <body>
+
+<div class="container">
+  <div class="status-text">旅の記録を更新中...</div>
+</div>
+
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
 
@@ -27,16 +57,33 @@
 
   async function main() {
     await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()) return liff.login({ redirectUri: location.href });
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
+    }
 
     const spot = getSpot();
-    if (!spot) return;
+    if (!spot) {
+      document.querySelector('.status-text').innerText = "店舗情報が見つかりません。";
+      return;
+    }
 
-    await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
-    liff.closeWindow(); // 送ったら閉じる
+    // 裏側でメッセージを送信
+    try {
+      await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
+      // 送信成功後、一瞬だけ間を置いて（0.3秒）パッと閉じる
+      setTimeout(() => {
+        liff.closeWindow();
+      }, 300);
+    } catch (error) {
+      // エラー時はメッセージを出す
+      document.querySelector('.status-text').innerText = "エラーが発生しました。";
+    }
   }
 
-  main().catch(()=>{});
+  main().catch(err => {
+    console.error(err);
+  });
 </script>
 </body>
 </html>
