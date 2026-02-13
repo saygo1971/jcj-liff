@@ -6,15 +6,15 @@
   <title>JCJ - Japan Coffee Journey</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    /* 画面を「アプリの起動画面」風に整える */
+    /* 画面のデザイン設定 */
     body {
       margin: 0;
-      background-color: #fcfaf5; /* カフェっぽい温かみのある白 */
+      background-color: #fcfaf5; /* 温かみのあるカフェカラー */
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      font-family: sans-serif;
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
     }
     .container {
       text-align: center;
@@ -22,19 +22,32 @@
     .status-text {
       color: #8b7d6b;
       font-size: 14px;
+      font-weight: bold;
       letter-spacing: 0.1em;
+    }
+    /* ローディング演出（小さなドットのアニメーション） */
+    .loading-dots:after {
+      content: ' .';
+      animation: dots 1s steps(5, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { color: rgba(0,0,0,0); text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
+      40% { color: #8b7d6b; text-shadow: .3em 0 0 rgba(0,0,0,0), .6em 0 0 rgba(0,0,0,0); }
+      60% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 rgba(0,0,0,0); }
+      80%, 100% { text-shadow: .3em 0 0 #8b7d6b, .6em 0 0 #8b7d6b; }
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="status-text">旅の記録を更新中...</div>
+  <div class="status-text">旅の記録を更新中<span class="loading-dots"></span></div>
 </div>
 
 <script>
   const LIFF_ID = "2008851980-yhGytJRd";
 
+  // URLから店舗ID（spot）を抽出する関数
   function getSpot() {
     const q = new URLSearchParams(location.search);
     const direct = (q.get("spot") || "").trim();
@@ -51,30 +64,38 @@
   }
 
   async function main() {
+    // 1. LIFFの初期化
     await liff.init({ liffId: LIFF_ID });
     
+    // 2. 店舗情報を取得（ログイン前に確保しておくのがコツ）
+    const spot = getSpot();
+
+    // 3. ログインチェック
     if (!liff.isLoggedIn()) {
-      // 400エラー対策：redirectUri を確実にGitHubのURLに固定する
-      liff.login({ redirectUri: "https://saygo1971.github.io/jcj-liff/index.html" });
+      // spot情報を含んだ現在のURL（location.href）を維持してログイン
+      liff.login({ redirectUri: location.href });
       return;
     }
 
-    const spot = getSpot();
+    // 4. 店舗情報がない場合の処理
     if (!spot) {
       document.querySelector('.status-text').innerText = "店舗情報が見つかりません。";
       return;
     }
 
-    // 裏側でメッセージを送信
+    // 5. 裏側でLINEメッセージを送信して閉じる
     try {
+      // ユーザーの代わりに「#店舗ID」を送信
       await liff.sendMessages([{ type:"text", text:`#${spot}` }]);
-      // 成功したら0.3秒だけ余韻を残して閉じる
+      
+      // 成功したら、ほんの少し余韻（0.3秒）をおいて閉じる
       setTimeout(() => {
         liff.closeWindow();
       }, 300);
+      
     } catch (error) {
-      // エラー時は状況を表示（デバッグ用）
-      document.querySelector('.status-text').innerText = "記録に失敗しました。トーク画面で直接送ってください。";
+      console.error(error);
+      document.querySelector('.status-text').innerText = "通信エラーが発生しました。";
     }
   }
 
