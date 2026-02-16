@@ -1,54 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JCJ Passport Recording...</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; }
-    .loader { text-align: center; }
+    /* JCJブランドカラーに合わせたシンプルな待機画面 */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f4f0; /* 落ち着いたベージュ */
+      color: #9f866a; /* コーヒーブラウン */
+    }
+    .loader-container {
+      text-align: center;
+    }
+    .status-text {
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+    /* 読み込み中のアニメーション（任意） */
+    .dots:after {
+      content: '.';
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60% { content: '...'; }
+      80%, 100% { content: ''; }
+    }
   </style>
 </head>
 <body>
-  <div class="loader">
-    <p>🎫 JCJパスポートに記録中...</p>
+
+  <div class="loader-container">
+    <p class="status-text">🎫 JCJパスポートに記録中<span class="dots"></span></p>
   </div>
 
   <script>
     async function main() {
-      // 1. LIFFの初期化 (ご自身のLIFF IDに書き換えてください)
-      await liff.init({ liffId: "2008851980-yhGytJRd" });
+      // 1. LIFFの初期化
+      try {
+        await liff.init({ liffId: "2008851980-yhGytJRd" });
+      } catch (err) {
+        console.error("LIFFの初期化に失敗しました", err);
+        alert("システムエラーが発生しました。");
+        return;
+      }
 
+      // 2. ログインチェック
       if (!liff.isLoggedIn()) {
         liff.login();
         return;
       }
 
-      // 2. URLパラメータから 'spot' (SPOTID) を取得
+      // 3. URLからパラメータ（店舗IDとイベントフラグ）を取得
       const urlParams = new URLSearchParams(window.location.search);
       const spotId = urlParams.get('spot');
+      const isEvent = urlParams.get('ev'); // Q列のURLには &ev=1 が付いている
 
       if (spotId) {
         try {
-          // 3. トークルームに演出用のメッセージを送信
+          // 4. トークルームに演出用のメッセージを送信
+          // 通常なら (ID: SPOT001)、イベントなら (EVENT ID: SPOT001) と出し分ける
+          const messageText = isEvent 
+            ? '🎫 JCJパスポートに記録中... (EVENT ID: ' + spotId + ')' 
+            : '🎫 JCJパスポートに記録中... (ID: ' + spotId + ')';
+
           await liff.sendMessages([
             {
               type: 'text',
-              text: '🎫 JCJパスポートに記録中... (ID: ' + spotId + ')'
+              text: messageText
             }
           ]);
-          // 4. 送信成功したらLIFFウィンドウを閉じる
+
+          // 5. 送信成功したら即座にLIFFを閉じてトーク画面に戻す
           liff.closeWindow();
         } catch (error) {
-          console.error("記録に失敗しました:", error);
-          alert("通信エラーが発生しました。もう一度お試しください。");
+          console.error("メッセージ送信に失敗しました", error);
+          alert("記録に失敗しました。LINEのトーク画面からもう一度お試しください。");
         }
       } else {
-        alert("ショップ情報が見つかりません。");
+        alert("ショップ情報（SPOT ID）が見つかりません。");
       }
     }
 
+    // 実行
     main();
   </script>
 </body>
