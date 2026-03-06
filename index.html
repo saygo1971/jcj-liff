@@ -8,12 +8,14 @@
   <style>
     body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; }
     .loader-container { text-align: center; }
-    .status-text { font-size: 16px; font-weight: bold; }
+    .status-text { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+    .check-mark { font-size: 40px; display: none; color: #4caf50; }
   </style>
 </head>
 <body>
   <div class="loader-container">
-    <p class="status-text">🎫 JCJパスポートに記録中...</p>
+    <p id="status" class="status-text">🎫 JCJパスポートに記録中...</p>
+    <div id="done" class="check-mark">✅ 完了</div>
   </div>
 
   <script>
@@ -23,12 +25,17 @@
         await liff.init({ liffId: "2008851980-yhGytJRd" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        // 2. ユーザーIDの取得（より確実なIDトークン方式に変更）
+        // 2. ユーザーID取得の「二段構え」
+        let userId = null;
+        
+        // Aプラン: トークンから取得（エラーが少なく最速）
         const idToken = liff.getDecodedIDToken();
-        const userId = idToken ? idToken.sub : null;
-
+        if (idToken) {
+          userId = idToken.sub;
+        }
+        
+        // Bプラン: Aがダメならプロフィール取得（少し時間がかかる）
         if (!userId) {
-          // 万が一IDトークンが取れない場合のみProfileを試す
           const profile = await liff.getProfile();
           userId = profile.userId;
         }
@@ -40,21 +47,26 @@
         if (spotId && userId) {
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
           
-          // 🚀 データを送信（投げっぱなし）
+          // 🚀 通信（投げっぱなし）
           fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, { mode: 'no-cors' });
 
-          // 3. 送信後、JCJ公式アカウントのトーク画面へ戻る
+          // ✅ 完了演出
+          document.getElementById('status').innerText = "記録されました！";
+          document.getElementById('done').style.display = "block";
+
+          // 3. 公式アカウントへ戻る（NTAG対策）
           setTimeout(() => {
-            window.location.href = "https://line.me/R/oaMessage/@jcj_coffee/";
-          }, 500);
+            // トーク画面へ自動転送
+            window.location.href = "https://line.me/R/ti/p/@jcj_coffee"; 
+          }, 1500);
 
         } else {
-          alert("情報の取得に失敗しました。もう一度お試しください。");
+          alert("情報の取得に失敗しました。再度タップしてください。");
         }
       } catch (err) {
-        // エラーを詳細に出さず、ユーザーには「再試行」を促す（iPhone流）
         console.error(err);
-        alert("接続を確認して、もう一度タップしてください。");
+        // エラーが出ても「再試行」を促すだけで止めない
+        alert("接続を待機中です。もう一度お試しください。");
       }
     }
     main();
