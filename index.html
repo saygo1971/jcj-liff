@@ -6,44 +6,22 @@
   <title>JCJ Passport Recording...</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f8f4f0;
-      color: #9f866a;
-    }
+    body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; }
     .loader-container { text-align: center; }
-    .status-text { font-size: 16px; font-weight: bold; letter-spacing: 0.05em; }
-    .dots:after {
-      content: '.';
-      animation: dots 1.5s steps(5, end) infinite;
-    }
-    @keyframes dots {
-      0%, 20% { content: '.'; }
-      40% { content: '..'; }
-      60% { content: '...'; }
-      80%, 100% { content: ''; }
-    }
+    .status-text { font-size: 16px; font-weight: bold; }
   </style>
 </head>
 <body>
-
   <div class="loader-container">
-    <p class="status-text">🎫 JCJパスポートに記録中<span class="dots"></span></p>
+    <p class="status-text">🎫 JCJパスポートに記録中...</p>
   </div>
 
   <script>
     async function main() {
       try {
-        // 1. LIFF初期化
         await liff.init({ liffId: "2008851980-yhGytJRd" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        // 2. ユーザー情報とURLパラメータの取得
         const profile = await liff.getProfile();
         const userId = profile.userId;
         const urlParams = new URLSearchParams(window.location.search);
@@ -51,29 +29,24 @@
         const isEvent = urlParams.get('ev');
 
         if (spotId) {
-          // 🚀 修正ポイント：データを「投げっぱなし」にする
-          // awaitを外すことで、GASの処理完了を待たずに次のステップへ進みます
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
           
-          fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, {
-            mode: 'no-cors'
-          });
+          // 🚀 裏側でデータを送信（awaitをつけず、止まらないようにする）
+          fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, { mode: 'no-cors' });
 
-          // 3. 0.5秒だけ待機して、強制的にウィンドウを閉じる
-          // これにより「記録中...」でフリーズするのを防ぎ、体感速度を上げます
+          // ✅ 記録後に「JCJ公式アカウントのトーク画面」へ飛ばす
+          // ※これを入れることで、NTAGからでも自動的にトーク画面へ移動します
           setTimeout(() => {
-            liff.closeWindow();
-          }, 500);
+            window.location.href = "https://line.me/R/oaMessage/@jcj_coffee/"; // あなたの公式アカウントのIDに合わせてください
+          }, 800);
 
         } else {
-          alert("ショップ情報（SPOT ID）が見つかりません。");
+          alert("ショップ情報が見つかりません。");
         }
       } catch (err) {
-        console.error(err);
-        alert("システムエラーが発生しました。");
+        alert("エラー詳細: " + err.message);
       }
     }
-
     main();
   </script>
 </body>
