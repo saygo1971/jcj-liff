@@ -58,7 +58,7 @@
 
     if (spotId) {
       // 🚀 ここがポイント：メッセージ送信ではなく、GASに直接データを送る
-      const gasUrl = "ここにあなたのGASウェブアプリURLを貼り付け";
+      const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
       await fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, {
         mode: 'no-cors' // GASの制約を回避
       });
