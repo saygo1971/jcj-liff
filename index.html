@@ -6,7 +6,6 @@
   <title>JCJ Passport Recording...</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    /* JCJブランドカラーに合わせたシンプルな待機画面 */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
       display: flex;
@@ -14,18 +13,11 @@
       justify-content: center;
       height: 100vh;
       margin: 0;
-      background-color: #f8f4f0; /* 落ち着いたベージュ */
-      color: #9f866a; /* コーヒーブラウン */
+      background-color: #f8f4f0;
+      color: #9f866a;
     }
-    .loader-container {
-      text-align: center;
-    }
-    .status-text {
-      font-size: 16px;
-      font-weight: bold;
-      letter-spacing: 0.05em;
-    }
-    /* 読み込み中のアニメーション（任意） */
+    .loader-container { text-align: center; }
+    .status-text { font-size: 16px; font-weight: bold; letter-spacing: 0.05em; }
     .dots:after {
       content: '.';
       animation: dots 1.5s steps(5, end) infinite;
@@ -46,34 +38,43 @@
 
   <script>
     async function main() {
-  try {
-    await liff.init({ liffId: "2008851980-yhGytJRd" });
-    if (!liff.isLoggedIn()) { liff.login(); return; }
+      try {
+        // 1. LIFF初期化
+        await liff.init({ liffId: "2008851980-yhGytJRd" });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
 
-    const profile = await liff.getProfile(); // ユーザーIDを取得
-    const userId = profile.userId;
-    const urlParams = new URLSearchParams(window.location.search);
-    const spotId = urlParams.get('spot');
-    const isEvent = urlParams.get('ev');
+        // 2. ユーザー情報とURLパラメータの取得
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
+        const urlParams = new URLSearchParams(window.location.search);
+        const spotId = urlParams.get('spot');
+        const isEvent = urlParams.get('ev');
 
-    if (spotId) {
-      // 🚀 ここがポイント：メッセージ送信ではなく、GASに直接データを送る
-      const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
-      await fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, {
-        mode: 'no-cors' // GASの制約を回避
-      });
+        if (spotId) {
+          // 🚀 修正ポイント：データを「投げっぱなし」にする
+          // awaitを外すことで、GASの処理完了を待たずに次のステップへ進みます
+          const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+          
+          fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, {
+            mode: 'no-cors'
+          });
 
-      // 完了したら無言で閉じる（iPhoneのようなスムーズさ）
-      liff.closeWindow();
-    } else {
-      alert("ショップ情報が見つかりません。");
+          // 3. 0.5秒だけ待機して、強制的にウィンドウを閉じる
+          // これにより「記録中...」でフリーズするのを防ぎ、体感速度を上げます
+          setTimeout(() => {
+            liff.closeWindow();
+          }, 500);
+
+        } else {
+          alert("ショップ情報（SPOT ID）が見つかりません。");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("システムエラーが発生しました。");
+      }
     }
-  } catch (err) {
-    console.error(err);
-    alert("エラーが発生しました。");
-  }
-}
-main();
+
+    main();
   </script>
 </body>
 </html>
