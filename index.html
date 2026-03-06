@@ -46,54 +46,34 @@
 
   <script>
     async function main() {
-      // 1. LIFFの初期化
-      try {
-        await liff.init({ liffId: "2008851980-yhGytJRd" });
-      } catch (err) {
-        console.error("LIFFの初期化に失敗しました", err);
-        alert("システムエラーが発生しました。");
-        return;
-      }
+  try {
+    await liff.init({ liffId: "2008851980-yhGytJRd" });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
 
-      // 2. ログインチェック
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
+    const profile = await liff.getProfile(); // ユーザーIDを取得
+    const userId = profile.userId;
+    const urlParams = new URLSearchParams(window.location.search);
+    const spotId = urlParams.get('spot');
+    const isEvent = urlParams.get('ev');
 
-      // 3. URLからパラメータ（店舗IDとイベントフラグ）を取得
-      const urlParams = new URLSearchParams(window.location.search);
-      const spotId = urlParams.get('spot');
-      const isEvent = urlParams.get('ev'); // Q列のURLには &ev=1 が付いている
+    if (spotId) {
+      // 🚀 ここがポイント：メッセージ送信ではなく、GASに直接データを送る
+      const gasUrl = "ここにあなたのGASウェブアプリURLを貼り付け";
+      await fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, {
+        mode: 'no-cors' // GASの制約を回避
+      });
 
-      if (spotId) {
-        try {
-          // 4. トークルームに演出用のメッセージを送信
-          // 通常なら (ID: SPOT001)、イベントなら (EVENT ID: SPOT001) と出し分ける
-          const messageText = isEvent 
-            ? '🎫 JCJパスポートに記録中... (EVENT ID: ' + spotId + ')' 
-            : '🎫 JCJパスポートに記録中... (ID: ' + spotId + ')';
-
-          await liff.sendMessages([
-            {
-              type: 'text',
-              text: messageText
-            }
-          ]);
-
-          // 5. 送信成功したら即座にLIFFを閉じてトーク画面に戻す
-          liff.closeWindow();
-        } catch (error) {
-          console.error("メッセージ送信に失敗しました", error);
-          alert("記録に失敗しました。LINEのトーク画面からもう一度お試しください。");
-        }
-      } else {
-        alert("ショップ情報（SPOT ID）が見つかりません。");
-      }
+      // 完了したら無言で閉じる（iPhoneのようなスムーズさ）
+      liff.closeWindow();
+    } else {
+      alert("ショップ情報が見つかりません。");
     }
-
-    // 実行
-    main();
+  } catch (err) {
+    console.error(err);
+    alert("エラーが発生しました。");
+  }
+}
+main();
   </script>
 </body>
 </html>
