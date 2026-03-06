@@ -19,32 +19,42 @@
   <script>
     async function main() {
       try {
+        // 1. LIFF初期化
         await liff.init({ liffId: "2008851980-yhGytJRd" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        const profile = await liff.getProfile();
-        const userId = profile.userId;
+        // 2. ユーザーIDの取得（より確実なIDトークン方式に変更）
+        const idToken = liff.getDecodedIDToken();
+        const userId = idToken ? idToken.sub : null;
+
+        if (!userId) {
+          // 万が一IDトークンが取れない場合のみProfileを試す
+          const profile = await liff.getProfile();
+          userId = profile.userId;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const spotId = urlParams.get('spot');
         const isEvent = urlParams.get('ev');
 
-        if (spotId) {
+        if (spotId && userId) {
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
           
-          // 🚀 裏側でデータを送信（awaitをつけず、止まらないようにする）
+          // 🚀 データを送信（投げっぱなし）
           fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, { mode: 'no-cors' });
 
-          // ✅ 記録後に「JCJ公式アカウントのトーク画面」へ飛ばす
-          // ※これを入れることで、NTAGからでも自動的にトーク画面へ移動します
+          // 3. 送信後、JCJ公式アカウントのトーク画面へ戻る
           setTimeout(() => {
-            window.location.href = "https://line.me/R/oaMessage/@jcj_coffee/"; // あなたの公式アカウントのIDに合わせてください
-          }, 800);
+            window.location.href = "https://line.me/R/oaMessage/@jcj_coffee/";
+          }, 500);
 
         } else {
-          alert("ショップ情報が見つかりません。");
+          alert("情報の取得に失敗しました。もう一度お試しください。");
         }
       } catch (err) {
-        alert("エラー詳細: " + err.message);
+        // エラーを詳細に出さず、ユーザーには「再試行」を促す（iPhone流）
+        console.error(err);
+        alert("接続を確認して、もう一度タップしてください。");
       }
     }
     main();
