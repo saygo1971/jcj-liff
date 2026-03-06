@@ -8,65 +8,52 @@
   <style>
     body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; }
     .loader-container { text-align: center; }
-    .status-text { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-    .check-mark { font-size: 40px; display: none; color: #4caf50; }
+    .status-text { font-size: 16px; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="loader-container">
-    <p id="status" class="status-text">🎫 JCJパスポートに記録中...</p>
-    <div id="done" class="check-mark">✅ 完了</div>
+    <p class="status-text">🎫 JCJパスポートに記録中...</p>
+    <p id="debug-info" style="font-size: 10px; color: #ccc; margin-top: 10px;"></p>
   </div>
 
   <script>
     async function main() {
       try {
-        // 1. LIFF初期化
         await liff.init({ liffId: "2008851980-yhGytJRd" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        // 2. ユーザーID取得の「二段構え」
-        let userId = null;
+        // 1. ユーザーIDの取得
+        const profile = await liff.getProfile();
+        const userId = profile.userId;
         
-        // Aプラン: トークンから取得（エラーが少なく最速）
-        const idToken = liff.getDecodedIDToken();
-        if (idToken) {
-          userId = idToken.sub;
-        }
-        
-        // Bプラン: Aがダメならプロフィール取得（少し時間がかかる）
-        if (!userId) {
-          const profile = await liff.getProfile();
-          userId = profile.userId;
-        }
-
         const urlParams = new URLSearchParams(window.location.search);
         const spotId = urlParams.get('spot');
         const isEvent = urlParams.get('ev');
 
         if (spotId && userId) {
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
-          
-          // 🚀 通信（投げっぱなし）
-          fetch(`${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`, { mode: 'no-cors' });
+          const finalUrl = `${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`;
 
-          // ✅ 完了演出
-          document.getElementById('status').innerText = "記録されました！";
-          document.getElementById('done').style.display = "block";
+          // 2. データの送信（送信完了を待ってから次に進むように変更して確実性を上げます）
+          await fetch(finalUrl, { mode: 'no-cors' });
 
-          // 3. 公式アカウントへ戻る（NTAG対策）
+          // 3. 成功演出として少し待ってから、公式アカウントの「トーク画面」へ移動
+          // URLの末尾から「/」を消し、最も安定した形式に変更しました
           setTimeout(() => {
-            // トーク画面へ自動転送
-            window.location.href = "https://line.me/R/ti/p/@jcj_coffee"; 
-          }, 1500);
+            liff.openWindow({
+              url: "https://line.me/R/ti/p/@jcj_coffee", 
+              external: false
+            });
+            // 補助として現在の窓も閉じる
+            liff.closeWindow();
+          }, 500);
 
         } else {
-          alert("情報の取得に失敗しました。再度タップしてください。");
+          document.getElementById('debug-info').innerText = "ID取得エラー";
         }
       } catch (err) {
-        console.error(err);
-        // エラーが出ても「再試行」を促すだけで止めない
-        alert("接続を待機中です。もう一度お試しください。");
+        document.getElementById('debug-info').innerText = "エラー: " + err.message;
       }
     }
     main();
