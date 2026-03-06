@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JCJ Passport Recording...</title>
+  <title>JCJ Passport</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; }
-    .loader-container { text-align: center; }
-    .status-text { font-size: 16px; font-weight: bold; }
+    body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; text-align: center; }
+    .status-text { font-size: 18px; font-weight: bold; padding: 20px; }
   </style>
 </head>
 <body>
-  <div class="loader-container">
-    <p class="status-text">🎫 JCJパスポートに記録中...</p>
-    <p id="debug-info" style="font-size: 10px; color: #ccc; margin-top: 10px;"></p>
+  <div>
+    <p id="status" class="status-text">🎫 パスポートを確認中...</p>
   </div>
 
   <script>
@@ -23,37 +21,31 @@
         await liff.init({ liffId: "2008851980-yhGytJRd" });
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
-        // 1. ユーザーIDの取得
         const profile = await liff.getProfile();
         const userId = profile.userId;
-        
         const urlParams = new URLSearchParams(window.location.search);
         const spotId = urlParams.get('spot');
-        const isEvent = urlParams.get('ev');
 
         if (spotId && userId) {
+          // 🚀 【重要】ここをご自身の最新のGAS URLに書き換えてください
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
-          const finalUrl = `${gasUrl}?userId=${userId}&spot=${spotId}&ev=${isEvent || ""}`;
+          
+          document.getElementById('status').innerText = "✍️ 記録を書き込み中...";
 
-          // 2. データの送信（送信完了を待ってから次に進むように変更して確実性を上げます）
-          await fetch(finalUrl, { mode: 'no-cors' });
+          // 通信が終わるまで「しっかり待つ（await）」
+          const response = await fetch(`${gasUrl}?userId=${userId}&spot=${spotId}`, { method: 'GET', mode: 'no-cors' });
 
-          // 3. 成功演出として少し待ってから、公式アカウントの「トーク画面」へ移動
-          // URLの末尾から「/」を消し、最も安定した形式に変更しました
-          setTimeout(() => {
-            liff.openWindow({
-              url: "https://line.me/R/ti/p/@jcj_coffee", 
-              external: false
-            });
-            // 補助として現在の窓も閉じる
-            liff.closeWindow();
-          }, 500);
+          // 画面上で成功を伝える（iPhoneのような心地よいフィードバック）
+          document.getElementById('status').innerText = "✅ 記録完了しました！";
 
+          // 1.5秒待ってから閉じる（これで通信を完結させる）
+          setTimeout(() => { liff.closeWindow(); }, 1500);
         } else {
-          document.getElementById('debug-info').innerText = "ID取得エラー";
+          document.getElementById('status').innerText = "⚠️ ショップ情報が見つかりません";
         }
       } catch (err) {
-        document.getElementById('debug-info').innerText = "エラー: " + err.message;
+        document.getElementById('status').innerText = "❌ エラー: もう一度お試しください";
+        console.error(err);
       }
     }
     main();
