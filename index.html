@@ -5,14 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JCJ Passport</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    body { font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f8f4f0; color: #9f866a; text-align: center; }
-    .status-text { font-size: 18px; font-weight: bold; padding: 20px; }
-  </style>
 </head>
-<body>
-  <div>
-    <p id="status" class="status-text">🎫 パスポートを確認中...</p>
+<body style="background-color:#f8f4f0; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; color:#9f866a; font-family:sans-serif;">
+  <div style="text-align:center;">
+    <p>🎫 パスポートを更新中...</p>
   </div>
 
   <script>
@@ -22,30 +18,20 @@
         if (!liff.isLoggedIn()) { liff.login(); return; }
 
         const profile = await liff.getProfile();
-        const userId = profile.userId;
         const urlParams = new URLSearchParams(window.location.search);
         const spotId = urlParams.get('spot');
 
-        if (spotId && userId) {
-          // 🚀 【重要】ここをご自身の最新のGAS URLに書き換えてください
+        if (spotId && profile.userId) {
+          // 🚀 ここがポイント：fetchではなく「画面ごと移動」させる
           const gasUrl = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+          const finalUrl = `${gasUrl}?userId=${profile.userId}&spot=${spotId}`;
           
-          document.getElementById('status').innerText = "✍️ 記録を書き込み中...";
-
-          // 通信が終わるまで「しっかり待つ（await）」
-          const response = await fetch(`${gasUrl}?userId=${userId}&spot=${spotId}`, { method: 'GET', mode: 'no-cors' });
-
-          // 画面上で成功を伝える（iPhoneのような心地よいフィードバック）
-          document.getElementById('status').innerText = "✅ 記録完了しました！";
-
-          // 1.5秒待ってから閉じる（これで通信を完結させる）
-          setTimeout(() => { liff.closeWindow(); }, 1500);
+          window.location.href = finalUrl; 
         } else {
-          document.getElementById('status').innerText = "⚠️ ショップ情報が見つかりません";
+          alert("情報が足りません");
         }
       } catch (err) {
-        document.getElementById('status').innerText = "❌ エラー: もう一度お試しください";
-        console.error(err);
+        alert("エラー: " + err.message);
       }
     }
     main();
