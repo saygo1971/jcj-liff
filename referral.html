@@ -94,7 +94,23 @@
     }
 
     if (data.status === "self_view") {
-      setStatus("これはあなたが紹介したリンクです。<br>店舗: " + data.shopName);
+      el("status").innerHTML =
+        "これはあなたが紹介したリンクです。<br>店舗: " + data.shopName;
+
+      if (liff.isInClient()) {
+        el("hint").innerHTML =
+          '<button id="closeBtn" style="' +
+          'margin-top:12px;padding:10px 18px;border:none;' +
+          'border-radius:10px;background:#999;color:#fff;' +
+          'font-size:14px;font-weight:700;">' +
+          '閉じる' +
+          '</button>';
+
+        el("closeBtn").addEventListener("click", () => {
+          try { liff.closeWindow(); } catch (e) {}
+        });
+      }
+
       return;
     }
 
@@ -181,13 +197,28 @@
       return;
     }
 
-    // パターン③は次のステージで実装予定。ここでは仮表示のまま。
-    setStatus(
-      "判定結果: <b>③ 登録済み</b><br>" +
-      "店舗: " + data.shopName + "<br>" +
-      "紹介者: " + referrerName,
-      true
-    );
+    // パターン③：登録済み → 最短導線。カード自体はStage5のプッシュで既に届いている
+    el("status").innerHTML =
+      "<span class='ok'>✅</span> " + data.shopName + "を<br>" +
+      "LINEのトークに送りました。";
+
+    el("hint").innerHTML =
+      '<button id="openTalkBtn" style="' +
+      'margin-top:12px;padding:12px 20px;border:none;' +
+      'border-radius:10px;background:#34595A;color:#fff;' +
+      'font-size:15px;font-weight:700;">' +
+      'トークを開く' +
+      '</button>';
+
+    el("openTalkBtn").addEventListener("click", () => {
+      if (liff.isInClient()) {
+        try {
+          liff.closeWindow();
+          return;
+        } catch (e) {}
+      }
+      location.href = "https://line.me/R/ti/p/@957zdear";
+    });
   }
 
   main().catch(e => {
