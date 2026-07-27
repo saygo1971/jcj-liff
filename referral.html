@@ -21,6 +21,7 @@
 
 <script>
   const LIFF_ID = "2008851980-3CkMcube";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
   const el = (id) => document.getElementById(id);
 
@@ -70,7 +71,49 @@
       return;
     }
 
-    setStatus("LIFF初期化成功。shareId: " + shareId, true);
+    setStatus("状態を確認しています…");
+
+    const profile = await liff.getProfile();
+    const viewerUserId = profile.userId;
+
+    const friendship = await liff.getFriendship();
+    const isFriend = !!friendship.friendFlag;
+
+    const stateUrl = GAS_URL + "?" + new URLSearchParams({
+      action: "referral_state",
+      shareId: shareId,
+      viewerUserId: viewerUserId
+    }).toString();
+
+    const res = await fetch(stateUrl);
+    const data = await res.json();
+
+    if (data.status === "not_found") {
+      setStatus("紹介情報が見つかりませんでした。", false);
+      return;
+    }
+
+    if (data.status === "self_view") {
+      setStatus("これはあなたが紹介したリンクです。<br>店舗: " + data.shopName);
+      return;
+    }
+
+    let pattern;
+    if (!isFriend) {
+      pattern = "① 未友だち";
+    } else if (!data.isRegistered) {
+      pattern = "② 友だち・未登録";
+    } else {
+      pattern = "③ 登録済み";
+    }
+
+    setStatus(
+      "判定結果: <b>" + pattern + "</b><br>" +
+      "店舗: " + data.shopName + "<br>" +
+      "紹介者: " + (data.referrerUserName || "(不明)") + "<br>" +
+      "isFriend: " + isFriend + " / isRegistered: " + data.isRegistered,
+      true
+    );
   }
 
   main().catch(e => {
