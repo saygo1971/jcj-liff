@@ -97,19 +97,17 @@
       el("status").innerHTML =
         "これはあなたが紹介したリンクです。<br>店舗: " + data.shopName;
 
-      if (liff.isInClient()) {
-        el("hint").innerHTML =
-          '<button id="closeBtn" style="' +
-          'margin-top:12px;padding:10px 18px;border:none;' +
-          'border-radius:10px;background:#999;color:#fff;' +
-          'font-size:14px;font-weight:700;">' +
-          '閉じる' +
-          '</button>';
+      el("hint").innerHTML =
+        '<button id="closeBtn" style="' +
+        'margin-top:12px;padding:10px 18px;border:none;' +
+        'border-radius:10px;background:#999;color:#fff;' +
+        'font-size:14px;font-weight:700;">' +
+        'トークを開く' +
+        '</button>';
 
-        el("closeBtn").addEventListener("click", () => {
-          try { liff.closeWindow(); } catch (e) {}
-        });
-      }
+      el("closeBtn").addEventListener("click", () => {
+        location.href = "https://line.me/R/ti/p/@957zdear";
+      });
 
       return;
     }
@@ -211,12 +209,6 @@
       '</button>';
 
     el("openTalkBtn").addEventListener("click", () => {
-      if (liff.isInClient()) {
-        try {
-          liff.closeWindow();
-          return;
-        } catch (e) {}
-      }
       location.href = "https://line.me/R/ti/p/@957zdear";
     });
   }
