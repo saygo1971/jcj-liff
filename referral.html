@@ -98,6 +98,19 @@
       return;
     }
 
+    // 閲覧を記録し、紹介者への閲覧マイル付与・登録済み者へのカードプッシュを行う
+    try {
+      const viewUrl = GAS_URL + "?" + new URLSearchParams({
+        action: "referral_view",
+        shareId: shareId,
+        viewerUserId: viewerUserId
+      }).toString();
+
+      await fetch(viewUrl);
+    } catch (e) {
+      console.error("referral_view failed", e);
+    }
+
     let pattern;
     if (!isFriend) {
       pattern = "① 未友だち";
