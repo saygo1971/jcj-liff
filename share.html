@@ -69,7 +69,22 @@
     }
 
     if (!liff.isApiAvailable("shareTargetPicker")) {
-      setStatus("この環境ではLINE共有を利用できません。", false);
+      let granted = "(取得失敗)";
+      try {
+        granted = JSON.stringify(await liff.permission.getGrantedAll());
+      } catch (e) {
+        granted = "(取得失敗: " + (e?.message || String(e)) + ")";
+      }
+
+      setStatus(
+        "この環境ではLINE共有を利用できません。<br>" +
+        "OS: " + liff.getOS() + "<br>" +
+        "LIFF SDK: " + liff.getVersion() + "<br>" +
+        "LINE ver: " + liff.getLineVersion() + "<br>" +
+        "isInClient: " + liff.isInClient() + "<br>" +
+        "付与済み権限: " + granted,
+        false
+      );
       return;
     }
 
