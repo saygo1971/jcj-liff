@@ -144,19 +144,48 @@
       return;
     }
 
-    // パターン①・③は次のステージで実装予定。ここでは仮表示のまま。
-    let pattern;
+    // パターン①：未友だち → 説明＋友だち追加
     if (!isFriend) {
-      pattern = "① 未友だち";
-    } else {
-      pattern = "③ 登録済み";
+      const imageHtml = data.shopImage
+        ? '<img src="' + data.shopImage + '" alt="' + data.shopName + '" ' +
+          'style="width:100%;border-radius:10px;margin:10px 0;">'
+        : "";
+
+      const placeHtml = data.shopPlace
+        ? '<div style="color:#9f866a;font-size:13px;font-weight:700;">📍 ' + data.shopPlace + '</div>'
+        : "";
+
+      el("status").innerHTML =
+        referrerName + "さんが、あなたに<br>" +
+        "コーヒーのお店を教えてくれました。<br><br>" +
+        imageHtml +
+        "<b style='font-size:18px;'>" + data.shopName + "</b><br>" +
+        placeHtml +
+        '<div style="margin:16px 0;border-top:1px solid #eee;padding-top:12px;">' +
+        '<b>JCJ Passportとは？</b><br>' +
+        '全国のロースターを旅するように巡り、訪れたお店をパスポートに記録していくアプリです。' +
+        '</div>';
+
+      el("hint").innerHTML =
+        '<button id="addFriendBtn" style="' +
+        'margin-top:8px;padding:12px 20px;border:none;' +
+        'border-radius:10px;background:#06C755;color:#fff;' +
+        'font-size:15px;font-weight:700;">' +
+        '友だち追加してお店を見る' +
+        '</button>';
+
+      el("addFriendBtn").addEventListener("click", () => {
+        location.href = "https://line.me/R/ti/p/@957zdear";
+      });
+
+      return;
     }
 
+    // パターン③は次のステージで実装予定。ここでは仮表示のまま。
     setStatus(
-      "判定結果: <b>" + pattern + "</b><br>" +
+      "判定結果: <b>③ 登録済み</b><br>" +
       "店舗: " + data.shopName + "<br>" +
-      "紹介者: " + referrerName + "<br>" +
-      "isFriend: " + isFriend + " / isRegistered: " + data.isRegistered,
+      "紹介者: " + referrerName,
       true
     );
   }
