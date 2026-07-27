@@ -111,11 +111,43 @@
       console.error("referral_view failed", e);
     }
 
+    const referrerName = data.referrerUserName || "友だち";
+
+    // パターン②：友だち・未登録 → 登録ハンドオフ
+    if (isFriend && !data.isRegistered) {
+      el("status").innerHTML =
+        referrerName + "さんおすすめの<br>" +
+        "<b>" + data.shopName + "</b><br><br>" +
+        "JCJ Passportに登録して、旅の記録を始めましょう。";
+
+      el("hint").innerHTML =
+        '<button id="startRegBtn" style="' +
+        'margin-top:12px;padding:12px 20px;border:none;' +
+        'border-radius:10px;background:#34595A;color:#fff;' +
+        'font-size:15px;font-weight:700;">' +
+        '登録してお店を見る' +
+        '</button>';
+
+      el("startRegBtn").addEventListener("click", async () => {
+        try {
+          await fetch(GAS_URL + "?" + new URLSearchParams({
+            action: "start_registration",
+            userId: viewerUserId
+          }).toString());
+        } catch (e) {
+          console.error("start_registration failed", e);
+        }
+
+        location.href = "https://line.me/R/ti/p/@957zdear";
+      });
+
+      return;
+    }
+
+    // パターン①・③は次のステージで実装予定。ここでは仮表示のまま。
     let pattern;
     if (!isFriend) {
       pattern = "① 未友だち";
-    } else if (!data.isRegistered) {
-      pattern = "② 友だち・未登録";
     } else {
       pattern = "③ 登録済み";
     }
@@ -123,7 +155,7 @@
     setStatus(
       "判定結果: <b>" + pattern + "</b><br>" +
       "店舗: " + data.shopName + "<br>" +
-      "紹介者: " + (data.referrerUserName || "(不明)") + "<br>" +
+      "紹介者: " + referrerName + "<br>" +
       "isFriend: " + isFriend + " / isRegistered: " + data.isRegistered,
       true
     );
