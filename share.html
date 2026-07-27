@@ -69,12 +69,16 @@
     }
 
     if (!liff.isApiAvailable("shareTargetPicker")) {
-      let granted = "(取得失敗)";
-      try {
-        granted = JSON.stringify(await liff.permission.getGrantedAll());
-      } catch (e) {
-        granted = "(取得失敗: " + (e?.message || String(e)) + ")";
-      }
+      const safe = async (fn) => {
+        try { return JSON.stringify(await fn()); }
+        catch (e) { return "(エラー: " + (e?.message || String(e)) + ")"; }
+      };
+
+      const granted = await safe(() => liff.permission.getGrantedAll());
+      const context = await safe(() => liff.getContext());
+      const friendship = await safe(() => liff.getFriendship());
+      const canSend = await safe(() => liff.isApiAvailable("sendMessages"));
+      const canShake = await safe(() => liff.isApiAvailable("shakeSendMessage"));
 
       setStatus(
         "この環境ではLINE共有を利用できません。<br>" +
@@ -82,7 +86,12 @@
         "LIFF SDK: " + liff.getVersion() + "<br>" +
         "LINE ver: " + liff.getLineVersion() + "<br>" +
         "isInClient: " + liff.isInClient() + "<br>" +
-        "付与済み権限: " + granted,
+        "isLoggedIn: " + liff.isLoggedIn() + "<br>" +
+        "付与済み権限: " + granted + "<br>" +
+        "context: " + context + "<br>" +
+        "friendship: " + friendship + "<br>" +
+        "sendMessages利用可: " + canSend + "<br>" +
+        "shakeSendMessage利用可: " + canShake,
         false
       );
       return;
