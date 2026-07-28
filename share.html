@@ -11,11 +11,18 @@
     .ok{color:#0a7a25;font-weight:800}
     .ng{color:#b00020;font-weight:800}
     .muted{color:#666;font-size:12px;word-break:break-all}
+    .spinner{
+      display:inline-block;width:16px;height:16px;
+      border:2px solid #ddd;border-top-color:#34595A;
+      border-radius:50%;vertical-align:middle;margin-right:8px;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
   </style>
 </head>
 <body>
   <div class="card">
-    <div id="status" class="muted">起動中…</div>
+    <div id="status" class="muted"><span class="spinner"></span>起動しています…</div>
   </div>
 
 <script>
@@ -29,6 +36,10 @@
       ok === true  ? `<span class="ok">✅</span> ${text}` :
       ok === false ? `<span class="ng">❌</span> ${text}` :
       text;
+  }
+
+  function setLoading(text) {
+    el("status").innerHTML = `<span class="spinner"></span>${text}`;
   }
 
   // NFC/QRやliff.state経由で入るケースも拾う
@@ -97,7 +108,7 @@
       return;
     }
 
-    setStatus("紹介リンクを準備しています…");
+    setLoading("紹介リンクを準備しています…");
 
     const profile = await liff.getProfile();
 
@@ -116,7 +127,7 @@
       return;
     }
 
-    setStatus("送る相手を選んでください。");
+    setLoading("送る相手を選んでください。");
 
     const placeText = data.shopPlace ? data.shopPlace + " " : "";
     const shareMessage = placeText + data.shopName + "\n\n" + data.shareUrl;
