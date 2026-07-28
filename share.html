@@ -118,7 +118,8 @@
 
     setStatus("送る相手を選んでください。");
 
-    const shareMessage = data.shopName + "、一緒に行きませんか？\n\n" + data.shareUrl;
+    const placeText = data.shopPlace ? data.shopPlace + " " : "";
+    const shareMessage = placeText + data.shopName + "\n\n" + data.shareUrl;
 
     const result = await liff.shareTargetPicker([
       { type: "text", text: shareMessage }
