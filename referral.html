@@ -11,11 +11,18 @@
     .ok{color:#0a7a25;font-weight:800}
     .ng{color:#b00020;font-weight:800}
     .muted{color:#666;font-size:12px;word-break:break-all}
+    .spinner{
+      display:inline-block;width:16px;height:16px;
+      border:2px solid #ddd;border-top-color:#34595A;
+      border-radius:50%;vertical-align:middle;margin-right:8px;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
   </style>
 </head>
 <body>
   <div class="card">
-    <div id="status" class="muted">起動中…</div>
+    <div id="status" class="muted"><span class="spinner"></span>読み込んでいます…</div>
     <div id="hint" class="muted"></div>
   </div>
 
@@ -30,6 +37,10 @@
       ok === true  ? `<span class="ok">✅</span> ${text}` :
       ok === false ? `<span class="ng">❌</span> ${text}` :
       text;
+  }
+
+  function setLoading(text) {
+    el("status").innerHTML = `<span class="spinner"></span>${text}`;
   }
 
   // liff.state経由で入るケースも拾う
@@ -71,13 +82,18 @@
       return;
     }
 
-    setStatus("状態を確認しています…");
+    setLoading("あなたの情報を確認しています…");
 
-    const profile = await liff.getProfile();
+    // 依存関係のない2つは同時に取得（体感速度を上げる）
+    const [profile, friendship] = await Promise.all([
+      liff.getProfile(),
+      liff.getFriendship()
+    ]);
+
     const viewerUserId = profile.userId;
-
-    const friendship = await liff.getFriendship();
     const isFriend = !!friendship.friendFlag;
+
+    setLoading("お店の情報を確認しています…");
 
     const stateUrl = GAS_URL + "?" + new URLSearchParams({
       action: "referral_state",
@@ -85,8 +101,20 @@
       viewerUserId: viewerUserId
     }).toString();
 
-    const res = await fetch(stateUrl);
-    const data = await res.json();
+    const viewUrl = GAS_URL + "?" + new URLSearchParams({
+      action: "referral_view",
+      shareId: shareId,
+      viewerUserId: viewerUserId
+    }).toString();
+
+    // 状態判定と閲覧記録(紹介者へのマイル付与含む)を同時に実行
+    // ※自分自身のリンクの場合はサーバー側でself_view扱いとなり報酬は発生しない
+    const [stateRes] = await Promise.all([
+      fetch(stateUrl),
+      fetch(viewUrl).catch((e) => console.error("referral_view failed", e))
+    ]);
+
+    const data = await stateRes.json();
 
     if (data.status === "not_found") {
       setStatus("紹介情報が見つかりませんでした。", false);
@@ -103,26 +131,14 @@
         'border-radius:10px;background:#999;color:#fff;' +
         'font-size:14px;font-weight:700;">' +
         'トークを開く' +
-        '</button>';
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
       el("closeBtn").addEventListener("click", () => {
         liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
       });
 
       return;
-    }
-
-    // 閲覧を記録し、紹介者への閲覧マイル付与・登録済み者へのカードプッシュを行う
-    try {
-      const viewUrl = GAS_URL + "?" + new URLSearchParams({
-        action: "referral_view",
-        shareId: shareId,
-        viewerUserId: viewerUserId
-      }).toString();
-
-      await fetch(viewUrl);
-    } catch (e) {
-      console.error("referral_view failed", e);
     }
 
     const referrerName = data.referrerUserName || "友だち";
@@ -140,7 +156,8 @@
         'border-radius:10px;background:#34595A;color:#fff;' +
         'font-size:15px;font-weight:700;">' +
         '登録してお店を見る' +
-        '</button>';
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
       el("startRegBtn").addEventListener("click", async () => {
         try {
@@ -186,7 +203,8 @@
         'border-radius:10px;background:#06C755;color:#fff;' +
         'font-size:15px;font-weight:700;">' +
         '友だち追加してお店を見る' +
-        '</button>';
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
       el("addFriendBtn").addEventListener("click", () => {
         liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
@@ -206,7 +224,8 @@
       'border-radius:10px;background:#34595A;color:#fff;' +
       'font-size:15px;font-weight:700;">' +
       'トークを開く' +
-      '</button>';
+      '</button>' +
+      '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
     el("openTalkBtn").addEventListener("click", () => {
       liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
