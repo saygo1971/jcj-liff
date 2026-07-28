@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>友だちからのおすすめロースター | JCJ Passport</title>
+  <meta property="og:title" content="友だちからのおすすめロースター | JCJ Passport">
+  <meta property="og:description" content="友だちがおすすめするコーヒーロースターをチェックしよう。JCJ Passportは、全国のロースターを旅するように巡るアプリです。">
+  <meta property="og:image" content="https://cdn.shopify.com/s/files/1/0582/1746/3893/files/jcj_passport_hero.jpg?v=1783085366&width=1200&height=630&crop=center">
+  <meta property="og:type" content="website">
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:20px;line-height:1.6}
+    .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px}
+    .ok{color:#0a7a25;font-weight:800}
+    .ng{color:#b00020;font-weight:800}
+    .muted{color:#666;font-size:12px;word-break:break-all}
+    .spinner{
+      display:inline-block;width:16px;height:16px;
+      border:2px solid #ddd;border-top-color:#34595A;
+      border-radius:50%;vertical-align:middle;margin-right:8px;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="status" class="muted"><span class="spinner"></span>読み込んでいます…</div>
+    <div id="hint" class="muted"></div>
+  </div>
+
+<script>
+  const LIFF_ID = "2010671952-xTVp44uz";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+
+  const el = (id) => document.getElementById(id);
+
+  function setStatus(text, ok = null) {
+    el("status").innerHTML =
+      ok === true  ? `<span class="ok">✅</span> ${text}` :
+      ok === false ? `<span class="ng">❌</span> ${text}` :
+      text;
+  }
+
+  function setLoading(text) {
+    el("status").innerHTML = `<span class="spinner"></span>${text}`;
+  }
+
+  // liff.state経由で入るケースも拾う
+  function getParam(name) {
+    const u = new URL(location.href);
+    const direct = u.searchParams.get(name);
+    if (direct) return direct;
+
+    const st = u.searchParams.get("liff.state");
+    if (st) {
+      try {
+        const s = st.startsWith("?") ? st.slice(1) : st;
+        const p = new URLSearchParams(s).get(name);
+        if (p) return p;
+      } catch (e) {}
+    }
+    return "";
+  }
+
+  async function main() {
+    const shareId = (getParam("shareId") || "").trim();
+
+    el("hint").textContent = `shareId=${shareId || "(none)"}`;
+
+    if (!shareId) {
+      setStatus("紹介情報が見つかりませんでした。", false);
+      return;
+    }
+
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isInClient()) {
+      setStatus("LINE内で開いてください。", false);
+      return;
+    }
+
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: location.href });
+      return;
+    }
+
+    setLoading("あなたの情報を確認しています…");
+
+    // 依存関係のない2つは同時に取得（体感速度を上げる）
+    const [profile, friendship] = await Promise.all([
+      liff.getProfile(),
+      liff.getFriendship()
+    ]);
+
+    const viewerUserId = profile.userId;
+    const isFriend = !!friendship.friendFlag;
+
+    setLoading("お店の情報を確認しています…");
+
+    const stateUrl = GAS_URL + "?" + new URLSearchParams({
+      action: "referral_state",
+      shareId: shareId,
+      viewerUserId: viewerUserId
+    }).toString();
+
+    const viewUrl = GAS_URL + "?" + new URLSearchParams({
+      action: "referral_view",
+      shareId: shareId,
+      viewerUserId: viewerUserId
+    }).toString();
+
+    // 状態判定と閲覧記録(紹介者へのマイル付与含む)を同時に実行
+    // ※自分自身のリンクの場合はサーバー側でself_view扱いとなり報酬は発生しない
+    const [stateRes] = await Promise.all([
+      fetch(stateUrl),
+      fetch(viewUrl).catch((e) => console.error("referral_view failed", e))
+    ]);
+
+    const data = await stateRes.json();
+
+    if (data.status === "not_found") {
+      setStatus("紹介情報が見つかりませんでした。", false);
+      return;
+    }
+
+    if (data.status === "self_view") {
+      el("status").innerHTML =
+        "これはあなたが紹介したリンクです。<br>店舗: " + data.shopName;
+
+      el("hint").innerHTML =
+        '<button id="closeBtn" style="' +
+        'margin-top:12px;padding:10px 18px;border:none;' +
+        'border-radius:10px;background:#999;color:#fff;' +
+        'font-size:14px;font-weight:700;">' +
+        'トークを開く' +
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
+
+      el("closeBtn").addEventListener("click", () => {
+        liff.openWindow({ url: "https://line.me/R/ti/p/@740rorcl", external: true });
+      });
+
+      return;
+    }
+
+    const referrerName = data.referrerUserName || "友だち";
+
+    // パターン②：友だち・未登録 → 登録ハンドオフ
+    if (isFriend && !data.isRegistered) {
+      el("status").innerHTML =
+        referrerName + "さんおすすめの<br>" +
+        "<b>" + data.shopName + "</b><br><br>" +
+        "JCJ Passportに登録して、旅の記録を始めましょう。";
+
+      el("hint").innerHTML =
+        '<button id="startRegBtn" style="' +
+        'margin-top:12px;padding:12px 20px;border:none;' +
+        'border-radius:10px;background:#34595A;color:#fff;' +
+        'font-size:15px;font-weight:700;">' +
+        '登録してお店を見る' +
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
+
+      el("startRegBtn").addEventListener("click", async () => {
+        try {
+          await fetch(GAS_URL + "?" + new URLSearchParams({
+            action: "start_registration",
+            userId: viewerUserId
+          }).toString());
+        } catch (e) {
+          console.error("start_registration failed", e);
+        }
+
+        liff.openWindow({ url: "https://line.me/R/ti/p/@740rorcl", external: true });
+      });
+
+      return;
+    }
+
+    // パターン①：未友だち → 説明＋友だち追加
+    if (!isFriend) {
+      const imageHtml = data.shopImage
+        ? '<img src="' + data.shopImage + '" alt="' + data.shopName + '" ' +
+          'style="width:100%;border-radius:10px;margin:10px 0;">'
+        : "";
+
+      const placeHtml = data.shopPlace
+        ? '<div style="color:#9f866a;font-size:13px;font-weight:700;">📍 ' + data.shopPlace + '</div>'
+        : "";
+
+      el("status").innerHTML =
+        referrerName + "さんが、あなたに<br>" +
+        "コーヒーのお店を教えてくれました。<br><br>" +
+        imageHtml +
+        "<b style='font-size:18px;'>" + data.shopName + "</b><br>" +
+        placeHtml +
+        '<div style="margin:16px 0;border-top:1px solid #eee;padding-top:12px;">' +
+        '<b>JCJ Passportとは？</b><br>' +
+        '全国のロースターを旅するように巡り、訪れたお店をパスポートに記録していくアプリです。' +
+        '</div>';
+
+      el("hint").innerHTML =
+        '<button id="addFriendBtn" style="' +
+        'margin-top:8px;padding:12px 20px;border:none;' +
+        'border-radius:10px;background:#06C755;color:#fff;' +
+        'font-size:15px;font-weight:700;">' +
+        '友だち追加してお店を見る' +
+        '</button>' +
+        '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
+
+      el("addFriendBtn").addEventListener("click", () => {
+        liff.openWindow({ url: "https://line.me/R/ti/p/@740rorcl", external: true });
+      });
+
+      return;
+    }
+
+    // パターン③：登録済み → 最短導線。カード自体はStage5のプッシュで既に届いている
+    el("status").innerHTML =
+      "<span class='ok'>✅</span> " + data.shopName + "を<br>" +
+      "LINEのトークに送りました。";
+
+    el("hint").innerHTML =
+      '<button id="openTalkBtn" style="' +
+      'margin-top:12px;padding:12px 20px;border:none;' +
+      'border-radius:10px;background:#34595A;color:#fff;' +
+      'font-size:15px;font-weight:700;">' +
+      'トークを開く' +
+      '</button>' +
+      '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
+
+    el("openTalkBtn").addEventListener("click", () => {
+      liff.openWindow({ url: "https://line.me/R/ti/p/@740rorcl", external: true });
+    });
+  }
+
+  main().catch(e => {
+    setStatus("エラー: " + (e?.message || String(e)), false);
+  });
+</script>
+</body>
+</html>
