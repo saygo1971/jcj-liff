@@ -19,6 +19,7 @@
     .sub{font-size:11px;color:#888;margin:0 0 8px}
     textarea{width:100%;box-sizing:border-box;border:1px solid #cfcfcf;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;line-height:1.5}
     .hint{font-size:11px;color:#aaa;margin:6px 2px 16px}
+    .grouphint{background:#f2f0ea;border-radius:8px;padding:9px 11px;font-size:12px;color:#6a6152;line-height:1.55;margin:0 0 12px}
     .btn{display:block;width:100%;box-sizing:border-box;background:#34595A;color:#fff;text-align:center;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
     .btn:disabled{opacity:.5}
     .spinner{
@@ -163,6 +164,7 @@
       '<div class="sub">よければ一言添えてください（なくてもOK）</div>' +
       '<textarea id="comment" rows="2" maxlength="60" placeholder="' + escapeHtml(DEFAULT_COMMENT) + '"></textarea>' +
       '<div class="hint">↑ 未入力ならこの文が入ります。書き換えもできます。</div>' +
+      '<div class="grouphint">☕ コーヒー好きの友だちや、グループにもまとめて送れます。</div>' +
       '<button id="send" class="btn">送る相手を選ぶ</button>';
 
     el("send").addEventListener("click", () => onSend(data));
