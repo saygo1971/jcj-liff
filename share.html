@@ -104,7 +104,7 @@
       margin: "md",
       contents: [{
         type: "text",
-        text: "JCJパスポート＝全国の焙煎所を旅するアプリ。\n友だちの紹介から始められます。",
+        text: "JCJパスポート＝全国の焙煎所を旅するアプリ。友だちの紹介から始められます。",
         size: "xs", color: "#777777", wrap: true
       }]
     });
@@ -112,11 +112,13 @@
     const bubble = {
       type: "bubble",
       body: {
-        type: "box", layout: "vertical", spacing: "sm", paddingAll: "16px",
+        type: "box", layout: "vertical", spacing: "sm",
+        paddingStart: "16px", paddingEnd: "16px", paddingTop: "16px", paddingBottom: "sm",
         contents: bodyContents
       },
       footer: {
-        type: "box", layout: "vertical", paddingAll: "16px",
+        type: "box", layout: "vertical",
+        paddingStart: "16px", paddingEnd: "16px", paddingBottom: "16px", paddingTop: "none",
         contents: [
           {
             type: "button", style: "primary", color: "#34595A", height: "sm",
@@ -124,7 +126,7 @@
           },
           {
             type: "text",
-            text: "気に入って登録すると80マイル（試飲チケットに使えます）",
+            text: "気に入って登録すると80マイル\n（試飲チケットに使えます）",
             size: "xxs", color: "#8A7F6A", wrap: true, align: "center", margin: "md"
           }
         ]
