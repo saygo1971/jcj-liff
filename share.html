@@ -41,7 +41,7 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
   // 送信者がひとことを書かなかったときの初期文
-  const DEFAULT_COMMENT = "気になってるロースターです ☕";
+  const DEFAULT_COMMENT = "気になってるコーヒー屋さんです ☕";
 
   const el = (id) => document.getElementById(id);
 
@@ -104,7 +104,7 @@
       margin: "md",
       contents: [{
         type: "text",
-        text: "JCJパスポート＝全国の焙煎所を旅するアプリ。友だちの紹介から始められます。",
+        text: "JCJパスポート＝全国のコーヒー屋さんを旅するアプリ。友だちの紹介から始められます。",
         size: "xs", color: "#777777", wrap: true
       }]
     });
@@ -123,11 +123,6 @@
           {
             type: "button", style: "primary", color: "#34595A", height: "sm",
             action: { type: "uri", label: "お店を見てみる", uri: data.shareUrl }
-          },
-          {
-            type: "text",
-            text: "気に入って登録すると80マイル\n（試飲チケットに使えます）",
-            size: "xxs", color: "#8A7F6A", wrap: true, align: "center", margin: "md"
           }
         ]
       }
