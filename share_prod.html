@@ -6,11 +6,22 @@
   <title>JCJ Share</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:20px;line-height:1.6}
-    .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px}
+    body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:16px;line-height:1.6;color:#332822}
+    .card{border:1px solid #e6e6e6;border-radius:14px;padding:16px}
     .ok{color:#0a7a25;font-weight:800}
     .ng{color:#b00020;font-weight:800}
     .muted{color:#666;font-size:12px;word-break:break-all}
+    .head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+    .thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#eee}
+    .shopname{font-size:15px;font-weight:700;color:#332822}
+    .area{font-size:12px;color:#888}
+    .label{font-size:13px;font-weight:700;color:#332822;margin:0 0 3px}
+    .sub{font-size:11px;color:#888;margin:0 0 8px}
+    textarea{width:100%;box-sizing:border-box;border:1px solid #cfcfcf;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;line-height:1.5}
+    .hint{font-size:11px;color:#aaa;margin:6px 2px 16px}
+    .grouphint{background:#f2f0ea;border-radius:8px;padding:9px 11px;font-size:12px;color:#6a6152;line-height:1.55;margin:0 0 12px}
+    .btn{display:block;width:100%;box-sizing:border-box;background:#34595A;color:#fff;text-align:center;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+    .btn:disabled{opacity:.5}
     .spinner{
       display:inline-block;width:16px;height:16px;
       border:2px solid #ddd;border-top-color:#34595A;
@@ -21,7 +32,7 @@
   </style>
 </head>
 <body>
-  <div class="card">
+  <div id="root" class="card">
     <div id="status" class="muted"><span class="spinner"></span>起動しています…</div>
   </div>
 
@@ -29,17 +40,28 @@
   const LIFF_ID = "2010671952-tIFYHtLE";
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
 
+  // 送信者がひとことを書かなかったときの初期文
+  const DEFAULT_COMMENT = "気になってるロースターです ☕";
+
   const el = (id) => document.getElementById(id);
 
   function setStatus(text, ok = null) {
-    el("status").innerHTML =
-      ok === true  ? `<span class="ok">✅</span> ${text}` :
-      ok === false ? `<span class="ng">❌</span> ${text}` :
-      text;
+    el("root").innerHTML =
+      '<div id="status" class="muted">' +
+      (ok === true  ? '<span class="ok">✅</span> ' :
+       ok === false ? '<span class="ng">❌</span> ' : '') +
+      text + '</div>';
   }
 
   function setLoading(text) {
-    el("status").innerHTML = `<span class="spinner"></span>${text}`;
+    el("root").innerHTML =
+      '<div id="status" class="muted"><span class="spinner"></span>' + text + '</div>';
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
   }
 
   // NFC/QRやliff.state経由で入るケースも拾う
@@ -57,6 +79,119 @@
       } catch (e) {}
     }
     return "";
+  }
+
+  // 写真つきカード（Flex Message）を組み立てる
+  function buildFlexMessage(data, comment) {
+    const area = String(data.shopPlace || "").trim();
+
+    const bodyContents = [
+      { type: "text", text: comment, wrap: true, size: "sm", color: "#666666" },
+      { type: "text", text: data.shopName, weight: "bold", size: "xl", wrap: true, color: "#34595A", margin: "md" }
+    ];
+
+    if (area) {
+      bodyContents.push({ type: "text", text: area, size: "sm", color: "#888888", wrap: true });
+    }
+
+    // 初見の人向け：これが何のアプリかを一言添える
+    bodyContents.push({
+      type: "box",
+      layout: "vertical",
+      backgroundColor: "#F2F0EA",
+      cornerRadius: "6px",
+      paddingAll: "9px",
+      margin: "md",
+      contents: [{
+        type: "text",
+        text: "JCJパスポート＝全国の焙煎所を旅するアプリ。友だちの紹介から始められます。",
+        size: "xs", color: "#777777", wrap: true
+      }]
+    });
+
+    const bubble = {
+      type: "bubble",
+      body: {
+        type: "box", layout: "vertical", spacing: "sm",
+        paddingStart: "16px", paddingEnd: "16px", paddingTop: "16px", paddingBottom: "sm",
+        contents: bodyContents
+      },
+      footer: {
+        type: "box", layout: "vertical",
+        paddingStart: "16px", paddingEnd: "16px", paddingBottom: "16px", paddingTop: "none",
+        contents: [
+          {
+            type: "button", style: "primary", color: "#34595A", height: "sm",
+            action: { type: "uri", label: "お店を見てみる", uri: data.shareUrl }
+          },
+          {
+            type: "text",
+            text: "気に入って登録すると80マイル",
+            size: "xxs", color: "#8A7F6A", wrap: true, align: "center", margin: "md"
+          }
+        ]
+      }
+    };
+
+    // 店の写真があればカード上部に載せる（無ければ写真なしで送る）
+    if (data.shopImage) {
+      bubble.hero = {
+        type: "image", url: data.shopImage,
+        size: "full", aspectRatio: "20:13", aspectMode: "cover",
+        action: { type: "uri", uri: data.shareUrl }
+      };
+    }
+
+    return {
+      type: "flex",
+      altText: data.shopName + " を紹介します",
+      contents: bubble
+    };
+  }
+
+  // ひとこと入力画面を表示する
+  function renderComposer(data) {
+    const thumb = data.shopImage
+      ? '<img class="thumb" src="' + escapeHtml(data.shopImage) + '" alt="" />'
+      : '<div class="thumb"></div>';
+
+    el("root").innerHTML =
+      '<div class="head">' + thumb +
+        '<div>' +
+          '<div class="shopname">' + escapeHtml(data.shopName) + '</div>' +
+          '<div class="area">' + escapeHtml(data.shopPlace || "") + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="label">あなたからのひとこと</div>' +
+      '<div class="sub">よければ一言添えてください（なくてもOK）</div>' +
+      '<textarea id="comment" rows="2" maxlength="60" placeholder="' + escapeHtml(DEFAULT_COMMENT) + '"></textarea>' +
+      '<div class="hint">↑ 未入力ならこの文が入ります。書き換えもできます。</div>' +
+      '<div class="grouphint">☕ コーヒー好きの友だちや、グループにもまとめて送れます。</div>' +
+      '<button id="send" class="btn">送る相手を選ぶ</button>';
+
+    el("send").addEventListener("click", () => onSend(data));
+  }
+
+  async function onSend(data) {
+    const raw = String(el("comment").value || "").trim();
+    const comment = raw || DEFAULT_COMMENT;
+
+    const btn = el("send");
+    btn.disabled = true;
+    btn.textContent = "送信画面を開いています…";
+
+    try {
+      const message = buildFlexMessage(data, comment);
+      const result = await liff.shareTargetPicker([message]);
+
+      if (result) {
+        setStatus("送信しました。", true);
+      } else {
+        setStatus("送信をキャンセルしました。");
+      }
+    } catch (e) {
+      setStatus("送信に失敗しました：" + (e?.message || String(e)), false);
+    }
   }
 
   async function main() {
@@ -112,11 +247,13 @@
 
     const profile = await liff.getProfile();
 
+    const source = (getParam("source") || "saved_card").trim();
+
     const createShareUrl = GAS_URL + "?" + new URLSearchParams({
       action: "create_share",
       spotId: shopId,
       referrerUserId: profile.userId,
-      source: "saved_card"
+      source: source
     }).toString();
 
     const res = await fetch(createShareUrl);
@@ -127,20 +264,7 @@
       return;
     }
 
-    setLoading("送る相手を選んでください。");
-
-    const placeText = data.shopPlace ? data.shopPlace + " " : "";
-    const shareMessage = placeText + data.shopName + "\n\n" + data.shareUrl;
-
-    const result = await liff.shareTargetPicker([
-      { type: "text", text: shareMessage }
-    ]);
-
-    if (result) {
-      setStatus("送信しました。", true);
-    } else {
-      setStatus("送信をキャンセルしました。");
-    }
+    renderComposer(data);
   }
 
   main().catch(e => {
