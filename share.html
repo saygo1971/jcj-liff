@@ -227,11 +227,13 @@
 
     const profile = await liff.getProfile();
 
+    const source = (getParam("source") || "saved_card").trim();
+
     const createShareUrl = GAS_URL + "?" + new URLSearchParams({
       action: "create_share",
       spotId: shopId,
       referrerUserId: profile.userId,
-      source: "saved_card"
+      source: source
     }).toString();
 
     const res = await fetch(createShareUrl);
