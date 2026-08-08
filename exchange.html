@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>マイルで試飲チケットと交換</title>
+  <style>
+    :root{ --brand:#34595A; --brand2:#DCE7D8; --line:#e6e6e6; --muted:#666; --hint:#999; }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
+    .wrap{max-width:480px;margin:0 auto;padding:14px}
+    .head{background:var(--brand);color:#fff;border-radius:16px 16px 0 0;padding:14px 16px}
+    .head .sub{color:var(--brand2);font-size:12px}
+    .head .ttl{font-size:17px;font-weight:700;margin-top:2px}
+    .card{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;padding:16px}
+    .bal{background:#f7f7f5;border-radius:12px;padding:14px;text-align:center}
+    .bal .lbl{font-size:13px;color:var(--muted)}
+    .bal .num{font-size:30px;font-weight:800;margin-top:2px}
+    .bal .num small{font-size:15px;color:var(--muted);font-weight:600}
+    .rate{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 0;color:var(--muted);font-size:13px}
+    .sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+    .sec .lbl{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .stepper{display:flex;align-items:center;justify-content:space-between}
+    .stepper button{width:48px;height:48px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px}
+    .stepper button:disabled{opacity:.35}
+    .cnt{text-align:center}
+    .cnt .n{font-size:28px;font-weight:800}
+    .cnt .m{font-size:12px;color:var(--hint)}
+    .note{background:#eef3f4;border-radius:12px;padding:10px 12px;margin-top:14px;font-size:12px;color:#2c4a4b;display:flex;gap:8px;align-items:center}
+    .go{width:100%;margin-top:14px;height:50px;border-radius:12px;background:var(--brand);color:#fff;border:none;font-size:16px;font-weight:700}
+    .go:disabled{opacity:.4}
+    .have{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;display:flex;justify-content:space-between;align-items:center}
+    .have .l{font-size:13px;color:var(--muted)}
+    .have .r{font-size:15px;font-weight:700}
+    .fine{font-size:11px;color:var(--hint);margin-top:10px;line-height:1.7}
+    .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
+    .msg.ok{background:#e8f5ea;color:#1b5e20}
+    .msg.ng{background:#fdecea;color:#b71c1c}
+    .status{color:var(--muted);font-size:12px;padding:8px 0}
+    .hidden{display:none}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;white-space:pre-wrap;font-size:12px}
+  </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="sub">JCJパスポート</div>
+    <div class="ttl">マイルで試飲チケットと交換</div>
+  </div>
+
+  <div class="card">
+    <div id="status" class="status">起動中…</div>
+
+    <div id="main" class="hidden">
+      <div class="bal">
+        <div class="lbl">いまのマイル</div>
+        <div class="num"><span id="mile">-</span> <small>マイル</small></div>
+      </div>
+
+      <div class="rate">
+        <span id="rateText">- マイル → 試飲チケット 1枚</span>
+      </div>
+
+      <div class="sec">
+        <div class="lbl">交換する枚数</div>
+        <div class="stepper">
+          <button id="minus" aria-label="減らす">−</button>
+          <div class="cnt">
+            <div class="n"><span id="cnt">1</span>枚</div>
+            <div class="m">−<span id="cost">0</span>マイル</div>
+          </div>
+          <button id="plus" aria-label="増やす">＋</button>
+        </div>
+      </div>
+
+      <div class="note" id="quotaNote">
+        <span>今月はあと <b id="allow">-</b> 枚まで交換できます</span>
+      </div>
+
+      <button id="go" class="go">交換する</button>
+
+      <div id="msg" class="msg hidden"></div>
+
+      <div class="have">
+        <div class="l">いま持っているチケット</div>
+        <div class="r"><span id="tkt">-</span>枚 <small style="font-size:12px;color:#999;font-weight:600">有効</small></div>
+      </div>
+
+      <div class="fine">
+        ・チケットは発行から<span id="days">180</span>日で失効します<br>
+        ・交換したチケットは全国の加盟ロースターで試飲1回に使えます<br>
+        ・上限：1人あたり月<span id="cap">5</span>枚まで
+      </div>
+    </div>
+
+    <pre id="debug" class="hidden"></pre>
+  </div>
+</div>
+
+<script>
+  // ===== 設定ここだけ（テスト環境）=====
+  // LIFF_ID：この交換画面用に LINE Developers で新規作成したLIFFアプリのID（テストのログインチャネル 2008851980 配下）に差し替える。
+  //          動作確認の間は、暫定で既存テストLIFFのIDを入れて開くことも可能。
+  const LIFF_ID = "2008851980-V1YDMRUc"; // JCJ マイル交換（テスト・ログインチャネル2008851980配下）
+  // GAS_URL：コード.js の doGet を配信しているテスト環境のデプロイURL（referral/share と同じもの）。
+  //          ※ ticket.js を push した後は「デプロイの管理→新バージョン」で更新しないと新しい入口が届かない点に注意。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const debugMode = (params.get("debug") || "") === "1";
+
+  let USER_ID = "";
+  let USER_NAME = "";
+  let state = null;      // 直近の mile_exchange_state
+  let count = 1;         // 交換枚数
+  let busy = false;      // 二重タップ防止
+
+  function setStatus(msg){ $("status").textContent = msg; }
+  function showDebug(o){ if(!debugMode) return; $("debug").classList.remove("hidden"); $("debug").textContent = typeof o==="string"?o:JSON.stringify(o,null,2); }
+  function showMsg(text, ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"ng"); m.textContent=text; m.classList.remove("hidden"); }
+  function clearMsg(){ $("msg").classList.add("hidden"); }
+
+  async function api(action, extra){
+    const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
+    const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    return await res.json();
+  }
+
+  function maxExchangeable(){
+    // 実際に押せる上限＝サーバの canExchangeNow（上限とマイル残高の小さい方）
+    return Math.max(0, Number(state && state.canExchangeNow || 0));
+  }
+
+  function renderState(){
+    const rate = Number(state.milePerTicket) || 0;
+    $("mile").textContent = (Number(state.mileBalance)||0).toLocaleString();
+    $("tkt").textContent  = Number(state.ticketBalance)||0;
+    $("days").textContent = Number(state.expiryDays)||180;
+    $("cap").textContent  = Number(state.cap)||5;
+    $("rateText").textContent = rate.toLocaleString() + " マイル → 試飲チケット 1枚";
+    $("allow").textContent = maxExchangeable();
+
+    const max = maxExchangeable();
+    if (count > max) count = max;
+    if (count < 1) count = (max >= 1 ? 1 : 0);
+    renderCount();
+
+    // 交換できない理由を出す
+    if (!state.exchangeOn){
+      showMsg("ただいまマイル交換の準備中です。もうしばらくお待ちください。", false);
+      $("go").disabled = true;
+    } else if (max < 1){
+      if ((Number(state.affordable)||0) < 1){
+        showMsg("チケット1枚に必要なマイルがまだ足りません。チェックインや紹介でマイルを貯めましょう。", false);
+      } else {
+        showMsg("今月の交換上限に達しました。来月また交換できます。", false);
+      }
+      $("go").disabled = true;
+    } else {
+      clearMsg();
+      $("go").disabled = false;
+    }
+  }
+
+  function renderCount(){
+    const rate = Number(state.milePerTicket) || 0;
+    $("cnt").textContent = count;
+    $("cost").textContent = (rate*count).toLocaleString();
+    const max = maxExchangeable();
+    $("minus").disabled = busy || count <= 1;
+    $("plus").disabled  = busy || count >= max;
+    $("go").textContent = busy ? "処理中…" : (count>0 ? (count+"枚を交換する") : "交換する");
+  }
+
+  async function loadState(){
+    setStatus("残高を確認しています…");
+    const d = await api("mile_exchange_state");
+    showDebug(d);
+    if(!d.ok){ setStatus("読み込みに失敗しました：" + (d.error||"unknown")); return; }
+    state = d;
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    renderState();
+  }
+
+  async function doExchange(){
+    if (busy) return;
+    const rate = Number(state.milePerTicket)||0;
+    const ok = window.confirm(count + "枚を交換します。\n" + (rate*count).toLocaleString() + "マイルを使います。よろしいですか？");
+    if(!ok) return;
+
+    busy = true; clearMsg(); renderCount();
+    setStatusBusy(true);
+    try{
+      const d = await api("mile_exchange", { userName:USER_NAME, count:count });
+      showDebug(d);
+      if(!d.ok){
+        showMsg(friendlyError(d.error), false);
+      } else {
+        showMsg(d.issuedCount + "枚を交換しました。チケットが" + d.ticketBalanceAfter + "枚になりました。", true);
+      }
+    } catch(err){
+      showMsg("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+      showDebug(String(err));
+    } finally {
+      busy = false;
+      setStatusBusy(false);
+      await loadState(); // 残高・上限を取り直して表示を最新化
+    }
+  }
+
+  function setStatusBusy(b){ $("go").disabled = b; renderCount(); }
+
+  function friendlyError(err){
+    const e = String(err||"");
+    if (e.indexOf("換金上限") >= 0) return "今月の交換上限に達しました。来月また交換できます。";
+    if (e.indexOf("マイルが足りません") >= 0) return "マイルが足りません。チェックインや紹介でマイルを貯めましょう。";
+    if (e.indexOf("停止中") >= 0 || e.indexOf("OFF") >= 0) return "ただいまマイル交換の準備中です。もうしばらくお待ちください。";
+    return "交換できませんでした。時間をおいてもう一度お試しください。";
+  }
+
+  async function main(){
+    setStatus("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()){ setStatus("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    USER_NAME = profile.displayName || "";
+    if(!USER_ID){ setStatus("ユーザー情報を取得できませんでした。"); return; }
+
+    $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; renderCount();} };
+    $("plus").onclick  = ()=>{ if(busy) return; if(count<maxExchangeable()){count++; renderCount();} };
+    $("go").onclick    = doExchange;
+
+    await loadState();
+  }
+
+  main().catch(err=>{ setStatus("エラー: " + (err && err.message || String(err))); showDebug(err); });
+</script>
+</body>
+</html>
