@@ -43,7 +43,18 @@
     .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
     .msg.ok{background:#e8f5ea;color:#1b5e20}
     .msg.ng{background:#fdecea;color:#b71c1c}
-    .status{color:var(--muted);font-size:12px;padding:8px 0}
+    .status{color:var(--muted);font-size:13px;padding:28px 0;text-align:center}
+    .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+    .sheet{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:18px 18px 24px;animation:slideup .18s ease-out}
+    @keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sheet .t{font-size:17px;font-weight:700;text-align:center}
+    .sheet .d{font-size:13px;color:#555;text-align:center;margin-top:10px;line-height:1.7}
+    .sheet .btns{display:flex;gap:10px;margin-top:18px}
+    .sheet .btns button{flex:1;height:48px;border-radius:12px;font-size:15px}
+    .sheet .cancel{border:1px solid #ddd;background:#fff;color:#333}
+    .sheet .ok{border:none;background:var(--brand);color:#fff;font-weight:700}
     .hidden{display:none}
     pre{background:#f6f6f6;padding:10px;border-radius:8px;white-space:pre-wrap;font-size:12px}
   </style>
@@ -57,7 +68,10 @@
   </div>
 
   <div class="card">
-    <div id="status" class="status">起動中…</div>
+    <div id="status" class="status">
+      <div id="spin" class="spin"></div>
+      <div id="statusText">起動中…</div>
+    </div>
 
     <div id="main" class="hidden">
       <div class="bal">
@@ -111,6 +125,17 @@
   </div>
 </div>
 
+<div id="overlay" class="overlay hidden">
+  <div class="sheet">
+    <div class="t" id="cfTtl">交換しますか？</div>
+    <div class="d" id="cfDesc"></div>
+    <div class="btns">
+      <button id="cfCancel" class="cancel">キャンセル</button>
+      <button id="cfOk" class="ok">交換する</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ===== 設定ここだけ（テスト環境）=====
   // LIFF_ID：この交換画面用に LINE Developers で新規作成したLIFFアプリのID（テストのログインチャネル 2008851980 配下）に差し替える。
@@ -131,8 +156,23 @@
   let count = 1;         // 交換枚数
   let busy = false;      // 二重タップ防止
 
-  function setStatus(msg){ $("status").textContent = msg; }
+  // 読み込み中＝スピナーつき（動いていると分かるように）
+  function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+  // 終了メッセージ（エラー・案内）＝スピナー無し
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
   function showDebug(o){ if(!debugMode) return; $("debug").classList.remove("hidden"); $("debug").textContent = typeof o==="string"?o:JSON.stringify(o,null,2); }
+
+  // 自前の確認シート（ブラウザ標準のconfirmを使わない＝ドメイン表示が出ない）
+  function confirmSheet(title, descHtml){
+    return new Promise(function(resolve){
+      $("cfTtl").textContent = title;
+      $("cfDesc").innerHTML = descHtml;
+      $("overlay").classList.remove("hidden");
+      const done = function(v){ $("overlay").classList.add("hidden"); $("cfOk").onclick=null; $("cfCancel").onclick=null; resolve(v); };
+      $("cfOk").onclick = function(){ done(true); };
+      $("cfCancel").onclick = function(){ done(false); };
+    });
+  }
   function showMsg(text, ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"ng"); m.textContent=text; m.classList.remove("hidden"); }
   function clearMsg(){ $("msg").classList.add("hidden"); }
 
@@ -191,10 +231,10 @@
   }
 
   async function loadState(){
-    setStatus("残高を確認しています…");
+    showLoading("残高を確認しています…");
     const d = await api("mile_exchange_state");
     showDebug(d);
-    if(!d.ok){ setStatus("読み込みに失敗しました：" + (d.error||"unknown")); return; }
+    if(!d.ok){ showStatusText("読み込みに失敗しました：" + (d.error||"unknown")); return; }
     state = d;
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
@@ -204,30 +244,36 @@
   async function doExchange(){
     if (busy) return;
     const rate = Number(state.milePerTicket)||0;
-    const ok = window.confirm(count + "枚を交換します。\n" + (rate*count).toLocaleString() + "マイルを使います。よろしいですか？");
+    const ok = await confirmSheet(
+      count + "枚を交換しますか？",
+      "<b>" + (rate*count).toLocaleString() + "マイル</b>を使って試飲チケット<b>" + count + "枚</b>を受け取ります"
+    );
     if(!ok) return;
 
-    busy = true; clearMsg(); renderCount();
-    setStatusBusy(true);
+    busy = true; clearMsg(); renderCount();   // ボタンは「処理中…」表示
     try{
       const d = await api("mile_exchange", { userName:USER_NAME, count:count });
       showDebug(d);
       if(!d.ok){
+        busy = false; renderCount();
         showMsg(friendlyError(d.error), false);
-      } else {
-        showMsg(d.issuedCount + "枚を交換しました。チケットが" + d.ticketBalanceAfter + "枚になりました。", true);
+        return;
       }
+      // 返り値の数字で画面をその場更新（再取得しない＝一瞬前に戻るチラつきを無くす）
+      state.mileBalance    = d.mileBalanceAfter;
+      state.ticketBalance  = d.ticketBalanceAfter;
+      state.allowedNow     = d.allowedNow;
+      state.canExchangeNow = d.canExchangeNow;
+      state.affordable     = (Number(state.milePerTicket) > 0) ? Math.floor(d.mileBalanceAfter / Number(state.milePerTicket)) : 0;
+      busy = false;
+      renderState();
+      showMsg(d.issuedCount + "枚を交換しました。チケットが" + d.ticketBalanceAfter + "枚になりました。", true);
     } catch(err){
+      busy = false; renderCount();
       showMsg("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
       showDebug(String(err));
-    } finally {
-      busy = false;
-      setStatusBusy(false);
-      await loadState(); // 残高・上限を取り直して表示を最新化
     }
   }
-
-  function setStatusBusy(b){ $("go").disabled = b; renderCount(); }
 
   function friendlyError(err){
     const e = String(err||"");
@@ -238,15 +284,15 @@
   }
 
   async function main(){
-    setStatus("LINEを起動しています…");
+    showLoading("LINEを起動しています…");
     await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()){ setStatus("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
     if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
 
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
     USER_NAME = profile.displayName || "";
-    if(!USER_ID){ setStatus("ユーザー情報を取得できませんでした。"); return; }
+    if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
 
     $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; renderCount();} };
     $("plus").onclick  = ()=>{ if(busy) return; if(count<maxExchangeable()){count++; renderCount();} };
@@ -255,7 +301,7 @@
     await loadState();
   }
 
-  main().catch(err=>{ setStatus("エラー: " + (err && err.message || String(err))); showDebug(err); });
+  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); showDebug(err); });
 </script>
 </body>
 </html>
