@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>試飲チケット</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
+    .wrap { max-width: 420px; margin: 0 auto; }
+    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; }
+    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; }
+    .lead { font-size: 13px; color: #8c6e50; line-height: 1.7; margin: 0 0 18px; }
+    .opt { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .opt.selected { border: 2px solid #8a6d4b; }
+    .opt .name { font-size: 15px; font-weight: 600; color: #5a4632; display: flex; align-items: center; gap: 6px; }
+    .opt .sub { font-size: 12px; color: #8c6e50; margin-top: 3px; }
+    .opt .price { font-size: 18px; font-weight: 600; color: #34595A; }
+    .badge { background: #D85A30; color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .strike { text-decoration: line-through; color: #b7a184; }
+    .terms { background: #F3EBDD; border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: #7a6247; font-size: 12px; line-height: 1.9; }
+    button#payBtn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; margin-top: 16px; }
+    button#payBtn:disabled { background: #c9bba7; cursor: default; }
+    .foot { text-align: center; color: #a08a6d; font-size: 11px; margin-top: 10px; line-height: 1.7; }
+    .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
+    .hidden { display: none; }
+    .done-num { font-size: 28px; font-weight: 600; color: #34595A; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="status">読み込み中...</div>
 
+  <div id="buy" class="hidden">
+    <h1>試飲チケット</h1>
+    <p class="lead">全国の加盟ロースターで、試飲の一杯に。旅の途中でどうぞ。</p>
+
+    <div class="opt selected" id="opt-pack" data-key="pack">
+      <div>
+        <div class="name">基本パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
+        <div class="sub" id="pack-sub">6枚セット</div>
+      </div>
+      <div class="price" id="pack-price">¥1,500</div>
+    </div>
+
+    <div class="opt" id="opt-bara" data-key="bara">
+      <div>
+        <div class="name">バラ</div>
+        <div class="sub">1枚</div>
+      </div>
+      <div class="price" id="bara-price">¥350</div>
+    </div>
+
+    <div class="terms">
+      <div>発行から<span id="expiry-days">180</span>日間 有効</div>
+      <div>1枚で試飲 1杯 と交換</div>
+    </div>
+
+    <button id="payBtn">決済に進む</button>
+    <div class="foot">Stripeで安全に決済します<br><span id="test-note">テスト環境：実際の請求は発生しません</span></div>
+  </div>
+
+  <div id="closed" class="notice hidden">
+    ただいま試飲チケットの購入を停止しています。<br>時間をおいて、もう一度お試しください。
+  </div>
+
+  <div id="result" class="notice hidden"></div>
+</div>
+
+<script>
+  const LIFF_ID = "2008851980-trDQgLA1";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
+
+  let currentUserId = "";
+  let currentUserName = "";
+  let selectedKey = "pack";
+  let campaignActive = false;
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (t) => { $("status").textContent = t; };
+  const yen = (n) => "¥" + Number(n).toLocaleString();
+  const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
+
+  async function fetchJson(query) {
+    const res = await fetch(GAS_URL + query, { method: "GET" });
+    return await res.json();
+  }
+
+  function runCancelStage() {
+    $("status").classList.add("hidden");
+    $("result").classList.remove("hidden");
+    $("result").innerHTML = 'お支払いは行われませんでした。<br>もう一度お試しになる場合は、この画面を閉じて「試飲チケットを買う」からどうぞ。';
+  }
+
+  async function runConfirmStage(sessionId) {
+    $("status").classList.add("hidden");
+    try {
+      const data = await fetchJson("?action=buy_confirm&session_id=" + encodeURIComponent(sessionId));
+      const box = $("result");
+      box.classList.remove("hidden");
+      if (data.ok && data.issued > 0) {
+        box.innerHTML = '<div class="done-num">' + data.issued + '枚</div>試飲チケットを受け取りました。<br>パスポートでいつでも確認できます。';
+      } else if (data.ok && data.already) {
+        box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。';
+      } else {
+        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。';
+      }
+    } catch (err) {
+      $("result").classList.remove("hidden");
+      $("result").textContent = "確認中にエラーが発生しました。時間をおいてお試しください。";
+    }
+  }
+
+  function renderPrices(data) {
+    campaignActive = !!data.campaignActive;
+    $("expiry-days").textContent = data.expiryDays;
+    $("pack-price").textContent = yen(data.pack.price);
+    $("bara-price").textContent = yen(data.bara.price);
+    if (!data.testMode) $("test-note").textContent = "";
+    if (campaignActive) {
+      $("pack-badge").classList.remove("hidden");
+      $("pack-sub").innerHTML = '<span class="strike">' + data.pack.baseCount + '枚</span> → ' + data.pack.count + '枚セット';
+    } else {
+      $("pack-sub").textContent = data.pack.count + "枚セット";
+    }
+  }
+
+  function selectOpt(key) {
+    selectedKey = key;
+    $("opt-pack").classList.toggle("selected", key === "pack");
+    $("opt-bara").classList.toggle("selected", key
