@@ -8,7 +8,9 @@
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
     .wrap { max-width: 420px; margin: 0 auto; }
-    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; }
+    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #E0D2B8; border-top-color: #8a6d4b; border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; }
     .lead { font-size: 13px; color: #8c6e50; line-height: 1.7; margin: 0 0 18px; }
     .opt { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
@@ -25,11 +27,12 @@
     .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
     .hidden { display: none; }
     .done-num { font-size: 28px; font-weight: 600; color: #34595A; }
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border-radius: 10px; background: #34595A; color: #fff; }
   </style>
 </head>
 <body>
 <div class="wrap">
-  <div id="status">読み込み中...</div>
+  <div id="status"><span class="spinner" id="spinner"></span><span id="status-text">読み込み中...</span></div>
 
   <div id="buy" class="hidden">
     <h1>試飲チケット</h1>
@@ -72,6 +75,9 @@
   const LIFF_ID = "2008851980-trDQgLA1";
   // GAS_URL：買う窓口(?action=buy_*)がある配備＝@413（テスト専用・誰でも可）。本番化時に差し替え。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
+  // 「パスポートに戻る」の戻り先＝JCJパスポート(メインアプリLIFF)。本番化時に本番LIFFへ差し替え。
+  const PASSPORT_URL = "https://liff.line.me/2008851980-5JktW2w4";
+  const backBtnHtml = '<a href="' + PASSPORT_URL + '" class="backBtn">パスポートに戻る</a>';
 
   let currentUserId = "";
   let currentUserName = "";
@@ -79,7 +85,13 @@
   let campaignActive = false;
 
   const $ = (id) => document.getElementById(id);
-  const setStatus = (t) => { $("status").textContent = t; };
+  // loading=true のときだけ くるくる を出す（エラー文言では出さない）
+  const setStatus = (t, loading = true) => {
+    $("status-text").textContent = t || "";
+    $("spinner").classList.toggle("hidden", !(loading && t));
+    $("status").classList.toggle("hidden", !t);
+  };
+  const hideStatus = () => { $("status").classList.add("hidden"); };
   const yen = (n) => "¥" + Number(n).toLocaleString();
   const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
 
@@ -89,27 +101,29 @@
   }
 
   function runCancelStage() {
-    $("status").classList.add("hidden");
+    hideStatus();
     $("result").classList.remove("hidden");
-    $("result").innerHTML = 'お支払いは行われませんでした。<br>もう一度お試しになる場合は、この画面を閉じて「試飲チケットを買う」からどうぞ。';
+    $("result").innerHTML = 'お支払いは行われませんでした。<br>もう一度お試しになる場合は「試飲チケットを買う」からどうぞ。' + backBtnHtml;
   }
 
   async function runConfirmStage(sessionId) {
-    $("status").classList.add("hidden");
+    setStatus("お支払いを確認しています…", true);
     try {
       const data = await fetchJson("?action=buy_confirm&session_id=" + encodeURIComponent(sessionId));
+      hideStatus();
       const box = $("result");
       box.classList.remove("hidden");
       if (data.ok && data.issued > 0) {
-        box.innerHTML = '<div class="done-num">' + data.issued + '枚</div>試飲チケットを受け取りました。<br>パスポートでいつでも確認できます。';
+        box.innerHTML = '<div class="done-num">' + data.issued + '枚</div>試飲チケットを受け取りました。<br>パスポートでいつでも確認できます。' + backBtnHtml;
       } else if (data.ok && data.already) {
-        box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。';
+        box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。' + backBtnHtml;
       } else {
-        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。';
+        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。' + backBtnHtml;
       }
     } catch (err) {
+      hideStatus();
       $("result").classList.remove("hidden");
-      $("result").textContent = "確認中にエラーが発生しました。時間をおいてお試しください。";
+      $("result").innerHTML = "確認中にエラーが発生しました。時間をおいてお試しください。" + backBtnHtml;
     }
   }
 
@@ -135,7 +149,7 @@
 
   async function goCheckout() {
     $("payBtn").disabled = true;
-    setStatus("");
+    setStatus("決済ページを開いています…", true);
     try {
       const data = await fetchJson(
         "?action=buy_checkout" +
@@ -146,25 +160,25 @@
         window.location.href = data.url;
       } else {
         $("payBtn").disabled = false;
-        setStatus("決済ページを開けませんでした。時間をおいてお試しください。");
+        setStatus("決済ページを開けませんでした。時間をおいてお試しください。", false);
       }
     } catch (err) {
       $("payBtn").disabled = false;
-      setStatus("通信に失敗しました。時間をおいてお試しください。");
+      setStatus("通信に失敗しました。時間をおいてお試しください。", false);
     }
   }
 
   async function loadState() {
-    setStatus("価格を読み込んでいます...");
+    setStatus("価格を読み込んでいます…", true);
     const data = await fetchJson("?action=buy_state&userId=" + encodeURIComponent(currentUserId));
-    if (!data || !data.ok) { setStatus("価格の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。"); return; }
+    if (!data || !data.ok) { setStatus("価格の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。", false); return; }
     if (!data.triggerOn) {
-      $("status").classList.add("hidden");
+      hideStatus();
       $("closed").classList.remove("hidden");
       return;
     }
     renderPrices(data);
-    $("status").classList.add("hidden");
+    hideStatus();
     $("buy").classList.remove("hidden");
   }
 
@@ -175,15 +189,15 @@
     if (stage === "cancel")  { return runCancelStage(); }
 
     // 購入（選択）画面：動作中の exchange.html と同じ初期化フロー
-    setStatus("LINEを起動しています…");
+    setStatus("LINEを起動しています…", true);
     await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
     if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
 
     const profile = await liff.getProfile();
     currentUserId = profile.userId || "";
     currentUserName = profile.displayName || "";
-    if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。"); return; }
+    if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
 
     $("opt-pack").addEventListener("click", () => selectOpt("pack"));
     $("opt-bara").addEventListener("click", () => selectOpt("bara"));
@@ -192,7 +206,7 @@
     await loadState();
   }
 
-  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err))); });
+  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err)), false); });
 </script>
 </body>
 </html>
