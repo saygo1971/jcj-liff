@@ -68,7 +68,9 @@
 </div>
 
 <script>
+  // ★このLIFFの設定★
   const LIFF_ID = "2008851980-trDQgLA1";
+  // GAS_URL：買う窓口(?action=buy_*)がある配備＝@413（テスト専用・誰でも可）。本番化時に差し替え。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
 
   let currentUserId = "";
@@ -128,4 +130,69 @@
   function selectOpt(key) {
     selectedKey = key;
     $("opt-pack").classList.toggle("selected", key === "pack");
-    $("opt-bara").classList.toggle("selected", key
+    $("opt-bara").classList.toggle("selected", key === "bara");
+  }
+
+  async function goCheckout() {
+    $("payBtn").disabled = true;
+    setStatus("");
+    try {
+      const data = await fetchJson(
+        "?action=buy_checkout" +
+        "&userId=" + encodeURIComponent(currentUserId) +
+        "&userName=" + encodeURIComponent(currentUserName) +
+        "&product=" + encodeURIComponent(selectedKey));
+      if (data && data.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        $("payBtn").disabled = false;
+        setStatus("決済ページを開けませんでした。時間をおいてお試しください。");
+      }
+    } catch (err) {
+      $("payBtn").disabled = false;
+      setStatus("通信に失敗しました。時間をおいてお試しください。");
+    }
+  }
+
+  async function loadState() {
+    setStatus("価格を読み込んでいます...");
+    const data = await fetchJson("?action=buy_state&userId=" + encodeURIComponent(currentUserId));
+    if (!data || !data.ok) { setStatus("価格の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。"); return; }
+    if (!data.triggerOn) {
+      $("status").classList.add("hidden");
+      $("closed").classList.remove("hidden");
+      return;
+    }
+    renderPrices(data);
+    $("status").classList.add("hidden");
+    $("buy").classList.remove("hidden");
+  }
+
+  async function main() {
+    // 決済からの戻り（LIFF不要・session_idだけで確定）
+    const stage = getParam("stage");
+    if (stage === "confirm") { return runConfirmStage(getParam("session_id")); }
+    if (stage === "cancel")  { return runCancelStage(); }
+
+    // 購入（選択）画面：動作中の exchange.html と同じ初期化フロー
+    setStatus("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    currentUserId = profile.userId || "";
+    currentUserName = profile.displayName || "";
+    if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。"); return; }
+
+    $("opt-pack").addEventListener("click", () => selectOpt("pack"));
+    $("opt-bara").addEventListener("click", () => selectOpt("bara"));
+    $("payBtn").addEventListener("click", goCheckout);
+
+    await loadState();
+  }
+
+  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err))); });
+</script>
+</body>
+</html>
