@@ -89,9 +89,10 @@
   const setStatus = (t, loading = true) => {
     $("status-text").textContent = t || "";
     $("spinner").classList.toggle("hidden", !(loading && t));
-    $("status").classList.toggle("hidden", !t);
+    // #status はID指定(display:flex)が.hiddenより強く勝つため、確実に効くインライン指定で出し入れする
+    $("status").style.display = t ? "flex" : "none";
   };
-  const hideStatus = () => { $("status").classList.add("hidden"); };
+  const hideStatus = () => { $("status").style.display = "none"; };
   const yen = (n) => "¥" + Number(n).toLocaleString();
   const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
 
@@ -107,25 +108,16 @@
     }
   }
 
-  // 【診断版】「パスポートに戻る」：各ステップの結果を画面に残す（今回は原因特定のため閉じない）。
+  // 「パスポートに戻る」：トークへ「パスポートを見る」を送る(可能なら)→この画面を閉じて元のトークへ戻す。
+  // 何が起きても最後に必ず closeWindow を試みる頑丈な作り（送信不可でも閉じるだけは実行）。
   async function backToPassport() {
-    const log = (m) => $("result").insertAdjacentHTML("beforeend",
-      '<div style="margin-top:8px;color:#b03;font-size:12px;text-align:left;">' + m + '</div>');
+    try { await liff.init({ liffId: LIFF_ID }); } catch (e) {}
     try {
-      log("① 初期化開始");
-      await liff.init({ liffId: LIFF_ID });
-      log("② 初期化OK / inClient=" + liff.isInClient() + " / loggedIn=" + liff.isLoggedIn());
-      let avail = false;
-      try { avail = liff.isApiAvailable("sendMessages"); } catch (e) { log("isApiAvailable例外: " + (e && e.message || e)); }
-      log("③ sendMessages利用可=" + avail);
-      if (avail) {
-        try { await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]); log("④ 送信OK"); }
-        catch (e) { log("④ 送信失敗: " + (e && e.message || e)); }
+      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
+        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
       }
-      log("⑤ ここまで到達（診断のため画面は閉じません）");
-    } catch (err) {
-      log("✖ 例外: " + (err && err.message || String(err)));
-    }
+    } catch (e) {}
+    try { liff.closeWindow(); } catch (e) {}
   }
   window.backToPassport = backToPassport;
 
@@ -147,12 +139,12 @@
       } else if (data.ok && data.already) {
         box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。' + backBtnHtml;
       } else {
-        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。<br><span style="font-size:11px;color:#b03;">（診断: ' + ((data && data.error) || '不明') + '）</span>' + backBtnHtml;
+        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。' + backBtnHtml;
       }
     } catch (err) {
       hideStatus();
       $("result").classList.remove("hidden");
-      $("result").innerHTML = "確認中にエラーが発生しました。<br><span style=\"font-size:11px;color:#b03;\">（診断: " + (err && err.message || String(err)) + "）</span>" + backBtnHtml;
+      $("result").innerHTML = "確認中にエラーが発生しました。時間をおいてお試しください。" + backBtnHtml;
     }
   }
 
