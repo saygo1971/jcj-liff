@@ -96,24 +96,36 @@
   const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
 
   async function fetchJson(query) {
-    const res = await fetch(GAS_URL + query, { method: "GET" });
-    return await res.json();
+    // 15秒で時間切れ（無限にくるくる回り続けるのを防ぐ）
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(GAS_URL + query, { method: "GET", signal: ctrl.signal });
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
-  // 「パスポートに戻る」：トークへ「パスポートを見る」を送る→show_passport が反応してカード表示→この画面を閉じる。
-  // 戻り/決済後はliff未初期化なので押した時に初期化。sendMessages不可(権限未付与/LINE外)なら閉じるだけにフォールバック。
+  // 【診断版】「パスポートに戻る」：各ステップの結果を画面に残す（今回は原因特定のため閉じない）。
   async function backToPassport() {
+    const log = (m) => $("result").insertAdjacentHTML("beforeend",
+      '<div style="margin-top:8px;color:#b03;font-size:12px;text-align:left;">' + m + '</div>');
     try {
+      log("① 初期化開始");
       await liff.init({ liffId: LIFF_ID });
-      if (liff.isInClient()) {
-        if (liff.isApiAvailable("sendMessages")) {
-          try { await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]); } catch (e) {}
-        }
-        liff.closeWindow();
-        return;
+      log("② 初期化OK / inClient=" + liff.isInClient() + " / loggedIn=" + liff.isLoggedIn());
+      let avail = false;
+      try { avail = liff.isApiAvailable("sendMessages"); } catch (e) { log("isApiAvailable例外: " + (e && e.message || e)); }
+      log("③ sendMessages利用可=" + avail);
+      if (avail) {
+        try { await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]); log("④ 送信OK"); }
+        catch (e) { log("④ 送信失敗: " + (e && e.message || e)); }
       }
-    } catch (e) {}
-    alert("LINEアプリに戻って、メニューからパスポートをご確認ください。");
+      log("⑤ ここまで到達（診断のため画面は閉じません）");
+    } catch (err) {
+      log("✖ 例外: " + (err && err.message || String(err)));
+    }
   }
   window.backToPassport = backToPassport;
 
@@ -135,12 +147,12 @@
       } else if (data.ok && data.already) {
         box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。' + backBtnHtml;
       } else {
-        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。' + backBtnHtml;
+        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。<br><span style="font-size:11px;color:#b03;">（診断: ' + ((data && data.error) || '不明') + '）</span>' + backBtnHtml;
       }
     } catch (err) {
       hideStatus();
       $("result").classList.remove("hidden");
-      $("result").innerHTML = "確認中にエラーが発生しました。時間をおいてお試しください。" + backBtnHtml;
+      $("result").innerHTML = "確認中にエラーが発生しました。<br><span style=\"font-size:11px;color:#b03;\">（診断: " + (err && err.message || String(err)) + "）</span>" + backBtnHtml;
     }
   }
 
