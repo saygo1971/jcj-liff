@@ -36,6 +36,7 @@
     #used .u-sep { border-top: 1px solid #DCE7D8; margin: 14px 0; }
     #used .u-rest { font-size: 14px; color: #5a4632; }
     #used .u-rest b { color: #df7461; }
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 14px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; font-family: inherit; }
   </style>
 </head>
 <body>
@@ -80,6 +81,7 @@
       <div class="u-rest">残り <b id="u-rest">0</b> 枚</div>
     </div>
   </div>
+  <button type="button" class="backBtn hidden" id="backTalkBtn" onclick="backToTalk()">トークに戻る</button>
 
   <!-- チケット無し・エラー画面 -->
   <div id="empty" class="notice hidden"></div>
@@ -116,6 +118,18 @@
       clearTimeout(timer);
     }
   }
+
+  // 「トークに戻る」＝この使う画面(LIFF)を閉じて元のトークへ戻す（買う画面と同じ作り）。
+  // 可能ならトークへ「パスポートを見る」を送って更新後の残枚数を確認できるようにし、最後に必ず閉じる。
+  async function backToTalk() {
+    try {
+      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
+        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
+      }
+    } catch (e) {}
+    try { liff.closeWindow(); } catch (e) {}
+  }
+  window.backToTalk = backToTalk;
 
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
   function nowText() {
@@ -200,6 +214,7 @@
     $("u-clock").textContent = nowText();
     setInterval(function () { $("u-clock").textContent = nowText(); }, 1000);
     show("used");
+    show("backTalkBtn");
   }
 
   async function main() {
