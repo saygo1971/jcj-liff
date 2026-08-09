@@ -27,7 +27,7 @@
     .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
     .hidden { display: none; }
     .done-num { font-size: 28px; font-weight: 600; color: #34595A; }
-    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border-radius: 10px; background: #34595A; color: #fff; }
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: none; border-radius: 10px; background: #34595A; color: #fff; cursor: pointer; font-family: inherit; }
   </style>
 </head>
 <body>
@@ -75,9 +75,9 @@
   const LIFF_ID = "2008851980-trDQgLA1";
   // GAS_URL：買う窓口(?action=buy_*)がある配備＝@413（テスト専用・誰でも可）。本番化時に差し替え。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
-  // 「パスポートに戻る」の戻り先＝JCJパスポート(メインアプリLIFF)。本番化時に本番LIFFへ差し替え。
-  const PASSPORT_URL = "https://liff.line.me/2008851980-5JktW2w4";
-  const backBtnHtml = '<a href="' + PASSPORT_URL + '" class="backBtn">パスポートに戻る</a>';
+  // 「パスポートに戻る」＝この買う画面(LIFF)を閉じて元のトーク(パスポートのカードがある場所)へ戻す。
+  // パスポートはWebページでなくトーク内のFlexカードのため、URL遷移ではなく liff.closeWindow() を使う。
+  const backBtnHtml = '<button type="button" class="backBtn" onclick="backToPassport()">パスポートに戻る</button>';
 
   let currentUserId = "";
   let currentUserName = "";
@@ -99,6 +99,16 @@
     const res = await fetch(GAS_URL + query, { method: "GET" });
     return await res.json();
   }
+
+  // この画面(LIFF)を閉じて元のトークへ戻す。戻り/決済後のためliff未初期化なので、押した時に初期化してから閉じる。
+  async function backToPassport() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (liff.isInClient()) { liff.closeWindow(); return; }
+    } catch (e) {}
+    alert("LINEアプリに戻って、メニューからパスポートをご確認ください。");
+  }
+  window.backToPassport = backToPassport;
 
   function runCancelStage() {
     hideStatus();
