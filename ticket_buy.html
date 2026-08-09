@@ -100,11 +100,18 @@
     return await res.json();
   }
 
-  // この画面(LIFF)を閉じて元のトークへ戻す。戻り/決済後のためliff未初期化なので、押した時に初期化してから閉じる。
+  // 「パスポートに戻る」：トークへ「パスポートを見る」を送る→show_passport が反応してカード表示→この画面を閉じる。
+  // 戻り/決済後はliff未初期化なので押した時に初期化。sendMessages不可(権限未付与/LINE外)なら閉じるだけにフォールバック。
   async function backToPassport() {
     try {
       await liff.init({ liffId: LIFF_ID });
-      if (liff.isInClient()) { liff.closeWindow(); return; }
+      if (liff.isInClient()) {
+        if (liff.isApiAvailable("sendMessages")) {
+          try { await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]); } catch (e) {}
+        }
+        liff.closeWindow();
+        return;
+      }
     } catch (e) {}
     alert("LINEアプリに戻って、メニューからパスポートをご確認ください。");
   }
