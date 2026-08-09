@@ -69,8 +69,7 @@
   <!-- ③ 使用中画面（店員に見せる） -->
   <div id="used" class="hidden">
     <div class="head">
-      <div class="mark">✅</div>
-      <div class="ttl">試飲チケット 使用中</div>
+      <div class="ttl">試飲チケットを使いました</div>
     </div>
     <div class="body">
       <div class="u-shop" id="u-shop"></div>
@@ -166,6 +165,8 @@
   async function doUse() {
     const n = Number($("count").value) || 1;
     $("doUseBtn").disabled = true;
+    $("confirm").classList.add("hidden");
+    setStatus("使用を記録しています…", true);
     try {
       const data = await fetchJson(
         "?action=use_do" +
@@ -177,16 +178,21 @@
       } else if (data && data.error === "insufficient") {
         showEmpty("チケットが足りませんでした。残り枚数をご確認ください。");
       } else {
+        hideStatus();
         $("doUseBtn").disabled = false;
+        show("confirm");
         alert("処理に失敗しました。時間をおいてお試しください。");
       }
     } catch (err) {
+      hideStatus();
       $("doUseBtn").disabled = false;
+      show("confirm");
       alert("通信に失敗しました。時間をおいてお試しください。");
     }
   }
 
   function renderUsed(data) {
+    hideStatus();
     $("confirm").classList.add("hidden");
     $("u-shop").textContent = data.shopName || shopName || "このお店";
     $("u-num").textContent = data.consumedCount;
