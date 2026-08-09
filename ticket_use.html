@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>試飲チケットを使う</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
+    .wrap { max-width: 420px; margin: 0 auto; }
+    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #E0D2B8; border-top-color: #8a6d4b; border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; }
+    .shop { font-size: 16px; font-weight: 600; color: #34595A; margin: 0 0 4px; }
+    .lead { font-size: 13px; color: #8c6e50; line-height: 1.7; margin: 0 0 18px; }
+    .card { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 18px 16px; margin-bottom: 12px; }
+    .field-label { font-size: 13px; color: #8c6e50; margin: 0 0 8px; }
+    select#count { width: 100%; padding: 12px 14px; font-size: 18px; font-weight: 600; color: #5a4632; border: 1px solid #E0D2B8; border-radius: 10px; background: #fff; -webkit-appearance: menulist; }
+    .hint { font-size: 12px; color: #a08a6d; margin: 8px 0 0; line-height: 1.7; }
+    button.primary { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: #34595A; color: #fff; cursor: pointer; margin-top: 14px; font-family: inherit; }
+    button.primary:disabled { background: #c9bba7; cursor: default; }
+    button.ghost { width: 100%; padding: 12px; font-size: 14px; font-weight: 600; border: 1px solid #C9BEB0; border-radius: 10px; background: #fff; color: #6B5E4F; cursor: pointer; margin-top: 8px; font-family: inherit; }
+    .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
+    .hidden { display: none; }
+    #used { border: 2px solid #34595A; border-radius: 14px; overflow: hidden; background: #fff; }
+    #used .head { background: #34595A; padding: 16px; text-align: center; }
+    #used .head .mark { font-size: 34px; }
+    #used .head .ttl { color: #fff; font-weight: 700; font-size: 17px; margin-top: 2px; }
+    #used .body { padding: 18px 16px; text-align: center; }
+    #used .u-shop { font-size: 16px; font-weight: 700; color: #34595A; }
+    #used .u-num { font-size: 22px; font-weight: 700; color: #332822; margin-top: 10px; }
+    #used .u-num b { color: #df7461; }
+    #used .u-clock { font-size: 26px; font-weight: 700; color: #332822; margin-top: 8px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    #used .u-hint { font-size: 12px; color: #8c6e50; margin-top: 4px; }
+    #used .u-sep { border-top: 1px solid #DCE7D8; margin: 14px 0; }
+    #used .u-rest { font-size: 14px; color: #5a4632; }
+    #used .u-rest b { color: #df7461; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="status"><span class="spinner" id="spinner"></span><span id="status-text">読み込み中...</span></div>
+
+  <!-- ① 枚数選択画面 -->
+  <div id="select" class="hidden">
+    <h1>試飲チケットを使う</h1>
+    <div class="card">
+      <div class="shop" id="sel-shop"></div>
+      <p class="lead" id="sel-balance"></p>
+      <div class="field-label">何枚使いますか？</div>
+      <select id="count"></select>
+      <p class="hint">連れの分・2種の飲み比べ・1杯に複数枚のお店に対応します。</p>
+      <button class="primary" id="toConfirmBtn">この枚数で使う</button>
+    </div>
+  </div>
+
+  <!-- ② 確認画面 -->
+  <div id="confirm" class="hidden">
+    <div class="card">
+      <div class="shop" id="cf-shop"></div>
+      <p class="lead" id="cf-text"></p>
+      <p class="hint">使うと元に戻せません。次の「使用中画面」を店員さんに見せて、一杯をお受け取りください。</p>
+      <button class="primary" id="doUseBtn"></button>
+      <button class="ghost" id="backBtn">やめる</button>
+    </div>
+  </div>
+
+  <!-- ③ 使用中画面（店員に見せる） -->
+  <div id="used" class="hidden">
+    <div class="head">
+      <div class="mark">✅</div>
+      <div class="ttl">試飲チケット 使用中</div>
+    </div>
+    <div class="body">
+      <div class="u-shop" id="u-shop"></div>
+      <div class="u-num"><b id="u-num">0</b> 枚 使用</div>
+      <div class="u-clock" id="u-clock">--:--:--</div>
+      <div class="u-hint">この時刻が「今」と合っていれば有効です</div>
+      <div class="u-sep"></div>
+      <div class="u-rest">残り <b id="u-rest">0</b> 枚</div>
+    </div>
+  </div>
+
+  <!-- チケット無し・エラー画面 -->
+  <div id="empty" class="notice hidden"></div>
+</div>
+
+<script>
+  // ★このLIFFの設定★
+  const LIFF_ID = "2008851980-JcWGG0Bd";
+  // GAS_URL：使う窓口(?action=use_*)がある配備＝@417/@418（買う画面と同じ・テスト専用）。本番化時に差し替え。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
+
+  let currentUserId = "";
+  let spotId = "";
+  let shopName = "";
+  let balance = 0;
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (t, loading = true) => {
+    $("status-text").textContent = t || "";
+    $("spinner").classList.toggle("hidden", !(loading && t));
+    $("status").style.display = t ? "flex" : "none";
+  };
+  const hideStatus = () => { $("status").style.display = "none"; };
+  const show = (id) => $(id).classList.remove("hidden");
+  const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
+
+  async function fetchJson(query) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(GAS_URL + query, { method: "GET", signal: ctrl.signal });
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function nowText() {
+    const d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
+      " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+  }
+
+  function showEmpty(msg) {
+    hideStatus();
+    $("select").classList.add("hidden");
+    $("confirm").classList.add("hidden");
+    $("used").classList.add("hidden");
+    $("empty").textContent = msg;
+    show("empty");
+  }
+
+  function renderSelect() {
+    $("sel-shop").textContent = shopName || "このお店";
+    $("sel-balance").textContent = "残り " + balance + " 枚 使えます。";
+    const sel = $("count");
+    sel.innerHTML = "";
+    for (let i = 1; i <= balance; i++) {
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = i + " 枚";
+      sel.appendChild(o);
+    }
+    hideStatus();
+    show("select");
+  }
+
+  function toConfirm() {
+    const n = Number($("count").value) || 1;
+    $("cf-shop").textContent = shopName || "このお店";
+    $("cf-text").textContent = (shopName || "このお店") + " で " + n + " 枚 使います。";
+    $("doUseBtn").textContent = "はい、" + n + " 枚使う";
+    $("select").classList.add("hidden");
+    show("confirm");
+  }
+
+  function backToSelect() {
+    $("confirm").classList.add("hidden");
+    show("select");
+  }
+
+  async function doUse() {
+    const n = Number($("count").value) || 1;
+    $("doUseBtn").disabled = true;
+    try {
+      const data = await fetchJson(
+        "?action=use_do" +
+        "&userId=" + encodeURIComponent(currentUserId) +
+        "&spotId=" + encodeURIComponent(spotId) +
+        "&count=" + encodeURIComponent(n));
+      if (data && data.ok) {
+        renderUsed(data);
+      } else if (data && data.error === "insufficient") {
+        showEmpty("チケットが足りませんでした。残り枚数をご確認ください。");
+      } else {
+        $("doUseBtn").disabled = false;
+        alert("処理に失敗しました。時間をおいてお試しください。");
+      }
+    } catch (err) {
+      $("doUseBtn").disabled = false;
+      alert("通信に失敗しました。時間をおいてお試しください。");
+    }
+  }
+
+  function renderUsed(data) {
+    $("confirm").classList.add("hidden");
+    $("u-shop").textContent = data.shopName || shopName || "このお店";
+    $("u-num").textContent = data.consumedCount;
+    $("u-rest").textContent = data.balanceAfter;
+    $("u-clock").textContent = nowText();
+    setInterval(function () { $("u-clock").textContent = nowText(); }, 1000);
+    show("used");
+  }
+
+  async function main() {
+    setStatus("LINEを起動しています…", true);
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    currentUserId = profile.userId || "";
+    if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
+
+    spotId = getParam("spot");
+    if (!spotId) {
+      showEmpty("お店の情報が読み取れませんでした。チェックイン完了の画面から、もう一度お試しください。");
+      return;
+    }
+
+    setStatus("残り枚数を確認しています…", true);
+    const data = await fetchJson(
+      "?action=use_state" +
+      "&userId=" + encodeURIComponent(currentUserId) +
+      "&spotId=" + encodeURIComponent(spotId));
+    if (!data || !data.ok) {
+      setStatus("読み込みに失敗しました（" + ((data && data.error) || "応答なし") + "）。", false);
+      return;
+    }
+
+    shopName = data.shopName || "";
+    balance = Number(data.balance) || 0;
+    if (balance <= 0) {
+      showEmpty("使える試飲チケットがありません。\nチケットは「買う」またはマイル交換で手に入ります。");
+      return;
+    }
+
+    $("toConfirmBtn").addEventListener("click", toConfirm);
+    $("doUseBtn").addEventListener("click", doUse);
+    $("backBtn").addEventListener("click", backToSelect);
+    renderSelect();
+  }
+
+  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err)), false); });
+</script>
+</body>
+</html>
