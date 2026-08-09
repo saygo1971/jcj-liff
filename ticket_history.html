@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>試飲チケット 履歴</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
+    .wrap { max-width: 420px; margin: 0 auto; }
+    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #E0D2B8; border-top-color: #8a6d4b; border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 14px; }
+    .tiles { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tile { flex: 1; background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; padding: 10px; text-align: center; }
+    .tile .lbl { font-size: 11px; color: #8c6e50; }
+    .tile .num { font-size: 22px; font-weight: 700; }
+    .tile .num span { font-size: 12px; }
+    .sec-title { font-size: 13px; font-weight: 700; margin: 0 0 6px; }
+    .list { background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; border-bottom: 1px solid #F0E7D6; }
+    .row:last-child { border-bottom: none; }
+    .row .main { font-size: 14px; color: #5a4632; font-weight: 600; }
+    .row .sub { font-size: 11px; color: #a08a6d; margin-top: 2px; }
+    .row .meta { font-size: 12px; color: #8c6e50; text-align: right; }
+    .row .meta.soon { color: #df7461; font-weight: 600; }
+    .emptyline { padding: 11px 13px; color: #a08a6d; font-size: 13px; }
+    .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
+    .hidden { display: none; }
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 6px; font-size: 15px; font-weight: 600; text-align: center; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; font-family: inherit; }
+    .backBtn.hidden { display: none; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div id="status"><span class="spinner" id="spinner"></span><span id="status-text">読み込み中...</span></div>
+
+  <div id="history" class="hidden">
+    <h1>試飲チケット 履歴</h1>
+    <div class="tiles">
+      <div class="tile"><div class="lbl">使える</div><div class="num" style="color:#34595A;"><span id="c-active">0</span><span>枚</span></div></div>
+      <div class="tile"><div class="lbl">使った</div><div class="num" style="color:#8a6d4b;"><span id="c-used">0</span><span>枚</span></div></div>
+    </div>
+
+    <div class="sec-title" style="color:#34595A;">使える</div>
+    <div class="list" id="sec-active"></div>
+
+    <div class="sec-title" style="color:#8a6d4b;">使った</div>
+    <div class="list" id="sec-used"></div>
+
+    <div class="sec-title" style="color:#a08a6d;">失効</div>
+    <div class="list" id="sec-expired"></div>
+
+    <button type="button" class="backBtn" onclick="backToTalk()">トークに戻る</button>
+  </div>
+
+  <div id="empty" class="notice hidden"></div>
+</div>
+
+<script>
+  const LIFF_ID = "2008851980-Ja5SU8nr";
+  // GAS_URL：履歴窓口(?action=ticket_history)がある配備＝@417/@418（買う・使う画面と同じ）。本番化時に差し替え。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (t, loading = true) => {
+    $("status-text").textContent = t || "";
+    $("spinner").classList.toggle("hidden", !(loading && t));
+    $("status").style.display = t ? "flex" : "none";
+  };
+  const hideStatus = () => { $("status").style.display = "none"; };
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  async function fetchJson(query) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15000);
+    try {
+      const res = await fetch(GAS_URL + query, { method: "GET", signal: ctrl.signal });
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function backToTalk() {
+    try {
+      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
+        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
+      }
+    } catch (e) {}
+    try { liff.closeWindow(); } catch (e) {}
+  }
+  window.backToTalk = backToTalk;
+
+  function renderActive(list) {
+    if (!list.length) { $("sec-active").innerHTML = '<div class="emptyline">使えるチケットはありません</div>'; return; }
+    $("sec-active").innerHTML = list.map(function (t) {
+      const soon = (t.daysLeft != null && t.daysLeft <= 30);
+      const metaText = t.expiry + " まで" + (soon ? "（あと" + t.daysLeft + "日）" : "");
+      const sub = t.source ? '<div class="sub">' + esc(t.source) + "</div>" : "";
+      return '<div class="row"><div><div class="main">試飲チケット</div>' + sub + '</div>' +
+        '<div class="meta' + (soon ? " soon" : "") + '">' + esc(metaText) + "</div></div>";
+    }).join("");
+  }
+
+  function renderUsed(list) {
+    if (!list.length) { $("sec-used").innerHTML = '<div class="emptyline">まだ使っていません</div>'; return; }
+    $("sec-used").innerHTML = list.map(function (t) {
+      return '<div class="row"><div class="main">' + esc(t.shop || "お店") + "</div>" +
+        '<div class="meta">' + esc(t.at) + "</div></div>";
+    }).join("");
+  }
+
+  function renderExpired(list) {
+    if (!list.length) { $("sec-expired").innerHTML = '<div class="emptyline">まだありません</div>'; return; }
+    $("sec-expired").innerHTML = list.map(function (t) {
+      return '<div class="row"><div class="main">試飲チケット</div>' +
+        '<div class="meta">' + esc(t.expiry) + " 失効</div></div>";
+    }).join("");
+  }
+
+  async function main() {
+    setStatus("LINEを起動しています…", true);
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    const userId = profile.userId || "";
+    if (!userId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
+
+    setStatus("履歴を読み込んでいます…", true);
+    const data = await fetchJson("?action=ticket_history&userId=" + encodeURIComponent(userId));
+    if (!data || !data.ok) { setStatus("読み込みに失敗しました（" + ((data && data.error) || "応答なし") + "）。", false); return; }
+
+    $("c-active").textContent = data.counts.active;
+    $("c-used").textContent = data.counts.used;
+    renderActive(data.active || []);
+    renderUsed(data.used || []);
+    renderExpired(data.expired || []);
+
+    hideStatus();
+    $("history").classList.remove("hidden");
+  }
+
+  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err)), false); });
+</script>
+</body>
+</html>
