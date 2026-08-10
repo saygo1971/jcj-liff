@@ -100,8 +100,7 @@
       '<div class="brand">JCJパスポート</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div class="pref">' + esc(st.pref) + '</div>' +
-      '<button id="go" class="go">チェックインする</button>' +
-      '<div class="fine">位置確認は今はありません</div>';
+      '<button id="go" class="go">チェックインする</button>';
     $("go").onclick = doCheckin;
   }
 
@@ -159,7 +158,8 @@
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
       mileHtml + ticketHtml +
-      '<a class="link" href="#" id="about">試飲チケットについて</a>';
+      '<a class="link" href="#" id="about">試飲チケットについて</a>' +
+      '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>';
 
     // バナーをカード先頭に
     const card = document.querySelector(".card");
@@ -167,7 +167,7 @@
     card.insertAdjacentHTML("afterbegin", banner);
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
-    $("about").onclick = (ev)=>{ ev.preventDefault(); alert("試飲チケットは対応店で1枚ずつ使えます。買い足し・マイル交換はメニューからどうぞ。"); };
+    $("about").onclick = (ev)=>{ ev.preventDefault(); $("aboutInfo").classList.toggle("hidden"); };
   }
 
   function wireTicket(bal){
