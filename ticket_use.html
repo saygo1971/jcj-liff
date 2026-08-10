@@ -192,6 +192,8 @@
         renderUsed(data);
       } else if (data && data.error === "insufficient") {
         showEmpty("チケットが足りませんでした。残り枚数をご確認ください。");
+      } else if (data && data.error === "not_enabled") {
+        showEmpty("このお店は試飲チケットの対象外です。\n対応しているお店でご利用ください。");
       } else {
         hideStatus();
         $("doUseBtn").disabled = false;
@@ -246,6 +248,10 @@
 
     shopName = data.shopName || "";
     balance = Number(data.balance) || 0;
+    if (data.enabled === false) {
+      showEmpty("このお店は試飲チケットの対象外です。\n対応しているお店でご利用ください。");
+      return;
+    }
     if (balance <= 0) {
       showEmpty("使える試飲チケットがありません。\nチケットは「買う」またはマイル交換で手に入ります。");
       return;
