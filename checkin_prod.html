@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>JCJ チェックイン</title>
+  <style>
+    :root{ --brand:#0F6E56; --brand2:#DCE7D8; --amber:#BA7517; --line:#e6e6e6; --muted:#666; --hint:#999; }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
+    .wrap{max-width:480px;margin:0 auto;padding:14px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+    .hero{width:100%;height:170px;object-fit:cover;display:block;background:#C9D6DC}
+    .body{padding:16px}
+    .brand{font-size:12px;color:var(--brand);font-weight:700}
+    .shop{font-size:19px;font-weight:800;margin:3px 0}
+    .pref{font-size:13px;color:var(--muted)}
+    .go{width:100%;margin-top:16px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
+    .go:disabled{opacity:.5}
+    .fine{font-size:11px;color:var(--hint);margin-top:8px;text-align:center}
+    .done{padding:18px;text-align:center;color:#fff}
+    .done.ci{background:var(--brand)}
+    .done.today{background:var(--amber)}
+    .done .ic{font-size:30px;line-height:1}
+    .done .t{font-size:16px;font-weight:800;margin-top:4px}
+    .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
+    .total{font-size:13px;color:var(--muted);text-align:center}
+    .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    .thd{font-size:14px;color:#444;font-weight:700;display:flex;align-items:center;gap:6px}
+    .stepper{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+    .stepper button{width:46px;height:46px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px}
+    .stepper button:disabled{opacity:.35}
+    .cnt{text-align:center}
+    .cnt .n{font-size:26px;font-weight:800}
+    .use{width:100%;margin-top:14px;height:50px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--amber)}
+    .use:disabled{opacity:.5}
+    .link{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:underline}
+    .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
+    .msg.ok{background:#e8f5ea;color:#1b5e20}
+    .msg.ng{background:#fdecea;color:#b71c1c}
+    .status{color:var(--muted);font-size:13px;padding:34px 0;text-align:center}
+    .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none}
+  </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div id="status" class="status">
+      <div id="spin" class="spin"></div>
+      <div id="statusText">起動中…</div>
+    </div>
+    <img id="hero" class="hero hidden" alt="" />
+    <div id="body" class="body hidden"></div>
+  </div>
+</div>
+
+<script>
+  // ===== 本番リリース時に2箇所を記入 =====
+  // LIFF_ID：本番チェックイン用LIFF（本番ログインチャネル 2010671952 配下）。手順書§4で発行後に記入。
+  const LIFF_ID = "2010671952-JEJp6R4e";
+  // GAS_URL：本番GAS（@740rorcl）で doGet を配信しているデプロイの /exec。②反映＋新バージョン再デプロイ後のURL。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+  // 本番の公式アカウント（未登録者の遷移先）
+  const OA_URL = "https://line.me/R/ti/p/@740rorcl";
+  // ======================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+
+  let USER_ID = "";
+  let SPOT = "";
+  let st = null;
+  let count = 1;
+  let busy = false;
+
+  function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; }
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
+  function hideStatus(){ $("status").classList.add("hidden"); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function api(action, extra){
+    const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
+    const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    return await res.json();
+  }
+
+  function renderPrompt(){
+    hideStatus();
+    $("hero").src = st.shopImage || "";
+    $("hero").classList.toggle("hidden", !st.shopImage);
+    $("body").classList.remove("hidden");
+    $("body").innerHTML =
+      '<div class="brand">JCJパスポート</div>' +
+      '<div class="shop">' + esc(st.shopName) + '</div>' +
+      '<div class="pref">' + esc(st.pref) + '</div>' +
+      '<button id="go" class="go">チェックインする</button>';
+    $("go").onclick = doCheckin;
+  }
+
+  async function doCheckin(){
+    if (busy) return; busy = true;
+    const b = $("go"); b.disabled = true; b.textContent = "記録しています…";
+    try{
+      const r = await api("checkin_do", { spot: SPOT });
+      busy = false;
+      if(!r || !r.ok){
+        if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
+        b.disabled = false; b.textContent = "チェックインする";
+        showMsgInline("チェックインに失敗しました。時間をおいて再度お試しください。", false); return;
+      }
+      renderDone(r);
+    }catch(e){
+      busy = false; b.disabled = false; b.textContent = "チェックインする";
+      showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+    }
+  }
+
+  function showMsgInline(text, ok){
+    let m = $("inlineMsg");
+    if(!m){ m = document.createElement("div"); m.id="inlineMsg"; $("body").appendChild(m); }
+    m.className = "msg " + (ok?"ok":"ng"); m.textContent = text;
+  }
+
+  function renderDone(r){
+    $("hero").classList.add("hidden");
+    const banner = r.alreadyToday
+      ? '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>'
+      : '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>';
+    const mileHtml = r.alreadyToday
+      ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
+      : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
+
+    let ticketHtml = "";
+    if (r.ticketEnabled && Number(r.ticketBalance) > 0){
+      const bal = Number(r.ticketBalance);
+      ticketHtml =
+        '<div class="tsec">' +
+          '<div class="thd">🎫 試飲チケット <span style="color:#999;font-weight:600">（残'+bal+'枚）</span></div>' +
+          '<div class="stepper"><button id="minus">−</button><div class="cnt"><div class="n"><span id="cnt">1</span>枚</div></div><button id="plus">＋</button></div>' +
+          '<button id="use" class="use">使う</button><div id="tmsg"></div>' +
+        '</div>';
+    }
+
+    $("body").innerHTML =
+      '<div style="height:8px"></div>' +
+      '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
+      mileHtml + ticketHtml +
+      '<a class="link" href="#" id="about">試飲チケットについて</a>' +
+      '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>';
+
+    const card = document.querySelector(".card");
+    const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
+    card.insertAdjacentHTML("afterbegin", banner);
+
+    if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
+    $("about").onclick = (ev)=>{ ev.preventDefault(); $("aboutInfo").classList.toggle("hidden"); };
+  }
+
+  function wireTicket(bal){
+    count = 1;
+    const render = ()=>{ $("cnt").textContent = count; $("minus").disabled = busy || count<=1; $("plus").disabled = busy || count>=Math.min(bal,10); $("use").textContent = busy ? "処理中…" : (count+"枚を使う"); };
+    $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
+    $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
+    $("use").onclick = async ()=>{
+      if(busy) return; busy = true; render();
+      try{
+        const d = await api("use_do", { spotId: st.shopId, count: count });
+        busy = false;
+        if(!d || !d.ok){
+          render();
+          const msg = d && d.error === "insufficient" ? "残り枚数が足りません。" : (d && d.error === "not_enabled" ? "この店は試飲チケット対応ではありません。" : "チケットの使用に失敗しました。");
+          $("tmsg").className = "msg ng"; $("tmsg").textContent = msg; return;
+        }
+        renderTicketUsed(d);
+      }catch(e){ busy=false; render(); $("tmsg").className="msg ng"; $("tmsg").textContent="通信に失敗しました。もう一度お試しください。"; }
+    };
+    render();
+  }
+
+  function renderTicketUsed(d){
+    const card = document.querySelector(".card");
+    const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
+    card.insertAdjacentHTML("afterbegin", '<div class="done" style="background:#BA7517"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
+    $("body").innerHTML =
+      '<div style="height:8px"></div>' +
+      '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
+      '<div class="total" style="margin-top:6px">残り ' + (Number(d.balanceAfter)||0) + '枚</div>' +
+      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>';
+  }
+
+  function renderNeedRegister(){
+    $("hero").classList.add("hidden");
+    $("body").innerHTML =
+      '<div class="brand">JCJパスポート</div>' +
+      '<div class="shop">' + esc(st.shopName) + '</div>' +
+      '<div class="fine" style="text-align:left;margin:12px 0;line-height:1.8;color:#555;font-size:13px">はじめての方は、先に登録が必要です。<br>登録するとこのお店に自動でチェックインされます。</div>' +
+      '<button id="reg" class="go">登録して続ける</button>';
+    $("reg").onclick = ()=>{
+      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: OA_URL, external: false });
+      else location.href = OA_URL;
+    };
+  }
+
+  async function main(){
+    showLoading("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    SPOT = params.get("spot") || params.get("spotId") || "";
+    if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+    if(!SPOT){ showStatusText("店番号がURLにありません。プレートのリンクをご確認ください。"); return; }
+
+    showLoading("お店を確認しています…");
+    st = await api("checkin_state", { spot: SPOT });
+    if(!st || !st.ok){
+      if (st && st.error === "shop_not_found"){ showStatusText("お店が見つかりませんでした。プレートのリンクをご確認ください。"); return; }
+      showStatusText("読み込みに失敗しました：" + (st && st.error || "unknown")); return;
+    }
+    renderPrompt();
+  }
+
+  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); });
+</script>
+</body>
+</html>
