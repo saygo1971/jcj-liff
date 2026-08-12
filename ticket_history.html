@@ -74,7 +74,7 @@
 
   async function fetchJson(query) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 15000);
+    const timer = setTimeout(() => ctrl.abort(), 40000);
     try {
       const res = await fetch(GAS_URL + query, { method: "GET", signal: ctrl.signal });
       return await res.json();
