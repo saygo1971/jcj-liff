@@ -98,6 +98,7 @@
   let spotId = "";
   let shopName = "";
   let balance = 0;
+  let useOpId = "";  // 二重使用ガードの合言葉。確認画面に入るたび発行し、失敗時の再送でも同じ値を使う。
 
   const $ = (id) => document.getElementById(id);
   const setStatus = (t, loading = true) => {
@@ -165,6 +166,8 @@
 
   function toConfirm() {
     const n = Number($("count").value) || 1;
+    // この「使う」1回分の合言葉を発行（再送しても同じ→サーバ側で二重消費を拒否）。
+    useOpId = "use_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
     $("cf-shop").textContent = shopName || "このお店";
     $("cf-text").textContent = (shopName || "このお店") + " で " + n + " 枚 使います。";
     $("doUseBtn").textContent = "はい、" + n + " 枚使う";
@@ -187,7 +190,8 @@
         "?action=use_do" +
         "&userId=" + encodeURIComponent(currentUserId) +
         "&spotId=" + encodeURIComponent(spotId) +
-        "&count=" + encodeURIComponent(n));
+        "&count=" + encodeURIComponent(n) +
+        "&opId=" + encodeURIComponent(useOpId));
       if (data && data.ok) {
         renderUsed(data);
       } else if (data && data.error === "insufficient") {
@@ -198,13 +202,14 @@
         hideStatus();
         $("doUseBtn").disabled = false;
         show("confirm");
-        alert("処理に失敗しました。時間をおいてお試しください。");
+        alert("処理に失敗しました。もう一度「使う」を押してください（同じ操作なら二重には使われません）。");
       }
     } catch (err) {
       hideStatus();
       $("doUseBtn").disabled = false;
       show("confirm");
-      alert("通信に失敗しました。時間をおいてお試しください。");
+      // 二重使用ガード（合言葉＝冪等キー）により、同じ画面からの再送でも二重消費は起きない。
+      alert("通信が不安定でした。もう一度「使う」を押してください（同じ操作なら二重には使われません）。");
     }
   }
 
