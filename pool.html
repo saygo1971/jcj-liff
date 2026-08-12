@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>試飲チケットの 預かり金</title>
+  <style>
+    :root{ --brand:#0F6E56; --brand-d:#085041; --brand-l:#E1F5EE; --brand-l2:#9FE1CB; --line:#e6e6e6; --muted:#666; --hint:#999; }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
+    .wrap{max-width:480px;margin:0 auto;padding:14px}
+    .head{background:var(--brand);color:#fff;border-radius:16px 16px 0 0;padding:16px}
+    .head .sub{color:var(--brand-l);font-size:12px}
+    .head .ttl{font-size:18px;font-weight:700;margin-top:3px}
+    .card{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;padding:18px 16px}
+    .bal .lbl{font-size:13px;color:var(--muted)}
+    .bal .num{font-size:36px;font-weight:800;line-height:1.15;margin-top:2px}
+    .bal .sub{font-size:12px;color:var(--hint);margin-top:2px}
+    .prog{background:var(--brand-l);border-radius:12px;padding:13px 14px;margin:16px 0}
+    .prog .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+    .prog .t{font-size:14px;color:var(--brand-d);font-weight:700}
+    .prog .c{font-size:12px;color:var(--brand-d)}
+    .bar{height:9px;background:var(--brand-l2);border-radius:20px;overflow:hidden}
+    .bar > i{display:block;height:100%;background:var(--brand);width:0%}
+    .prog .dl{font-size:12px;color:var(--brand-d);margin-top:8px}
+    .rule{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+    .rule .h{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+    .rule .b{font-size:12px;color:#555;line-height:1.7}
+    .hist .h{font-size:14px;font-weight:700;margin-bottom:8px}
+    .hist .row{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+    .hist .row .d{color:var(--muted)}
+    .hist .empty{border-top:1px solid var(--line);padding:14px 0;font-size:12px;color:var(--hint);text-align:center}
+    .foot{margin-top:16px;font-size:11px;color:var(--hint);text-align:center;line-height:1.7}
+    .status{color:var(--muted);font-size:13px;padding:34px 0;text-align:center}
+    .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;white-space:pre-wrap;font-size:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="sub">JCJ 試飲チケット</div>
+    <div class="ttl"><span id="shopName">お店</span> さまの 預かり金</div>
+  </div>
+
+  <div class="card">
+    <div id="status" class="status">
+      <div id="spin" class="spin"></div>
+      <div id="statusText">読み込んでいます…</div>
+    </div>
+
+    <div id="main" class="hidden">
+      <div class="bal">
+        <div class="lbl">お店へお渡しする 預かり金</div>
+        <div class="num">¥<span id="bal">0</span></div>
+        <div class="sub" id="balSub"></div>
+      </div>
+
+      <div class="prog" id="progBox">
+        <div class="top">
+          <div class="t" id="progTitle">あと −枚で お振込</div>
+          <div class="c"><span id="cnt">0</span> / <span id="thr">20</span>枚</div>
+        </div>
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="dl hidden" id="dl"></div>
+      </div>
+
+      <div class="rule">
+        <div class="h">お振込のルール</div>
+        <div class="b">
+          <span id="thr2">20</span>枚（¥<span id="thrYen">4,800</span>）たまったら、翌月末までにまとめてお振込します。<span id="thr3">20</span>枚に届かなくても<span id="mon">6</span>か月に一度は残額を全額お振込します。預かり金が消えることはありません。
+        </div>
+      </div>
+
+      <div class="hist">
+        <div class="h">これまでのお振込</div>
+        <div id="histList"></div>
+      </div>
+
+      <div class="foot">🔒 このページはあなたのお店だけの専用リンクです。<br>URLを他の人に教えないようご注意ください。</div>
+    </div>
+
+    <pre id="debug" class="hidden"></pre>
+  </div>
+</div>
+
+<script>
+  // ===== 設定ここだけ（テスト環境）=====
+  // GAS_URL：コード.js の doGet を配信しているテスト環境のデプロイURL（exchange/referral/share と同じ /exec）。
+  //          ※ ticket.js / コード.js を push した後は「デプロイの管理→新バージョン」で更新しないと新しい入口(action=roaster_pool_state)が届かない点に注意。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const KEY = (params.get("k") || "").trim();
+  const debugMode = (params.get("debug") || "") === "1";
+
+  function showStatus(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+  function showDebug(o){ if(!debugMode) return; $("debug").classList.remove("hidden"); $("debug").textContent = typeof o==="string"?o:JSON.stringify(o,null,2); }
+  const yen = n => (Number(n)||0).toLocaleString();
+
+  function render(d){
+    $("shopName").textContent = d.shopName || "お店";
+    $("bal").textContent = yen(d.balanceYen);
+
+    const per = Number(d.perTicketYen)||0;
+    $("balSub").textContent = "（試飲チケット" + (Number(d.unpaidCount)||0) + "枚ぶん" + (per>0 ? "・1枚 ¥"+yen(per) : "") + "）";
+
+    const thr = Number(d.thresholdCount)||20;
+    const cnt = Number(d.unpaidCount)||0;
+    $("thr").textContent = thr; $("thr2").textContent = thr; $("thr3").textContent = thr;
+    $("thrYen").textContent = yen(thr * (per||240));
+    $("cnt").textContent = cnt;
+    const pct = Math.max(0, Math.min(100, Math.round(cnt/thr*100)));
+    $("barFill").style.width = pct + "%";
+
+    const np = d.nextPayout || {};
+    if (np.type === "none"){
+      $("progTitle").textContent = "まだ 預かり金はありません";
+    } else if (np.type === "threshold_reached"){
+      $("progTitle").textContent = "まもなくお振込します（" + thr + "枚に到達）";
+    } else {
+      $("progTitle").textContent = "あと " + (Number(np.remainingCount)||0) + "枚で お振込";
+      if (np.deadlineYmd){
+        $("dl").classList.remove("hidden");
+        $("dl").textContent = "または " + np.deadlineYmd + " までに残額を全額お振込します";
+      }
+    }
+
+    const hist = Array.isArray(d.history) ? d.history : [];
+    const box = $("histList");
+    if (hist.length === 0){
+      box.innerHTML = '<div class="empty">まだお振込はありません。預かり金は大切にお預かりしています。</div>';
+    } else {
+      box.innerHTML = hist.map(function(h){
+        return '<div class="row"><span class="d">'+ h.ymd +'</span><span>¥'+ yen(h.yen) +'（'+ (Number(h.count)||0) +'枚）</span></div>';
+      }).join("");
+    }
+
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function load(){
+    if (!KEY){ showStatus("リンクが正しくありません。お店専用のリンクからもう一度お開きください。"); return; }
+    try{
+      const q = new URLSearchParams({ action:"roaster_pool_state", k:KEY, _:Date.now() });
+      const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+      const d = await res.json();
+      showDebug(d);
+      if(!d.ok){
+        if (d.error === "invalid_key") showStatus("このリンクは無効です。お店専用のリンクをご確認ください。");
+        else if (d.error === "missing_key") showStatus("リンクが正しくありません。お店専用のリンクからお開きください。");
+        else showStatus("読み込みに失敗しました。時間をおいてもう一度お試しください。");
+        return;
+      }
+      render(d);
+    } catch(err){
+      showStatus("通信に失敗しました。電波の良い場所でもう一度お試しください。");
+      showDebug(String(err));
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
