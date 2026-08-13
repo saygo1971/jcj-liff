@@ -21,9 +21,15 @@
     .go{width:100%;margin-top:16px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
     .go:disabled{opacity:.5}
     .fine{font-size:11px;color:var(--hint);margin-top:8px;text-align:center}
+    .ask{margin-top:14px;background:#eef6f2;border:1px solid #cfe4da;border-radius:12px;padding:12px 13px;font-size:13.5px;line-height:1.75;color:#215}
+    .ask b{color:var(--brand)}
+    .asknote{color:#777;font-size:12px}
+    .holdmsg{margin:14px 12px 4px;background:#fff7ea;border:1px solid #f0d9a8;border-radius:12px;padding:12px 13px;font-size:13px;line-height:1.75;color:#6b4c12}
+    .holdmsg b{color:var(--amber)}
     .done{padding:18px;text-align:center;color:#fff}
     .done.ci{background:var(--brand)}
     .done.today{background:var(--amber)}
+    .done.hold{background:var(--amber)}
     .done .ic{font-size:30px;line-height:1}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
     .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
@@ -90,7 +96,7 @@
     return await res.json();
   }
 
-  // ① 開いた画面：店名＋「チェックインする」（1タップ・位置確認なし）
+  // ① 開いた画面：店名＋お願い文＋「現在地を確認して進む」（位置確認あり）
   function renderPrompt(){
     hideStatus();
     $("hero").src = st.shopImage || "";
@@ -100,24 +106,50 @@
       '<div class="brand">JCJパスポート</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div class="pref">' + esc(st.pref) + '</div>' +
-      '<button id="go" class="go">チェックインする</button>';
+      '<div class="ask">📍 <b>お店に来た確認のため、位置情報を使います。</b><br>次に出る画面で「許可」を押してね。<br>' +
+      '<span class="asknote">※許可しなくてもチェックインはできます（マイルは後で確認）</span></div>' +
+      '<button id="go" class="go">現在地を確認して進む</button>';
     $("go").onclick = doCheckin;
+  }
+
+  // 現在地を取得（取れたら {ok:true,lat,lng,acc} / 取れない・断られたら {ok:false,reason}）
+  function getPosition_(){
+    return new Promise(function(resolve){
+      if (!navigator.geolocation){ resolve({ ok:false, reason:"unsupported" }); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos){
+          resolve({ ok:true, lat:pos.coords.latitude, lng:pos.coords.longitude, acc:Math.round(pos.coords.accuracy||0) });
+        },
+        function(err){
+          // 1=許可しない / 2=取得不可 / 3=タイムアウト
+          var reason = (err && err.code===1) ? "denied" : ((err && err.code===3) ? "timeout" : "unavailable");
+          resolve({ ok:false, reason:reason });
+        },
+        { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
+      );
+    });
   }
 
   async function doCheckin(){
     if (busy) return; busy = true;
-    const b = $("go"); b.disabled = true; b.textContent = "記録しています…";
+    const b = $("go"); b.disabled = true; b.textContent = "位置を確認しています…";
+    // ① 現在地を取りに行く（OS標準の許可ポップアップはここで出る）
+    const geo = await getPosition_();
+    b.textContent = "記録しています…";
     try{
-      const r = await api("checkin_do", { spot: SPOT });
+      const extra = { spot: SPOT };
+      if (geo && geo.ok){ extra.lat = geo.lat; extra.lng = geo.lng; extra.acc = geo.acc; }
+      else { extra.geo = (geo && geo.reason) ? geo.reason : "unavailable"; }
+      const r = await api("checkin_do", extra);
       busy = false;
       if(!r || !r.ok){
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
-        b.disabled = false; b.textContent = "チェックインする";
+        b.disabled = false; b.textContent = "現在地を確認して進む";
         showMsgInline("チェックインに失敗しました。時間をおいて再度お試しください。", false); return;
       }
       renderDone(r);
     }catch(e){
-      busy = false; b.disabled = false; b.textContent = "チェックインする";
+      busy = false; b.disabled = false; b.textContent = "現在地を確認して進む";
       showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
     }
   }
@@ -128,8 +160,24 @@
     m.className = "msg " + (ok?"ok":"ng"); m.textContent = text;
   }
 
+  // ④ 位置とれない/遠い → 保留（チェックインは記録・マイルは確認中）
+  function renderHold(r){
+    $("hero").classList.add("hidden");
+    const card = document.querySelector(".card");
+    const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
+    card.insertAdjacentHTML("afterbegin",
+      '<div class="done hold"><div class="ic">🕒</div><div class="t">チェックインを記録しました</div></div>');
+    $("body").innerHTML =
+      '<div style="height:8px"></div>' +
+      '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName || st.shopName) + '</div>' +
+      '<div class="holdmsg"><b>マイルは確認中です。</b><br>位置情報が確認できなかったため、マイルは保留になっています。お店の近くでもう一度チェックインすると受け取れます。</div>' +
+      '<div class="fine" style="margin-top:12px">※ ずるを防ぐための仕組みです。ご協力ありがとうございます</div>';
+  }
+
   // ② 完了 →（対応店＆残あり）チケット案内
   function renderDone(r){
+    // 位置が確認できずマイル保留のときは保留画面へ
+    if (r && r.pending){ renderHold(r); return; }
     $("hero").classList.add("hidden");
     const banner = r.alreadyToday
       ? '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>'
