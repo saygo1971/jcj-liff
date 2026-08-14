@@ -354,15 +354,8 @@
   async function doExchange(){
     dlog("[tap] 換えるボタン→doExchange開始 busy=" + busy);
     if (busy) return;
-    const rate = Number(stateEx.milePerCoupon)||0;
-    const yen = Number(stateEx.discountYen)||0;
-    const ok = await confirmSheet(
-      count + "枚を交換しますか？",
-      "<b>" + (rate*count).toLocaleString() + "マイル</b>を使って、豆¥" + yen.toLocaleString() + "引きクーポンを<b>" + count + "枚</b>受け取ります",
-      "交換する"
-    );
-    dlog("[flow] confirm結果 ok=" + ok + " / busy=" + busy);
-    if(!ok) return;
+    // ※確認ポップアップ(overlay)は一部端末で「交換する」のタップが通らない事象があったため撤去。
+    //   このボタン自体を1回押した時点で直接交換する。二重実行は busy ガードで防止。
     busy = true; clearMsg($("msg")); renderCount();
     try{
       dlog("[flow] サーバ送信 beans_exchange userId=" + (USER_ID?USER_ID.slice(0,6)+"…":"(空)") + " count=" + count);
