@@ -249,6 +249,55 @@
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
       '<div class="total" style="margin-top:6px">残り ' + (Number(d.balanceAfter)||0) + '枚</div>' +
       '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>';
+    sendReceiptToTalk(d);  // ★使用直後に「控えカード（レシート）」をトークへ1枚置く（入口B=ticket_use.html と同じ・配信枠を使わない無料の送信）
+  }
+
+  // ★控えカード（トークに"残る"レシート）——ticket_use.html と同じ見た目・データは use_do 返り値のみ
+  function shortWhen(at){
+    const m = String(at||"").match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    if(m) return Number(m[2]) + "/" + Number(m[3]) + " " + m[4] + ":" + m[5];
+    const dt = new Date();
+    const p2 = n => (n<10?"0":"")+n;
+    return (dt.getMonth()+1) + "/" + dt.getDate() + " " + p2(dt.getHours()) + ":" + p2(dt.getMinutes());
+  }
+  function buildReceiptFlex(d){
+    const shop = d.shopName || (st && st.shopName) || "このお店";
+    const num = String(Number(d.consumedCount)||0);
+    const rest = String(Number(d.balanceAfter)||0);
+    const when = shortWhen(d.at);
+    const row = (label, value, strong) => ({
+      type:"box", layout:"horizontal", margin:"sm",
+      contents:[
+        { type:"text", text:label, size:"sm", color:"#8c6e50", flex:0 },
+        { type:"text", text:value, size:"sm", color:"#332822", align:"end", weight: strong ? "bold" : "regular" }
+      ]
+    });
+    return {
+      type:"flex",
+      altText:"🎫 試飲チケットを使いました（" + shop + " / " + num + "枚）",
+      contents:{
+        type:"bubble", size:"kilo",
+        header:{ type:"box", layout:"vertical", backgroundColor:"#34595A", paddingAll:"14px",
+          contents:[ { type:"text", text:"🎫 試飲チケットを使いました", color:"#ffffff", weight:"bold", size:"md", wrap:true } ] },
+        body:{ type:"box", layout:"vertical", paddingAll:"16px",
+          contents:[
+            { type:"text", text:shop, weight:"bold", size:"lg", color:"#34595A", wrap:true },
+            row("使った枚数", num + " 枚", true),
+            row("残り", rest + " 枚", false),
+            row("使用日時", when, false),
+            { type:"separator", margin:"lg", color:"#EFE7D6" },
+            { type:"text", margin:"md", size:"xxs", color:"#8c6e50", wrap:true,
+              text:"お店の方へ：この控えは記録用です。ご注文の確認はお客様の画面でお願いします。" }
+          ] }
+      }
+    };
+  }
+  // 控えカードをトークへ"置く"。送れない環境（トーク外・許可未設定）でも黙って諦める＝画面表示は主役。
+  async function sendReceiptToTalk(d){
+    try{
+      if(!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
+      await liff.sendMessages([ buildReceiptFlex(d) ]);
+    }catch(e){}
   }
 
   function renderNeedRegister(){
