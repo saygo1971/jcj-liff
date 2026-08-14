@@ -234,6 +234,22 @@
   const params = new URLSearchParams(location.search);
   const debugMode = (params.get("debug") || "") === "1";
 
+  // ★★ 一時デバッグ（原因特定用・特定後に削除）★★ 画面上部に固定でログを出す。
+  function dlog(m){
+    try{
+      var d = document.getElementById("__dbg");
+      if(!d){
+        d = document.createElement("div"); d.id = "__dbg";
+        d.style.cssText = "position:fixed;top:0;left:0;right:0;max-height:38%;overflow:auto;background:rgba(0,0,0,.88);color:#0f0;font:11px/1.5 monospace;padding:8px;z-index:9999;white-space:pre-wrap";
+        (document.body || document.documentElement).appendChild(d);
+      }
+      d.textContent += m + "\n";
+    }catch(_){}
+  }
+  window.onerror = function(msg, src, ln, col){ dlog("[JSエラー] " + msg + " @" + ln + ":" + col); return false; };
+  window.addEventListener("unhandledrejection", function(e){ dlog("[未処理Promise] " + (e && e.reason ? e.reason : "?")); });
+  dlog("起動: beans.html 読み込みOK");
+
   let USER_ID = "";
   let USER_NAME = "";
   let stateEx = null;   // beans_state
@@ -256,9 +272,10 @@
       $("cfDesc").innerHTML = descHtml;
       $("cfOk").textContent = okLabel || "交換する";
       $("overlay").classList.remove("hidden");
+      dlog("[flow] 確認ポップアップ表示（cfOk/cfCancel を配線）");
       const done = function(v){ $("overlay").classList.add("hidden"); $("cfOk").onclick=null; $("cfCancel").onclick=null; resolve(v); };
-      $("cfOk").onclick = function(){ done(true); };
-      $("cfCancel").onclick = function(){ done(false); };
+      $("cfOk").onclick = function(){ dlog("[tap] 交換する ボタン押下"); done(true); };
+      $("cfCancel").onclick = function(){ dlog("[tap] キャンセル 押下"); done(false); };
     });
   }
 
@@ -335,6 +352,7 @@
   }
 
   async function doExchange(){
+    dlog("[tap] 換えるボタン→doExchange開始 busy=" + busy);
     if (busy) return;
     const rate = Number(stateEx.milePerCoupon)||0;
     const yen = Number(stateEx.discountYen)||0;
@@ -343,10 +361,13 @@
       "<b>" + (rate*count).toLocaleString() + "マイル</b>を使って、豆¥" + yen.toLocaleString() + "引きクーポンを<b>" + count + "枚</b>受け取ります",
       "交換する"
     );
+    dlog("[flow] confirm結果 ok=" + ok + " / busy=" + busy);
     if(!ok) return;
     busy = true; clearMsg($("msg")); renderCount();
     try{
+      dlog("[flow] サーバ送信 beans_exchange userId=" + (USER_ID?USER_ID.slice(0,6)+"…":"(空)") + " count=" + count);
       const d = await api("beans_exchange", { userName:USER_NAME, count:count });
+      dlog("[flow] 応答 " + JSON.stringify(d));
       showDebug(d);
       if(!d.ok){ busy=false; renderCount(); showMsg($("msg"), friendlyError(d.error), false); return; }
       stateEx.mileBalance = d.mileBalanceAfter;
@@ -355,6 +376,7 @@
       busy = false; renderExchange();
       showMsg($("msg"), d.issuedCount + "枚を交換しました。クーポンが" + d.couponBalanceAfter + "枚になりました。", true);
     } catch(err){
+      dlog("[flow] 送信catch（通信失敗） " + String(err));
       busy = false; renderCount();
       showMsg($("msg"), "通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
       showDebug(String(err));
