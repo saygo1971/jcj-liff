@@ -223,6 +223,68 @@
     setInterval(function () { $("u-clock").textContent = nowText(); }, 1000);
     show("used");
     show("backTalkBtn");
+    sendReceiptToTalk(data);  // ★使用直後に「控えカード（レシート）」をトークへ1枚置く（配信枠を使わない無料の送信）
+  }
+
+  // ★控えカード（トークに"残る"レシート）——————————————————————
+  // 使用日時 "yyyy-MM-dd HH:mm:ss" → "M/D HH:mm" に短縮（無ければ今の時刻で代用）。
+  function shortWhen(at) {
+    const m = String(at || "").match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    if (m) return Number(m[2]) + "/" + Number(m[3]) + " " + m[4] + ":" + m[5];
+    const d = new Date();
+    return (d.getMonth() + 1) + "/" + d.getDate() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+
+  // 控えカード（LINE Flex）を組み立てる。データは use_do の返り値のみ（追加読取なし）。
+  function buildReceiptFlex(data) {
+    const shop = data.shopName || shopName || "このお店";
+    const num = String(data.consumedCount);
+    const rest = String(data.balanceAfter);
+    const when = shortWhen(data.at);
+    const row = (label, value, strong) => ({
+      type: "box", layout: "horizontal", margin: "sm",
+      contents: [
+        { type: "text", text: label, size: "sm", color: "#8c6e50", flex: 0 },
+        { type: "text", text: value, size: "sm", color: "#332822", align: "end",
+          weight: strong ? "bold" : "regular" }
+      ]
+    });
+    return {
+      type: "flex",
+      altText: "🎫 試飲チケットを使いました（" + shop + " / " + num + "枚）",
+      contents: {
+        type: "bubble", size: "kilo",
+        header: {
+          type: "box", layout: "vertical", backgroundColor: "#34595A", paddingAll: "14px",
+          contents: [
+            { type: "text", text: "🎫 試飲チケットを使いました", color: "#ffffff", weight: "bold", size: "md", wrap: true }
+          ]
+        },
+        body: {
+          type: "box", layout: "vertical", paddingAll: "16px",
+          contents: [
+            { type: "text", text: shop, weight: "bold", size: "lg", color: "#34595A", wrap: true },
+            row("使った枚数", num + " 枚", true),
+            row("残り", rest + " 枚", false),
+            row("使用日時", when, false),
+            { type: "separator", margin: "lg", color: "#EFE7D6" },
+            { type: "text", margin: "md", size: "xxs", color: "#8c6e50", wrap: true,
+              text: "お店の方へ：この控えは記録用です。ご注文の確認はお客様の「使用中画面」でお願いします。" }
+          ]
+        }
+      }
+    };
+  }
+
+  // 控えカードをトークへ"置く"（liff.sendMessages＝配信枠を消費しない無料の送信）。
+  // 補助機能なので、送れない環境（トーク外・許可未設定など）でも黙って諦める＝使用中画面は必ず出す。
+  async function sendReceiptToTalk(data) {
+    try {
+      if (!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
+      await liff.sendMessages([ buildReceiptFlex(data) ]);
+    } catch (e) {
+      // 控えはあくまで記録用の補助。失敗しても使用中画面が主役なので致命ではない。
+    }
   }
 
   async function main() {
