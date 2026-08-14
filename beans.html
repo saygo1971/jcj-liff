@@ -234,21 +234,8 @@
   const params = new URLSearchParams(location.search);
   const debugMode = (params.get("debug") || "") === "1";
 
-  // ★★ 一時デバッグ（原因特定用・特定後に削除）★★ 画面上部に固定でログを出す。
-  function dlog(m){
-    try{
-      var d = document.getElementById("__dbg");
-      if(!d){
-        d = document.createElement("div"); d.id = "__dbg";
-        d.style.cssText = "position:fixed;top:0;left:0;right:0;max-height:38%;overflow:auto;background:rgba(0,0,0,.88);color:#0f0;font:11px/1.5 monospace;padding:8px;z-index:9999;white-space:pre-wrap";
-        (document.body || document.documentElement).appendChild(d);
-      }
-      d.textContent += m + "\n";
-    }catch(_){}
-  }
-  window.onerror = function(msg, src, ln, col){ dlog("[JSエラー] " + msg + " @" + ln + ":" + col); return false; };
-  window.addEventListener("unhandledrejection", function(e){ dlog("[未処理Promise] " + (e && e.reason ? e.reason : "?")); });
-  dlog("起動: beans.html 読み込みOK");
+  // デバッグ表示は原因特定済みのため無効化（no-op）。呼び出し箇所はそのまま無害に通過する。
+  function dlog(){}
 
   let USER_ID = "";
   let USER_NAME = "";
