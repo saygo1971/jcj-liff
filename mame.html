@@ -74,7 +74,7 @@
     .used .t{font-size:18px;font-weight:800;margin-top:6px}
     .used .d{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}
     .ghost{width:100%;height:46px;border-radius:12px;background:#fff;border:1px solid #ccc;color:#555;font-size:15px;font-weight:700;margin-top:14px}
-    .hidden{display:none}
+    .hidden{display:none !important}
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center;z-index:50}
     .sheet{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:18px 18px 24px;animation:slideup .18s ease-out}
     @keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -209,16 +209,9 @@
   </div>
 </div>
 
-<div id="overlay" class="overlay hidden">
-  <div class="sheet">
-    <div class="t" id="cfTtl">交換しますか？</div>
-    <div class="d" id="cfDesc"></div>
-    <div class="btns">
-      <button id="cfCancel" class="cancel" type="button">キャンセル</button>
-      <button id="cfOk" class="ok" type="button">交換する</button>
-    </div>
-  </div>
-</div>
+<!-- 確認ポップアップ(overlay)は撤去済み。1タップ直接交換に統一したため不要。
+     以前は class="overlay hidden" だが .overlay の display:flex が .hidden(display:none)を上書きし、
+     常時グレーの膜が全面に出て緑ボタンを覆いタップ不能にしていた（実機で詰まった真因）。膜ごと削除。 -->
 
 <script>
   // ===== 設定ここだけ（テスト環境）=====
@@ -255,18 +248,7 @@
   function showMsg(el, text, ok){ el.className="msg "+(ok?"ok":"ng"); el.textContent=text; el.classList.remove("hidden"); }
   function clearMsg(el){ el.classList.add("hidden"); }
 
-  function confirmSheet(title, descHtml, okLabel){
-    return new Promise(function(resolve){
-      $("cfTtl").textContent = title;
-      $("cfDesc").innerHTML = descHtml;
-      $("cfOk").textContent = okLabel || "交換する";
-      $("overlay").classList.remove("hidden");
-      dlog("[flow] 確認ポップアップ表示（cfOk/cfCancel を配線）");
-      const done = function(v){ $("overlay").classList.add("hidden"); $("cfOk").onclick=null; $("cfCancel").onclick=null; resolve(v); };
-      $("cfOk").onclick = function(){ dlog("[tap] 交換する ボタン押下"); done(true); };
-      $("cfCancel").onclick = function(){ dlog("[tap] キャンセル 押下"); done(false); };
-    });
-  }
+  // confirmSheet（確認ポップアップ）は撤去済み。1タップ直接交換に統一したため未使用のため削除。
 
   async function api(action, extra){
     const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
