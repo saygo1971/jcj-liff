@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>マイルで豆の割引</title>
+  <style>
+    :root{ --brand:#34595A; --brand2:#DCE7D8; --line:#e6e6e6; --muted:#666; --hint:#999; --wood:#8a6d4b; }
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
+    .wrap{max-width:480px;margin:0 auto;padding:14px}
+    .head{background:var(--brand);color:#fff;border-radius:16px 16px 0 0;padding:14px 16px}
+    .head .sub{color:var(--brand2);font-size:12px}
+    .head .ttl{font-size:17px;font-weight:700;margin-top:2px}
+    .card{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;padding:16px}
+    .tabs{display:flex;gap:8px;margin-bottom:14px}
+    .tabs button{flex:1;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:#555}
+    .tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .bal{background:#f7f7f5;border-radius:12px;padding:14px;text-align:center}
+    .bal .lbl{font-size:13px;color:var(--muted)}
+    .bal .num{font-size:30px;font-weight:800;margin-top:2px}
+    .bal .num small{font-size:15px;color:var(--muted);font-weight:600}
+    .ratecard{background:#f7f7f5;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+    .ratecard .lbl{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .ratecard .row{display:flex;align-items:center;justify-content:space-between;text-align:center}
+    .ratecard .col{flex:1}
+    .ratecard .col .v{font-size:17px;font-weight:800;line-height:1.3}
+    .ratecard .col .v.brand{color:var(--brand)}
+    .ratecard .col .u{font-size:12px;color:var(--muted);font-weight:600}
+    .ratecard .eq{font-size:24px;color:var(--hint);font-weight:800;padding:0 8px}
+    .ratecard .desc{border-top:1px solid var(--line);margin-top:12px;padding-top:10px;font-size:12px;color:#555;line-height:1.7}
+    .sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+    .sec .lbl{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .stepper{display:flex;align-items:center;justify-content:space-between}
+    .stepper button{width:48px;height:48px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px}
+    .stepper button:disabled{opacity:.35}
+    .cnt{text-align:center}
+    .cnt .n{font-size:28px;font-weight:800}
+    .cnt .m{font-size:12px;color:var(--hint)}
+    .go{width:100%;margin-top:14px;height:50px;border-radius:12px;background:var(--brand);color:#fff;border:none;font-size:16px;font-weight:700}
+    .go:disabled{opacity:.4}
+    .have{border-top:1px solid var(--line);margin-top:16px;padding-top:12px;display:flex;justify-content:space-between;align-items:center}
+    .have .l{font-size:13px;color:var(--muted)}
+    .have .r{font-size:15px;font-weight:700}
+    .fine{font-size:11px;color:var(--hint);margin-top:10px;line-height:1.7}
+    .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
+    .msg.ok{background:#e8f5ea;color:#1b5e20}
+    .msg.ng{background:#fdecea;color:#b71c1c}
+    .status{color:var(--muted);font-size:13px;padding:28px 0;text-align:center}
+    .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    select{width:100%;padding:12px 14px;font-size:16px;font-weight:600;color:#333;border:1px solid #ddd;border-radius:12px;background:#fff;-webkit-appearance:menulist}
+    /* 使う：見せる画面 */
+    .coupon{border:2px solid var(--brand);border-radius:16px;overflow:hidden;background:#fff}
+    .coupon .top{background:var(--brand);color:#fff;text-align:center;padding:16px}
+    .coupon .top .hint{font-size:13px;color:var(--brand2)}
+    .coupon .top .off{font-size:32px;font-weight:800;margin-top:6px;letter-spacing:1px}
+    .coupon .top .shop{font-size:12px;color:var(--brand2);margin-top:2px}
+    .coupon .mid{padding:16px;text-align:center}
+    .coupon .mid .lead{font-size:12px;color:var(--muted)}
+    .coupon .mid .clock{font-size:26px;font-weight:800;margin-top:8px;letter-spacing:1px;font-variant-numeric:tabular-nums}
+    .coupon .mid .exp{font-size:11px;color:var(--hint);margin-top:2px}
+    .coupon .mid .sep{border-top:1px solid var(--brand2);margin:14px 0}
+    .coupon .mid .codelbl{font-size:12px;color:var(--muted)}
+    .coupon .mid .code{font-size:20px;font-weight:800;letter-spacing:2px;color:var(--brand)}
+    .coupon .foot{border-top:1px solid var(--brand2);padding:12px 14px}
+    .confirm{width:100%;height:46px;border-radius:10px;background:var(--wood);color:#fff;border:none;font-size:15px;font-weight:700}
+    .confirm:disabled{opacity:.4}
+    .used{border:1px solid var(--brand2);border-radius:16px;background:#fff;text-align:center;padding:22px 16px}
+    .used .mk{font-size:40px;color:var(--brand)}
+    .used .t{font-size:18px;font-weight:800;margin-top:6px}
+    .used .d{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}
+    .ghost{width:100%;height:46px;border-radius:12px;background:#fff;border:1px solid #ccc;color:#555;font-size:15px;font-weight:700;margin-top:14px}
+    .hidden{display:none}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+    .sheet{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:18px 18px 24px;animation:slideup .18s ease-out}
+    @keyframes slideup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .sheet .t{font-size:17px;font-weight:700;text-align:center}
+    .sheet .d{font-size:13px;color:#555;text-align:center;margin-top:10px;line-height:1.7}
+    .sheet .btns{display:flex;gap:10px;margin-top:18px}
+    .sheet .btns button{flex:1;height:48px;border-radius:12px;font-size:15px}
+    .sheet .cancel{border:1px solid #ddd;background:#fff;color:#333}
+    .sheet .ok{border:none;background:var(--brand);color:#fff;font-weight:700}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;white-space:pre-wrap;font-size:12px}
+  </style>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="sub">JCJパスポート</div>
+    <div class="ttl">マイルで豆の割引</div>
+  </div>
+
+  <div class="card">
+    <div id="status" class="status">
+      <div id="spin" class="spin"></div>
+      <div id="statusText">起動中…</div>
+    </div>
+
+    <div id="main" class="hidden">
+      <div class="tabs">
+        <button id="tabExchange" class="on" type="button">マイルを換える</button>
+        <button id="tabUse" type="button">お店で使う</button>
+      </div>
+
+      <!-- ===== 換える ===== -->
+      <div id="paneExchange">
+        <div class="bal">
+          <div class="lbl">いまのマイル</div>
+          <div class="num"><span id="mile">-</span> <small>マイル</small></div>
+        </div>
+
+        <div class="ratecard">
+          <div class="lbl">交換レート</div>
+          <div class="row">
+            <div class="col"><div class="v" id="rateMile">-</div><div class="u">マイル</div></div>
+            <div class="eq">=</div>
+            <div class="col"><div class="v brand"><span id="rateYen">-</span>引き</div><div class="u">豆のお会計</div></div>
+          </div>
+          <div class="desc" id="rateDesc">たまったマイルで、豆のお会計に使える割引クーポンと交換できます。</div>
+        </div>
+
+        <div class="sec">
+          <div class="lbl">交換する枚数</div>
+          <div class="stepper">
+            <button id="minus" type="button" aria-label="減らす">−</button>
+            <div class="cnt">
+              <div class="n"><span id="cnt">1</span>枚</div>
+              <div class="m">−<span id="cost">0</span>マイル</div>
+            </div>
+            <button id="plus" type="button" aria-label="増やす">＋</button>
+          </div>
+        </div>
+
+        <button id="go" class="go" type="button">豆割引に換える</button>
+        <div id="msg" class="msg hidden"></div>
+
+        <div class="have">
+          <div class="l">持っている豆割引クーポン</div>
+          <div class="r"><span id="coupon">-</span>枚 <small style="font-size:12px;color:#999;font-weight:600">有効</small></div>
+        </div>
+
+        <div class="fine">
+          ・換えたクーポンは豆のお会計にだけ使えます<br>
+          ・使えるのは<b>1回のお会計で¥<span id="fineYen">200</span>引き（1枚）まで</b>です<br>
+          ・クーポンは発行から<span id="days">30</span>日で失効します
+        </div>
+      </div>
+
+      <!-- ===== 使う ===== -->
+      <div id="paneUse" class="hidden">
+        <!-- A: 店選び -->
+        <div id="useSelect">
+          <div class="bal">
+            <div class="lbl">持っている豆割引クーポン</div>
+            <div class="num"><span id="uCoupon">-</span> <small>枚</small></div>
+          </div>
+          <div class="fine" style="margin-top:10px">1回のお会計で使えるのは <b>1枚（¥<span id="uYen">200</span>引き）</b> までです</div>
+          <div class="sec">
+            <div class="lbl">いまどのお店にいますか？</div>
+            <select id="shop"><option value="">お店を選ぶ…</option></select>
+            <div class="fine">※加盟ロースターの一覧から選びます</div>
+          </div>
+          <button id="useGo" class="go" type="button" disabled>このお店で ¥<span id="useYen">200</span>引きを使う</button>
+          <div id="useMsg" class="msg hidden"></div>
+        </div>
+
+        <!-- B: 見せる -->
+        <div id="useShow" class="hidden">
+          <div class="coupon">
+            <div class="top">
+              <div class="hint">この画面をお店の人に見せてください</div>
+              <div class="off">¥<span id="showYen">200</span> OFF</div>
+              <div class="shop" id="showShop">-</div>
+            </div>
+            <div class="mid">
+              <div class="lead">豆のお会計から割引（1回1枚）</div>
+              <div class="clock" id="clock">03:00</div>
+              <div class="exp" id="expHint">この時間内にお店の人が確認します</div>
+              <div class="sep"></div>
+              <div class="codelbl">確認コード</div>
+              <div class="code" id="code">-</div>
+            </div>
+            <div class="foot">
+              <button id="confirm" class="confirm" type="button">お店の人：確認しました</button>
+            </div>
+          </div>
+          <button id="cancelUse" class="ghost" type="button">やめる（戻る）</button>
+          <div id="showMsg" class="msg hidden"></div>
+        </div>
+
+        <!-- C: 使用済み -->
+        <div id="useDone" class="hidden">
+          <div class="used">
+            <div class="mk">✓</div>
+            <div class="t">¥<span id="doneYen">200</span>引きを使いました</div>
+            <div class="d" id="doneShop">-</div>
+          </div>
+          <button id="doneBack" class="ghost" type="button">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <pre id="debug" class="hidden"></pre>
+  </div>
+</div>
+
+<div id="overlay" class="overlay hidden">
+  <div class="sheet">
+    <div class="t" id="cfTtl">交換しますか？</div>
+    <div class="d" id="cfDesc"></div>
+    <div class="btns">
+      <button id="cfCancel" class="cancel" type="button">キャンセル</button>
+      <button id="cfOk" class="ok" type="button">交換する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== 設定ここだけ（テスト環境）=====
+  // このファイル mame.html は、LINEの頑固なキャッシュ（古い画面/古いendpoint設定を握って離さない事象）を
+  // 回避するために新設した「新しい入口」。旧 beans.html とは別ファイル名＋別LIFF IDで100%新鮮に配信する。
+  // LIFF_ID：この mame.html 専用に LINE Developers で新規作成したLIFFアプリのID
+  //          （テストのログインチャネル 2008851980 配下・エンドポイント= この mame.html のURL）。
+  const LIFF_ID = "2008851980-70LKkgEw"; // JCJ 豆の割引(テスト新・キャッシュ回避の新入口・ログインチャネル2008851980配下)
+  // GAS_URL：コード.js の doGet を配信しているテスト環境のデプロイURL（exchange/referral と同じもの）。
+  //          ※ beans.js を push した後は「デプロイの管理→新バージョン」で更新しないと新しい窓口が届かない。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const debugMode = (params.get("debug") || "") === "1";
+
+  // デバッグ表示は原因特定済みのため無効化（no-op）。呼び出し箇所はそのまま無害に通過する。
+  function dlog(){}
+
+  let USER_ID = "";
+  let USER_NAME = "";
+  let stateEx = null;   // beans_state
+  let stateUse = null;  // beans_use_state
+  let count = 1;        // 交換枚数
+  let busy = false;
+  let useBusy = false;
+  let timer = null;     // 見せる画面のカウントダウン
+  let opId = "";        // 使う操作ID（冪等）
+
+  function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
+  function showDebug(o){ if(!debugMode) return; $("debug").classList.remove("hidden"); $("debug").textContent = typeof o==="string"?o:JSON.stringify(o,null,2); }
+  function showMsg(el, text, ok){ el.className="msg "+(ok?"ok":"ng"); el.textContent=text; el.classList.remove("hidden"); }
+  function clearMsg(el){ el.classList.add("hidden"); }
+
+  function confirmSheet(title, descHtml, okLabel){
+    return new Promise(function(resolve){
+      $("cfTtl").textContent = title;
+      $("cfDesc").innerHTML = descHtml;
+      $("cfOk").textContent = okLabel || "交換する";
+      $("overlay").classList.remove("hidden");
+      dlog("[flow] 確認ポップアップ表示（cfOk/cfCancel を配線）");
+      const done = function(v){ $("overlay").classList.add("hidden"); $("cfOk").onclick=null; $("cfCancel").onclick=null; resolve(v); };
+      $("cfOk").onclick = function(){ dlog("[tap] 交換する ボタン押下"); done(true); };
+      $("cfCancel").onclick = function(){ dlog("[tap] キャンセル 押下"); done(false); };
+    });
+  }
+
+  async function api(action, extra){
+    const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
+    const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    return await res.json();
+  }
+
+  /* ---------- タブ ---------- */
+  function switchTab(which){
+    if (which === "use"){
+      $("tabUse").classList.add("on"); $("tabExchange").classList.remove("on");
+      $("paneUse").classList.remove("hidden"); $("paneExchange").classList.add("hidden");
+      loadUse();
+    } else {
+      $("tabExchange").classList.add("on"); $("tabUse").classList.remove("on");
+      $("paneExchange").classList.remove("hidden"); $("paneUse").classList.add("hidden");
+      stopClock(); backToUseSelect();
+      loadExchange();
+    }
+  }
+
+  /* ---------- 換える ---------- */
+  function maxExchangeable(){ return Math.max(0, Number(stateEx && stateEx.canExchangeNow || 0)); }
+
+  function renderExchange(){
+    const rate = Number(stateEx.milePerCoupon) || 0;
+    const yen = Number(stateEx.discountYen) || 0;
+    $("mile").textContent = (Number(stateEx.mileBalance)||0).toLocaleString();
+    $("coupon").textContent = Number(stateEx.couponBalance)||0;
+    $("days").textContent = Number(stateEx.expiryDays)||30;
+    $("rateMile").textContent = rate.toLocaleString();
+    $("rateYen").textContent = "¥" + yen.toLocaleString();
+    $("fineYen").textContent = yen.toLocaleString();
+    $("rateDesc").innerHTML = "たまった<b>" + rate.toLocaleString() + "マイル</b>で、全国の加盟ロースターの<b>豆のお会計が¥" + yen.toLocaleString() + "引き</b>になるクーポンと交換できます。";
+
+    const max = maxExchangeable();
+    if (count > max) count = max;
+    if (count < 1) count = (max >= 1 ? 1 : 0);
+    renderCount();
+
+    if (!stateEx.exchangeOn){
+      showMsg($("msg"), "ただいま準備中です。もうしばらくお待ちください。", false);
+      $("go").disabled = true;
+    } else if (max < 1){
+      showMsg($("msg"), "クーポン1枚に必要なマイルがまだ足りません。チェックインや紹介でマイルを貯めましょう。", false);
+      $("go").disabled = true;
+    } else {
+      clearMsg($("msg"));
+      $("go").disabled = false;
+    }
+  }
+
+  function renderCount(){
+    const rate = Number(stateEx.milePerCoupon) || 0;
+    $("cnt").textContent = count;
+    $("cost").textContent = (rate*count).toLocaleString();
+    const max = maxExchangeable();
+    $("minus").disabled = busy || count <= 1;
+    $("plus").disabled  = busy || count >= max;
+    $("go").textContent = busy ? "処理中…" : (count>0 ? (count+"枚を豆割引に換える") : "豆割引に換える");
+  }
+
+  async function loadExchange(){
+    showLoading("残高を確認しています…");
+    const d = await api("beans_state");
+    showDebug(d);
+    if(!d.ok){ showStatusText("読み込みに失敗しました：" + (d.error||"unknown")); return; }
+    stateEx = d;
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    renderExchange();
+  }
+
+  async function doExchange(){
+    dlog("[tap] 換えるボタン→doExchange開始 busy=" + busy);
+    if (busy) return;
+    // ※確認ポップアップ(overlay)は一部端末で「交換する」のタップが通らない事象があったため撤去。
+    //   このボタン自体を1回押した時点で直接交換する。二重実行は busy ガードで防止。
+    busy = true; clearMsg($("msg")); renderCount();
+    try{
+      dlog("[flow] サーバ送信 beans_exchange userId=" + (USER_ID?USER_ID.slice(0,6)+"…":"(空)") + " count=" + count);
+      const d = await api("beans_exchange", { userName:USER_NAME, count:count });
+      dlog("[flow] 応答 " + JSON.stringify(d));
+      showDebug(d);
+      if(!d.ok){ busy=false; renderCount(); showMsg($("msg"), friendlyError(d.error), false); return; }
+      stateEx.mileBalance = d.mileBalanceAfter;
+      stateEx.couponBalance = d.couponBalanceAfter;
+      stateEx.canExchangeNow = d.canExchangeNow;
+      busy = false; renderExchange();
+      showMsg($("msg"), d.issuedCount + "枚を交換しました。クーポンが" + d.couponBalanceAfter + "枚になりました。", true);
+    } catch(err){
+      dlog("[flow] 送信catch（通信失敗） " + String(err));
+      busy = false; renderCount();
+      showMsg($("msg"), "通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+      showDebug(String(err));
+    }
+  }
+
+  function friendlyError(err){
+    const e = String(err||"");
+    if (e.indexOf("マイルが足りません") >= 0) return "マイルが足りません。チェックインや紹介でマイルを貯めましょう。";
+    if (e.indexOf("停止中") >= 0 || e.indexOf("OFF") >= 0) return "ただいま準備中です。もうしばらくお待ちください。";
+    if (e.indexOf("使える豆割引クーポンがありません") >= 0) return "使えるクーポンがありません。先に「マイルを換える」で受け取ってください。";
+    return "うまくいきませんでした。時間をおいてもう一度お試しください。";
+  }
+
+  /* ---------- 使う ---------- */
+  function backToUseSelect(){
+    $("useSelect").classList.remove("hidden");
+    $("useShow").classList.add("hidden");
+    $("useDone").classList.add("hidden");
+  }
+
+  async function loadUse(){
+    showLoading("クーポンを確認しています…");
+    const d = await api("beans_use_state");
+    showDebug(d);
+    if(!d.ok){ showStatusText("読み込みに失敗しました：" + (d.error||"unknown")); return; }
+    stateUse = d;
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    renderUseSelect();
+  }
+
+  function renderUseSelect(){
+    backToUseSelect();
+    const yen = Number(stateUse.discountYen)||0;
+    $("uCoupon").textContent = Number(stateUse.couponBalance)||0;
+    $("uYen").textContent = yen.toLocaleString();
+    $("useYen").textContent = yen.toLocaleString();
+    // 店プルダウン
+    const sel = $("shop");
+    sel.innerHTML = '<option value="">お店を選ぶ…</option>';
+    (stateUse.shops||[]).forEach(function(s){
+      const o = document.createElement("option");
+      o.value = s.id; o.textContent = s.name; sel.appendChild(o);
+    });
+    clearMsg($("useMsg"));
+    const has = (Number(stateUse.couponBalance)||0) >= 1;
+    if (!has){ showMsg($("useMsg"), "使えるクーポンがありません。先に「マイルを換える」で受け取ってください。", false); }
+    updateUseGo();
+  }
+
+  function updateUseGo(){
+    const has = (Number(stateUse && stateUse.couponBalance)||0) >= 1;
+    const picked = $("shop").value !== "";
+    $("useGo").disabled = useBusy || !has || !picked;
+  }
+
+  function startShow(){
+    const yen = Number(stateUse.discountYen)||0;
+    const sel = $("shop");
+    const shopName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : "";
+    opId = "OP-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+    $("showYen").textContent = yen.toLocaleString();
+    $("showShop").textContent = shopName;
+    $("code").textContent = makeCode(opId);
+    clearMsg($("showMsg"));
+    $("confirm").disabled = false;
+    $("useSelect").classList.add("hidden");
+    $("useShow").classList.remove("hidden");
+    $("useDone").classList.add("hidden");
+    startClock(Number(stateUse.useWindowSec)||180);
+  }
+
+  function makeCode(seed){
+    // 見た目の確認コード（お店の人向け・照合用ではなく体験用）。opIdから短い記号を生成。
+    let h = 0; for (let i=0;i<seed.length;i++){ h=(h*31+seed.charCodeAt(i))>>>0; }
+    const n = (h % 9000) + 1000;
+    return "B-" + n;
+  }
+
+  function startClock(sec){
+    stopClock();
+    let remain = sec;
+    renderClock(remain);
+    timer = setInterval(function(){
+      remain--;
+      if (remain <= 0){
+        stopClock(); renderClock(0);
+        $("confirm").disabled = true;
+        $("expHint").textContent = "時間切れです。お手数ですがもう一度お試しください。";
+        return;
+      }
+      renderClock(remain);
+    }, 1000);
+  }
+  function stopClock(){ if(timer){ clearInterval(timer); timer=null; } }
+  function renderClock(sec){
+    const m = Math.floor(sec/60), s = sec%60;
+    $("clock").textContent = (m<10?"0":"")+m + ":" + (s<10?"0":"")+s;
+  }
+
+  async function doUse(){
+    if (useBusy) return;
+    useBusy = true; $("confirm").disabled = true; clearMsg($("showMsg"));
+    const sel = $("shop");
+    const spotId = sel.value;
+    try{
+      const d = await api("beans_use_do", { spotId:spotId, opId:opId });
+      showDebug(d);
+      if(!d.ok){ useBusy=false; $("confirm").disabled=false; showMsg($("showMsg"), friendlyError(d.error), false); return; }
+      stopClock();
+      useBusy = false;
+      $("doneYen").textContent = (Number(d.discountYen)||Number(stateUse.discountYen)||0).toLocaleString();
+      $("doneShop").innerHTML = (d.spotName||"") + "<br>残りのクーポン " + (Number(d.couponBalanceAfter)||0) + "枚";
+      $("useShow").classList.add("hidden");
+      $("useDone").classList.remove("hidden");
+      stateUse.couponBalance = Number(d.couponBalanceAfter)||0;
+    } catch(err){
+      useBusy = false; $("confirm").disabled = false;
+      showMsg($("showMsg"), "通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+      showDebug(String(err));
+    }
+  }
+
+  async function main(){
+    showLoading("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    USER_NAME = profile.displayName || "";
+    if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+
+    $("tabExchange").onclick = ()=>switchTab("exchange");
+    $("tabUse").onclick = ()=>switchTab("use");
+    $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; renderCount();} };
+    $("plus").onclick  = ()=>{ if(busy) return; if(count<maxExchangeable()){count++; renderCount();} };
+    $("go").onclick    = doExchange;
+    $("shop").onchange = updateUseGo;
+    $("useGo").onclick = ()=>{ if(!$("useGo").disabled) startShow(); };
+    $("confirm").onclick = doUse;
+    $("cancelUse").onclick = ()=>{ stopClock(); renderUseSelect(); };
+    $("doneBack").onclick = ()=>{ loadUse(); };
+
+    // 入口は「換える」から
+    await loadExchange();
+  }
+
+  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); showDebug(err); });
+</script>
+</body>
+</html>
