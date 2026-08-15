@@ -219,10 +219,9 @@
   // 回避するために新設した「新しい入口」。旧 beans.html とは別ファイル名＋別LIFF IDで100%新鮮に配信する。
   // 【本番版 mame_prod.html】テスト版 mame.html を複製し、飛び先GASを本番exec・LIFFを本番IDに差し替えたもの。
   // LIFF_ID：本番の豆割引用LIFF（本番ログインチャネル 2010671952 配下・エンドポイント= この mame_prod.html の本番URL）。
-  //          ⚠️ 本番LIFFはまだ未作成。GitHub Pagesへ公開してURL確定→LINE Developersで新規LIFF作成→
-  //          発行された 2010671952-XXXX を下の "2010671952-XXXXXXXX" と GAS_本番 CONFIG(beans_liff_id) の両方へ差込。
-  //          （checkin_prod.html と同じ段取り。差込前は beans_exchange_on=false のまま＝この画面は顧客に出ない）
-  const LIFF_ID = "2010671952-XXXXXXXX"; // TODO(本番LIFF作成後に差込): 本番 豆割引LIFF（ログインチャネル2010671952配下）
+  //          2026-08-15 オーナーがLINE Developersで作成・受領した実ID（本部v21経由）。GAS_本番 CONFIG(beans_liff_id) は
+  //          version432デプロイ後（runSetupBeansでキー生成後）に同じ値を差込＝別Gate。beans_exchange_on=false の間は顧客に出ない。
+  const LIFF_ID = "2010671952-b5dbPe8l"; // 本番 豆割引LIFF（ログインチャネル2010671952配下・Endpoint=この mame_prod.html）
   // GAS_URL：本番GAS（@740rorcl）で doGet を配信しているデプロイの /exec（checkin_prod.html と同一・redeployしてもURL不変）。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
   // ====================================
