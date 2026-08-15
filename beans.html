@@ -377,12 +377,26 @@
     $("uCoupon").textContent = Number(stateUse.couponBalance)||0;
     $("uYen").textContent = yen.toLocaleString();
     $("useYen").textContent = yen.toLocaleString();
-    // 店プルダウン
+    // 店プルダウン：エリア（地域）ごとに <optgroup> で見出しを付けて探しやすくする。
+    // サーバ(beans_use_state)がエリア順(spots順)に並べて region 付きで返すので、
+    // region が変わったら新しい見出しグループを作る（連続グループ化）。空欄は「その他」。
     const sel = $("shop");
-    sel.innerHTML = '<option value="">お店を選ぶ…</option>';
+    sel.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = ""; ph.textContent = "お店を選ぶ…";
+    sel.appendChild(ph);
+    let curLabel = null, curGroup = null;
     (stateUse.shops||[]).forEach(function(s){
+      const label = (s.region && String(s.region).trim()) ? String(s.region).trim() : "その他";
+      if (label !== curLabel){
+        curLabel = label;
+        curGroup = document.createElement("optgroup");
+        curGroup.label = label;
+        sel.appendChild(curGroup);
+      }
       const o = document.createElement("option");
-      o.value = s.id; o.textContent = s.name; sel.appendChild(o);
+      o.value = s.id; o.textContent = s.name;
+      curGroup.appendChild(o);
     });
     clearMsg($("useMsg"));
     const has = (Number(stateUse.couponBalance)||0) >= 1;
