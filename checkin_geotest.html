@@ -167,6 +167,10 @@
         '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
         '<div class="total" style="margin-top:8px">マイルは保留中です（まだ確定していません）</div>' +
         '<div class="msg ng" style="margin-top:12px;background:#fff6e5;color:#8a5a00">位置情報を許可すると、その場でマイルが確定します。お店の近くでもう一度どうぞ。</div>' +
+        // 精度acc を特に大きく目立たせる（acc巨大＝Wi-Fi/IP測位で300m判定が誤りうる／取得失敗ならcodeを大きく）。
+        (g.ok
+          ? '<div style="margin-top:12px;text-align:center;font-size:22px;font-weight:800;color:#b71c1c">📏 位置精度 acc = ' + Math.round(g.acc||0) + ' m</div>'
+          : '<div style="margin-top:12px;text-align:center;font-size:18px;font-weight:800;color:#b71c1c">⚠️ 位置が取れませんでした code=' + (g.code==null?'?':g.code) + '（' + (CODE_NAME[g.code]||'?') + '）</div>') +
         '<div style="margin-top:12px;padding:8px;border:1px dashed #bbb;border-radius:8px;font-size:11px;color:#555;text-align:left;font-family:monospace;white-space:pre-wrap">【デバッグ(テスト専用)】\nクライアント位置: ' + esc(dbg) + '\nサーバ判定reason: ' + esc(String(r.reason||'')) + '</div>';
       const cardP = document.querySelector(".card");
       const oldP = cardP.querySelector(".done"); if (oldP) oldP.remove();
