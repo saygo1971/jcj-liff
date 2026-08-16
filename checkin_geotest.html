@@ -80,6 +80,7 @@
   let st = null;
   let count = 1;
   let busy = false;
+  let lastGeo = null; // 【geotest一時デバッグ】直近に取得した位置情報(getGeoParamsの結果)を保持
 
   function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; }
   function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
@@ -123,6 +124,7 @@
     const b = $("go"); b.disabled = true; b.textContent = "位置を確認しています…";
     try{
       const geoParams = await getGeoParams();   // 初回は「位置情報を許可しますか？」ポップアップが出る
+      lastGeo = geoParams;                       // 【geotest一時デバッグ】クライアントが取れた値を保持
       b.textContent = "記録しています…";
       const r = await api("checkin_do", Object.assign({ spot: SPOT }, geoParams));
       busy = false;
@@ -149,11 +151,18 @@
 
     // 位置確認で「保留」（遠い／位置情報を許可しない・取れない）＝マイル未確定。親切文言でその場確定を促す（本部v21 2026-08-16）。
     if (r.pending) {
+      // 【geotest一時デバッグ】クライアントが取れた位置(lat/lng/acc or 失敗理由)＋サーバ判定reasonを表示。
+      //   (A)遠い＝『取得OK＋reason=far』／(B)許可しても座標取れず＝『取得失敗＋reason=denied|timeout|unavailable』を切り分ける。
+      var g = lastGeo || {};
+      var dbg = (g.lat != null && g.lng != null)
+        ? ('取得OK  緯度=' + Number(g.lat).toFixed(6) + '  経度=' + Number(g.lng).toFixed(6) + '  精度=' + (g.acc==null?'?':g.acc) + 'm')
+        : ('取得失敗  理由=' + (g.geo || '不明'));
       $("body").innerHTML =
         '<div style="height:8px"></div>' +
         '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
         '<div class="total" style="margin-top:8px">マイルは保留中です（まだ確定していません）</div>' +
-        '<div class="msg ng" style="margin-top:12px;background:#fff6e5;color:#8a5a00">位置情報を許可すると、その場でマイルが確定します。お店の近くでもう一度どうぞ。</div>';
+        '<div class="msg ng" style="margin-top:12px;background:#fff6e5;color:#8a5a00">位置情報を許可すると、その場でマイルが確定します。お店の近くでもう一度どうぞ。</div>' +
+        '<div style="margin-top:12px;padding:8px;border:1px dashed #bbb;border-radius:8px;font-size:11px;color:#555;text-align:left;font-family:monospace;white-space:pre-wrap">【デバッグ(テスト専用)】\nクライアント位置: ' + esc(dbg) + '\nサーバ判定reason: ' + esc(String(r.reason||'')) + '</div>';
       const cardP = document.querySelector(".card");
       const oldP = cardP.querySelector(".done"); if (oldP) oldP.remove();
       cardP.insertAdjacentHTML("afterbegin", '<div class="done today"><div class="ic">📍</div><div class="t">位置を確認できませんでした</div></div>');
