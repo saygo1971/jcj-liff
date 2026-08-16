@@ -103,11 +103,28 @@
     $("go").onclick = doCheckin;
   }
 
+  // 位置情報を取得して checkin_do に付ける（サーバ側 parseGeoParam_ / recordUrlCheckin_ の300m判定に使う）。
+  // 成功→{lat,lng,acc}／拒否・失敗→{geo:denied|timeout|unavailable}。取れない時もサーバは従来どおり満額(フェイルオープン)。
+  // options＝enableHighAccuracy=false/timeout25s/maximumAge60s：iOS LINE内webviewでの取得成功率を優先（300m判定に高精度GPS不要／geotestで19m取得を実証）。
+  //   粗い測位でaccが大きくても、サーバ側が実効半径 300+min(acc,500) で店客を誤保留にしない（コード.js recordUrlCheckin_ のacc考慮）。
+  function getGeoParams(){
+    return new Promise((resolve)=>{
+      if (!navigator.geolocation) { resolve({ geo: "unavailable" }); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos)=> resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round((pos.coords && pos.coords.accuracy) || 0) }),
+        (err)=> resolve({ geo: (err && err.code === 1) ? "denied" : ((err && err.code === 3) ? "timeout" : "unavailable") }),
+        { enableHighAccuracy: false, timeout: 25000, maximumAge: 60000 }
+      );
+    });
+  }
+
   async function doCheckin(){
     if (busy) return; busy = true;
-    const b = $("go"); b.disabled = true; b.textContent = "記録しています…";
+    const b = $("go"); b.disabled = true; b.textContent = "位置を確認しています…";
     try{
-      const r = await api("checkin_do", { spot: SPOT });
+      const geoParams = await getGeoParams();   // 初回は「位置情報を許可しますか？」ポップアップが出る
+      b.textContent = "記録しています…";
+      const r = await api("checkin_do", Object.assign({ spot: SPOT }, geoParams));
       busy = false;
       if(!r || !r.ok){
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
@@ -129,6 +146,20 @@
 
   function renderDone(r){
     $("hero").classList.add("hidden");
+
+    // 位置確認で「保留」（遠い／位置情報を許可しない・取れない）＝マイル未確定。親切文言でその場確定を促す（本部v21 2026-08-16）。
+    if (r.pending) {
+      $("body").innerHTML =
+        '<div style="height:8px"></div>' +
+        '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
+        '<div class="total" style="margin-top:8px">マイルは保留中です（まだ確定していません）</div>' +
+        '<div class="msg ng" style="margin-top:12px;background:#fff6e5;color:#8a5a00">位置情報を許可すると、その場でマイルが確定します。お店の近くでもう一度どうぞ。</div>';
+      const cardP = document.querySelector(".card");
+      const oldP = cardP.querySelector(".done"); if (oldP) oldP.remove();
+      cardP.insertAdjacentHTML("afterbegin", '<div class="done today"><div class="ic">📍</div><div class="t">位置を確認できませんでした</div></div>');
+      return;
+    }
+
     const banner = r.alreadyToday
       ? '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>'
       : '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>';
@@ -150,16 +181,15 @@
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + ticketHtml +
-      '<a class="link" href="#" id="about">試飲チケットについて</a>' +
-      '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>';
+      mileHtml + ticketHtml;
+      // 「試飲チケットについて」リンク＋説明は削除（試飲を隠す方針＝豆割引1本／本部v21 2026-08-16）。
+      // 試飲チケット本体(ticketHtml)は ticketEnabled&&残>0 の時だけ描画＝本番は試飲販売なしのため実質非表示。
 
     const card = document.querySelector(".card");
     const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
     card.insertAdjacentHTML("afterbegin", banner);
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
-    $("about").onclick = (ev)=>{ ev.preventDefault(); $("aboutInfo").classList.toggle("hidden"); };
   }
 
   function wireTicket(bal){
