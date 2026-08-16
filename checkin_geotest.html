@@ -80,7 +80,7 @@
   let st = null;
   let count = 1;
   let busy = false;
-  let lastGeo = null; // 【geotest一時デバッグ】直近に取得した位置情報(getGeoParamsの結果)を保持
+  let lastGeoDebug = null; // 【geotest一時デバッグ】直近の getCurrentPosition 生結果（成功:lat/lng/acc／失敗:code/message）
 
   function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; }
   function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
@@ -108,13 +108,18 @@
 
   // 位置情報を取得して checkin_do に付ける（サーバ側 parseGeoParam_ / recordUrlCheckin_ の300m判定に使う）。
   // 成功→{lat,lng,acc}／拒否・失敗→{geo:denied|timeout|unavailable}。取れない時もサーバは従来どおり満額(フェイルオープン)。
+  // 【緩和(本部v21 2026-08-16)】enableHighAccuracy=false／timeout=25s／maximumAge=60s。
+  //   300m判定に高精度GPSは不要＝Wi-Fi/セルの粗い位置で取得成功率を優先（iOS LINE内webviewでの取得失敗=code2/3対策）。
+  // 生の PositionError(code/message) と成功座標は lastGeoDebug に保持（サーバへは送らずデバッグ表示のみ）。
   function getGeoParams(){
     return new Promise((resolve)=>{
-      if (!navigator.geolocation) { resolve({ geo: "unavailable" }); return; }
+      if (!navigator.geolocation) { lastGeoDebug = { ok:false, code:0, message:"navigator.geolocation なし" }; resolve({ geo: "unavailable" }); return; }
       navigator.geolocation.getCurrentPosition(
-        (pos)=> resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round((pos.coords && pos.coords.accuracy) || 0) }),
-        (err)=> resolve({ geo: (err && err.code === 1) ? "denied" : ((err && err.code === 3) ? "timeout" : "unavailable") }),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        (pos)=> { lastGeoDebug = { ok:true, lat:pos.coords.latitude, lng:pos.coords.longitude, acc:(pos.coords&&pos.coords.accuracy)||0 };
+                  resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round((pos.coords && pos.coords.accuracy) || 0) }); },
+        (err)=> { lastGeoDebug = { ok:false, code:(err&&err.code), message:(err&&err.message)||"" };
+                  resolve({ geo: (err && err.code === 1) ? "denied" : ((err && err.code === 3) ? "timeout" : "unavailable") }); },
+        { enableHighAccuracy: false, timeout: 25000, maximumAge: 60000 }
       );
     });
   }
@@ -123,8 +128,7 @@
     if (busy) return; busy = true;
     const b = $("go"); b.disabled = true; b.textContent = "位置を確認しています…";
     try{
-      const geoParams = await getGeoParams();   // 初回は「位置情報を許可しますか？」ポップアップが出る
-      lastGeo = geoParams;                       // 【geotest一時デバッグ】クライアントが取れた値を保持
+      const geoParams = await getGeoParams();   // 初回は「位置情報を許可しますか？」ポップアップが出る（最大25秒）
       b.textContent = "記録しています…";
       const r = await api("checkin_do", Object.assign({ spot: SPOT }, geoParams));
       busy = false;
@@ -151,12 +155,13 @@
 
     // 位置確認で「保留」（遠い／位置情報を許可しない・取れない）＝マイル未確定。親切文言でその場確定を促す（本部v21 2026-08-16）。
     if (r.pending) {
-      // 【geotest一時デバッグ】クライアントが取れた位置(lat/lng/acc or 失敗理由)＋サーバ判定reasonを表示。
-      //   (A)遠い＝『取得OK＋reason=far』／(B)許可しても座標取れず＝『取得失敗＋reason=denied|timeout|unavailable』を切り分ける。
-      var g = lastGeo || {};
-      var dbg = (g.lat != null && g.lng != null)
-        ? ('取得OK  緯度=' + Number(g.lat).toFixed(6) + '  経度=' + Number(g.lng).toFixed(6) + '  精度=' + (g.acc==null?'?':g.acc) + 'm')
-        : ('取得失敗  理由=' + (g.geo || '不明'));
+      // 【geotest一時デバッグ】getCurrentPositionの生結果＋サーバ判定reasonを表示。
+      //   (A)遠い＝『取得OK＋reason=far』／(B)座標取れず＝『取得失敗 code=2/3＋reason=…』を切り分ける。
+      var CODE_NAME = { 0:"no-geolocation", 1:"PERMISSION_DENIED", 2:"POSITION_UNAVAILABLE", 3:"TIMEOUT" };
+      var g = lastGeoDebug || {};
+      var dbg = g.ok
+        ? ('取得OK  緯度=' + Number(g.lat).toFixed(6) + '  経度=' + Number(g.lng).toFixed(6) + '  精度=' + Math.round(g.acc||0) + 'm')
+        : ('取得失敗  code=' + (g.code==null?'?':g.code) + ' (' + (CODE_NAME[g.code]||'?') + ')  message=' + (g.message||''));
       $("body").innerHTML =
         '<div style="height:8px"></div>' +
         '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
