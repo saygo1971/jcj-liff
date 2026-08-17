@@ -351,18 +351,30 @@
     };
   }
 
+  // LIFFはURLのクエリ(?spot=..., ?preview=...)を一時的に liff.state に包むことがある。
+  // init後にlocation.searchを読み直し、liff.state があれば中身も展開して解決する。
+  function resolveParams(){
+    let q = new URLSearchParams(location.search);
+    const ls = q.get("liff.state");
+    if (ls){ try { q = new URLSearchParams(ls.charAt(0)==="?" ? ls.slice(1) : ls); } catch(e){} }
+    return q;
+  }
+
   async function main(){
     showLoading("LINEを起動しています…");
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
-    SPOT = params.get("spot") || params.get("spotId") || "";
+    // init後に実クエリを解決して読む（起動直後の params では liff.state に包まれ読めないことがある）
+    const qp = resolveParams();
+    const getp = (k)=> qp.get(k) || params.get(k);
+    SPOT = getp("spot") || getp("spotId") || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
 
     // ★プレビュー用スイッチ（?preview=done）：実チェックインなしで「完了画面」を確認するテスト専用。
     //   本番反映前に削除する一時コード。?spot=<店ID> を付けるとその店の完了カード画像を表示（既定 HKD_NODE）。
-    if (params.get("preview") === "done") {
+    if (getp("preview") === "done") {
       const pid = SPOT || "HKD_NODE";
       st = { ok:true, shopId: pid, shopName: "テスト焙煎所（プレビュー）", pref: "サンプル県 サンプル市", shopImage: "" };
       renderDone({ ok:true, earnedMile:10, newTotal:240, alreadyToday:false, ticketEnabled:false, ticketBalance:0, shopName: st.shopName });
