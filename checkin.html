@@ -79,8 +79,9 @@
   const LIFF_ID = "2008851980-Ky1Q5Lh9";
   // GAS_URL：コード.js の doGet を配信しているテスト環境のデプロイURL（exchange/share と同じ）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
-  // 紹介ランディングLIFF（チェックイン直後の「友だち紹介」ボタンの飛び先。友だち初来店で紹介者に+100マイル）
-  const REFERRAL_URL = "https://liff.line.me/2010671952-xTVp44uz";
+  // 紹介の「送る側」LIFF＝share(テスト)（"送る相手を選ぶ"）。?shopId=<チェックインした店ID> を付けて開く。友だち初来店で紹介者に+100マイル。
+  // ※referralは"受け取る側"でshareId必須＝送る本人がそこへ飛ぶと「紹介情報が見つかりません」になるため share へ。
+  const SHARE_URL = "https://liff.line.me/2008851980-V8WaCaZw";
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   // ============================
@@ -247,8 +248,10 @@
     // 紹介ボタン：紹介ランディングLIFFを開く（LINE内はアプリ内ウィンドウ）。
     const rb = document.getElementById("refBtn");
     if (rb) rb.onclick = function(){
-      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: REFERRAL_URL, external: false });
-      else location.href = REFERRAL_URL;
+      // 送る側ページへ「いまチェックインした店ID」を渡す（share は shopId 必須）。
+      const url = SHARE_URL + "?shopId=" + encodeURIComponent(st.shopId || SPOT || "");
+      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: url, external: false });
+      else location.href = url;
     };
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
