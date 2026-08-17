@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>割引クーポンの 補填の預かり</title>
+  <title>マイル特典の 補填の預かり</title>
   <style>
     :root{ --brand:#34595A; --brand-d:#24403f; --brand-l:#E4EEE6; --brand-l2:#c9dccb; --wood:#8a6d4b; --line:#e6e6e6; --muted:#666; --hint:#999; --warn-bg:#FBF3E4; --warn-bd:#E7D3AC; --warn-tx:#8a6d4b; }
     *{box-sizing:border-box}
@@ -53,7 +53,7 @@
 <body>
 <div class="wrap">
   <div class="head">
-    <div class="sub">JCJ 割引クーポン（豆）</div>
+    <div class="sub">JCJ マイル特典（豆）</div>
     <div class="ttl"><span id="shopName">お店</span> さまの 補填の預かり</div>
   </div>
 
@@ -64,7 +64,7 @@
     </div>
 
     <div id="main" class="hidden">
-      <div class="prep">🛠 <b>はじめにお読みください：</b>いまは、お客さまが割引クーポンを使うたびに <b>1枚¥<span id="perYen">120</span></b> をお店へお返しする分として記録している段階です。<b>下の金額・枚数・お振込のルールは仮のもので、これから変わる可能性があります。</b></div>
+      <div class="prep">🛠 <b>はじめにお読みください：</b>いまは、お客さまがマイル特典を使うたびに <b>1枚¥<span id="perYen">120</span></b> をお店へお返しする分として記録している段階です。<b>下の金額・枚数・お振込のルールは仮のもので、これから変わる可能性があります。</b></div>
 
       <div class="bal">
         <div class="lbl">お店へお返しする 補填の預かり</div>
@@ -84,7 +84,7 @@
       <div class="rule">
         <div class="h">お振込のルール</div>
         <div class="b">
-          割引クーポンが <span class="y"><span id="thr2">20</span>枚（¥<span id="thrYen">2,400</span>）</span>たまったら、翌月末までにまとめてお返しします。<span id="thr3">20</span>枚に届かなくても<span id="mon">6</span>か月に一度は残額をまとめてお返しします。たまった分が消えることはありません。
+          マイル特典が <span class="y"><span id="thr2">20</span>枚（¥<span id="thrYen">2,400</span>）</span>たまったら、翌月末までにまとめてお返しします。<span id="thr3">20</span>枚に届かなくても<span id="mon">6</span>か月に一度は残額をまとめてお返しします。たまった分が消えることはありません。
         </div>
       </div>
 
@@ -122,7 +122,7 @@
 
     const per = Number(d.perCouponYen)||120;
     $("perYen").textContent = yen(per);
-    $("balSub").textContent = "（割引クーポン" + (Number(d.usedCount)||0) + "枚ぶん・1枚 ¥" + yen(per) + "）";
+    $("balSub").textContent = "（マイル特典" + (Number(d.usedCount)||0) + "枚ぶん・1枚 ¥" + yen(per) + "）";
 
     const thr = Number(d.thresholdCount)||20;
     const cnt = Number(d.usedCount)||0;

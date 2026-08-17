@@ -26,6 +26,12 @@
     .done.today{background:var(--amber)}
     .done .ic{font-size:30px;line-height:1}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
+    .donecard{width:100%;height:auto;display:block;background:#C9D6DC}
+    .refcard{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+    .refbox{background:#f2f8f5;border:1px solid #d6e7de;border-radius:12px;padding:14px}
+    .reftitle{font-size:14px;font-weight:800;color:var(--brand);text-align:center}
+    .refdesc{font-size:12px;color:#555;text-align:center;margin-top:6px;line-height:1.7}
+    .refbtn{width:100%;margin-top:12px;height:50px;border-radius:12px;border:none;font-size:15px;font-weight:700;color:#fff;background:var(--brand)}
     .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
     .total{font-size:13px;color:var(--muted);text-align:center}
     .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
@@ -68,6 +74,10 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
   // 本番の公式アカウント（未登録者の遷移先）
   const OA_URL = "https://line.me/R/ti/p/@740rorcl";
+  // 紹介ランディングLIFF（チェックイン直後の「友だち紹介」ボタンの飛び先。友だち初来店で紹介者に+100マイル）
+  const REFERRAL_URL = "https://liff.line.me/2010671952-xTVp44uz";
+  // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
+  const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   // ======================================
 
   const $ = id => document.getElementById(id);
@@ -160,9 +170,16 @@
       return;
     }
 
-    const banner = r.alreadyToday
-      ? '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>'
-      : '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>';
+    // 完了時の一番上：新規チェックインは店ごとの完了カード画像(checkin.jpg)。
+    // 画像が無い店は onerror で従来の緑帯にフォールバック（画面が崩れない保険）。
+    let banner;
+    if (r.alreadyToday) {
+      banner = '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>';
+    } else {
+      const shopId = st.shopId || SPOT || "";
+      const cardUrl = CHECKIN_CARD_BASE + encodeURIComponent(shopId) + "/checkin.jpg";
+      banner = '<img id="donecard" class="donecard" alt="チェックイン完了" src="' + esc(cardUrl) + '">';
+    }
     const mileHtml = r.alreadyToday
       ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
       : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
@@ -178,16 +195,35 @@
         '</div>';
     }
 
+    // 紹介コーナー：チェックインした今この瞬間に友だちへお店を紹介（友だち初来店で紹介者に+100マイル）。
+    const refHtml =
+      '<div class="refcard"><div class="refbox">' +
+        '<div class="reftitle">🎁 友だちを誘って +100マイル</div>' +
+        '<div class="refdesc">今この場でお店をシェア。友だちが初めて来店すると、あなたに100マイル入ります。</div>' +
+        '<button id="refBtn" class="refbtn">このお店を紹介する</button>' +
+      '</div></div>';
+
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + ticketHtml;
+      mileHtml + ticketHtml + refHtml;
       // 「試飲チケットについて」リンク＋説明は削除（試飲を隠す方針＝豆割引1本／本部v21 2026-08-16）。
       // 試飲チケット本体(ticketHtml)は ticketEnabled&&残>0 の時だけ描画＝本番は試飲販売なしのため実質非表示。
 
     const card = document.querySelector(".card");
-    const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
+    const oldB = card.querySelector(".done, #donecard"); if(oldB) oldB.remove();
     card.insertAdjacentHTML("afterbegin", banner);
+
+    // 完了カード画像が無い店は、緑帯にフォールバック（画面が崩れない保険）。
+    const dc = document.getElementById("donecard");
+    if (dc) dc.onerror = function(){ dc.outerHTML = '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>'; };
+
+    // 紹介ボタン：紹介ランディングLIFFを開く（LINE内はアプリ内ウィンドウ）。
+    const rb = document.getElementById("refBtn");
+    if (rb) rb.onclick = function(){
+      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: REFERRAL_URL, external: false });
+      else location.href = REFERRAL_URL;
+    };
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
   }
@@ -215,7 +251,7 @@
 
   function renderTicketUsed(d){
     const card = document.querySelector(".card");
-    const oldB = card.querySelector(".done"); if(oldB) oldB.remove();
+    const oldB = card.querySelector(".done, #donecard"); if(oldB) oldB.remove();
     card.insertAdjacentHTML("afterbegin", '<div class="done" style="background:#BA7517"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
     $("body").innerHTML =
       '<div style="height:8px"></div>' +

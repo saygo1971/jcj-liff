@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>マイルで豆の割引</title>
+  <title>マイル特典</title>
   <style>
     :root{ --brand:#34595A; --brand2:#DCE7D8; --line:#e6e6e6; --muted:#666; --hint:#999; --wood:#8a6d4b; }
     *{box-sizing:border-box}
@@ -66,8 +66,12 @@
     .coupon .mid .sep{border-top:1px solid var(--brand2);margin:14px 0}
     .coupon .mid .codelbl{font-size:12px;color:var(--muted)}
     .coupon .mid .code{font-size:20px;font-weight:800;letter-spacing:2px;color:var(--brand)}
+    /* 店員向けの案内（小さく控えめ・お客の目に主張しない） */
+    .coupon .staffbox{background:#fff8e1;border-bottom:1px solid #f0e2b8;padding:8px 14px;text-align:center}
+    .coupon .staffbox .lb{font-size:10px;color:#8a6d1a;font-weight:700;letter-spacing:.5px}
+    .coupon .staffbox .bg{font-size:13px;font-weight:600;color:#6b5a2a;margin-top:1px}
     .coupon .foot{border-top:1px solid var(--brand2);padding:12px 14px}
-    .confirm{width:100%;height:46px;border-radius:10px;background:var(--wood);color:#fff;border:none;font-size:15px;font-weight:700}
+    .confirm{width:100%;height:48px;border-radius:10px;background:var(--brand);color:#fff;border:none;font-size:16px;font-weight:800}
     .confirm:disabled{opacity:.4}
     .used{border:1px solid var(--brand2);border-radius:16px;background:#fff;text-align:center;padding:22px 16px}
     .used .mk{font-size:40px;color:var(--brand)}
@@ -92,7 +96,7 @@
 <div class="wrap">
   <div class="head">
     <div class="sub">JCJパスポート</div>
-    <div class="ttl">マイルで豆の割引</div>
+    <div class="ttl">マイル特典</div>
   </div>
 
   <div class="card">
@@ -103,7 +107,7 @@
 
     <div id="main" class="hidden">
       <div class="tabs">
-        <button id="tabExchange" class="on" type="button">マイルを換える</button>
+        <button id="tabExchange" class="on" type="button">マイルを交換</button>
         <button id="tabUse" type="button">お店で使う</button>
       </div>
 
@@ -119,9 +123,9 @@
           <div class="row">
             <div class="col"><div class="v" id="rateMile">-</div><div class="u">マイル</div></div>
             <div class="eq">=</div>
-            <div class="col"><div class="v brand"><span id="rateYen">-</span>引き</div><div class="u">豆のお会計</div></div>
+            <div class="col"><div class="v brand">クーポン1枚</div><div class="u"><span id="rateYen">-</span>分</div></div>
           </div>
-          <div class="desc" id="rateDesc">たまったマイルで、豆のお会計に使える割引クーポンと交換できます。</div>
+          <div class="desc" id="rateDesc">貯めたマイルを、豆のお会計に使えるクーポン1枚と交換できます。</div>
         </div>
 
         <div class="sec">
@@ -136,17 +140,17 @@
           </div>
         </div>
 
-        <button id="go" class="go" type="button">豆割引に換える</button>
+        <button id="go" class="go" type="button">クーポン1枚に換える</button>
         <div id="msg" class="msg hidden"></div>
 
         <div class="have">
-          <div class="l">持っている豆割引クーポン</div>
+          <div class="l">持っているクーポン</div>
           <div class="r"><span id="coupon">-</span>枚 <small style="font-size:12px;color:#999;font-weight:600">有効</small></div>
         </div>
 
         <div class="fine">
           ・換えたクーポンは豆のお会計にだけ使えます<br>
-          ・使えるのは<b>1回のお会計で¥<span id="fineYen">200</span>引き（1枚）まで</b>です<br>
+          ・使えるのは<b>1回のお会計でクーポン1枚まで</b>です<br>
           ・クーポンは発行から<span id="days">30</span>日で失効します
         </div>
       </div>
@@ -156,16 +160,16 @@
         <!-- A: 店選び -->
         <div id="useSelect">
           <div class="bal">
-            <div class="lbl">持っている豆割引クーポン</div>
+            <div class="lbl">持っているクーポン</div>
             <div class="num"><span id="uCoupon">-</span> <small>枚</small></div>
           </div>
-          <div class="fine" style="margin-top:10px">1回のお会計で使えるのは <b>1枚（¥<span id="uYen">200</span>引き）</b> までです</div>
+          <div class="fine" style="margin-top:10px">1回のお会計で使えるのは <b>クーポン1枚（¥<span id="uYen">200</span>分）</b> までです</div>
           <div class="sec">
             <div class="lbl">いまどのお店にいますか？</div>
             <select id="shop"><option value="">お店を選ぶ…</option></select>
             <div class="fine">※加盟ロースターの一覧から選びます</div>
           </div>
-          <button id="useGo" class="go" type="button" disabled>このお店で ¥<span id="useYen">200</span>引きを使う</button>
+          <button id="useGo" class="go" type="button" disabled>このお店で使う</button>
           <div id="useMsg" class="msg hidden"></div>
         </div>
 
@@ -174,11 +178,15 @@
           <div class="coupon">
             <div class="top">
               <div class="hint">この画面をお店の人に見せてください</div>
-              <div class="off">¥<span id="showYen">200</span> OFF</div>
+              <div class="off">¥<span id="showYen">200</span>分</div>
               <div class="shop" id="showShop">-</div>
             </div>
+            <div class="staffbox">
+              <div class="lb">お店の方へ</div>
+              <div class="bg">この金額をお会計からお引きください</div>
+            </div>
             <div class="mid">
-              <div class="lead">豆のお会計から割引（1回1枚）</div>
+              <div class="lead">マイル特典（クーポン1枚）</div>
               <div class="clock" id="clock">03:00</div>
               <div class="exp" id="expHint">この時間内にお店の人が確認します</div>
               <div class="sep"></div>
@@ -186,7 +194,7 @@
               <div class="code" id="code">-</div>
             </div>
             <div class="foot">
-              <button id="confirm" class="confirm" type="button">お店の人：確認しました</button>
+              <button id="confirm" class="confirm" type="button">クーポンを使う</button>
             </div>
           </div>
           <button id="cancelUse" class="ghost" type="button">やめる（戻る）</button>
@@ -197,7 +205,7 @@
         <div id="useDone" class="hidden">
           <div class="used">
             <div class="mk">✓</div>
-            <div class="t">¥<span id="doneYen">200</span>引きを使いました</div>
+            <div class="t">クーポン1枚を使いました</div>
             <div class="d" id="doneShop">-</div>
           </div>
           <button id="doneBack" class="ghost" type="button">閉じる</button>
@@ -279,8 +287,7 @@
     $("days").textContent = Number(stateEx.expiryDays)||30;
     $("rateMile").textContent = rate.toLocaleString();
     $("rateYen").textContent = "¥" + yen.toLocaleString();
-    $("fineYen").textContent = yen.toLocaleString();
-    $("rateDesc").innerHTML = "たまった<b>" + rate.toLocaleString() + "マイル</b>で、全国の加盟ロースターの<b>豆のお会計が¥" + yen.toLocaleString() + "引き</b>になるクーポンと交換できます。";
+    $("rateDesc").innerHTML = "たまった<b>" + rate.toLocaleString() + "マイル</b>で、全国の加盟ロースターの<b>豆のお会計に使えるクーポン1枚</b>と交換できます。";
 
     const max = maxExchangeable();
     if (count > max) count = max;
@@ -306,7 +313,7 @@
     const max = maxExchangeable();
     $("minus").disabled = busy || count <= 1;
     $("plus").disabled  = busy || count >= max;
-    $("go").textContent = busy ? "処理中…" : (count>0 ? (count+"枚を豆割引に換える") : "豆割引に換える");
+    $("go").textContent = busy ? "処理中…" : (count>0 ? ("クーポン"+count+"枚に換える") : "クーポンに換える");
   }
 
   async function loadExchange(){
@@ -349,7 +356,7 @@
     const e = String(err||"");
     if (e.indexOf("マイルが足りません") >= 0) return "マイルが足りません。チェックインや紹介でマイルを貯めましょう。";
     if (e.indexOf("停止中") >= 0 || e.indexOf("OFF") >= 0) return "ただいま準備中です。もうしばらくお待ちください。";
-    if (e.indexOf("使える豆割引クーポンがありません") >= 0) return "使えるクーポンがありません。先に「マイルを換える」で受け取ってください。";
+    if (e.indexOf("使える豆割引クーポンがありません") >= 0) return "使えるクーポンがありません。先に「マイルを交換」で受け取ってください。";
     return "うまくいきませんでした。時間をおいてもう一度お試しください。";
   }
 
@@ -376,7 +383,6 @@
     const yen = Number(stateUse.discountYen)||0;
     $("uCoupon").textContent = Number(stateUse.couponBalance)||0;
     $("uYen").textContent = yen.toLocaleString();
-    $("useYen").textContent = yen.toLocaleString();
     // 店プルダウン：エリア（地域）ごとに <optgroup> で見出しを付けて探しやすくする。
     // サーバ(beans_use_state)がエリア順(spots順)に並べて region 付きで返すので、
     // region が変わったら新しい見出しグループを作る（連続グループ化）。空欄は「その他」。
@@ -400,7 +406,7 @@
     });
     clearMsg($("useMsg"));
     const has = (Number(stateUse.couponBalance)||0) >= 1;
-    if (!has){ showMsg($("useMsg"), "使えるクーポンがありません。先に「マイルを換える」で受け取ってください。", false); }
+    if (!has){ showMsg($("useMsg"), "使えるクーポンがありません。先に「マイルを交換」で受け取ってください。", false); }
     updateUseGo();
   }
 
@@ -465,7 +471,6 @@
       if(!d.ok){ useBusy=false; $("confirm").disabled=false; showMsg($("showMsg"), friendlyError(d.error), false); return; }
       stopClock();
       useBusy = false;
-      $("doneYen").textContent = (Number(d.discountYen)||Number(stateUse.discountYen)||0).toLocaleString();
       $("doneShop").innerHTML = (d.spotName||"") + "<br>残りのクーポン " + (Number(d.couponBalanceAfter)||0) + "枚";
       $("useShow").classList.add("hidden");
       $("useDone").classList.remove("hidden");
