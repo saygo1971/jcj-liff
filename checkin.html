@@ -188,6 +188,8 @@
   function renderDone(r){
     // 位置が確認できずマイル保留のときは保留画面へ
     if (r && r.pending){ renderHold(r); return; }
+    hideStatus();                             // 「起動中…」表示を消す（preview直呼び対策）
+    $("body").classList.remove("hidden");     // 本文エリアを表示（preview直呼び対策）
     $("hero").classList.add("hidden");
     // 完了時の一番上：新規チェックインは店ごとの完了カード画像(checkin.jpg)。
     // 画像が無い店は onerror で従来の緑帯にフォールバック（画面が崩れない保険）。
