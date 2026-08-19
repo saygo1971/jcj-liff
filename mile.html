@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>マイルについて</title>
+<style>
+  :root{
+    --teal:#34595A; --coral:#DF7461; --coralBtn:#C9573F;
+    --cream:#FAF8F5; --beige:#F6F0E7; --hair:#EBE2D3;
+    --ink:#332822; --note:#7A6E5F; --white:#fff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; background:var(--cream)}
+  body{
+    font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+    color:var(--ink); line-height:1.75; font-size:14px;
+  }
+  .wrap{max-width:480px; margin:0 auto; padding:0 16px 40px}
+
+  /* HERO */
+  .hero{padding:30px 6px 8px}
+  .kicker{font-size:12px; letter-spacing:.18em; color:var(--teal); font-weight:700; margin:0 0 8px}
+  .hero h1{font-size:26px; line-height:1.3; margin:0 0 12px; color:var(--ink); font-weight:800}
+  .hero .catch{font-size:16px; font-weight:700; color:var(--teal); margin:0 0 6px}
+  .hero .lead{font-size:14px; color:var(--note); margin:0}
+
+  /* SECTION */
+  section{margin-top:26px}
+  .sec-h{display:flex; align-items:center; gap:8px; margin:0 2px 12px}
+  .sec-no{flex:none; width:24px; height:24px; border-radius:50%; background:var(--teal); color:var(--white);
+    font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center}
+  .sec-h h2{font-size:18px; margin:0; font-weight:800; color:var(--ink)}
+  .sec-lead{margin:0 2px 14px; font-size:14px; color:var(--ink)}
+
+  /* CARD */
+  .card{background:var(--beige); border:1px solid var(--hair); border-radius:14px; padding:14px 16px; margin-bottom:12px}
+  .card .cap{font-size:12px; font-weight:700; color:var(--teal); letter-spacing:.02em; margin:0 0 4px}
+  .card .cap small{color:var(--note); font-weight:600}
+  .row{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--hair)}
+  .row:first-of-type{border-top:0}
+  .row .lbl{font-size:14px; color:var(--ink)}
+  .row .lbl small{display:block; font-size:12px; color:var(--note); line-height:1.5; margin-top:2px}
+  .row .val{flex:none; font-size:15px; font-weight:800; color:var(--teal); white-space:nowrap}
+  .hint{margin:2px 0 0; font-size:12.5px; color:var(--note)}
+  .hint b{color:var(--teal)}
+
+  /* USE (特典) */
+  .use{background:var(--white); border:1px solid var(--hair); border-radius:14px; padding:18px 16px; text-align:center}
+  .use .conv{font-size:20px; font-weight:800; color:var(--ink); margin:0}
+  .use .conv .m{color:var(--teal)}
+  .use .arrow{display:block; color:var(--note); font-size:13px; margin:6px 0}
+  .use .yen{display:inline-block; margin-top:2px; background:var(--beige); border:1px solid var(--hair); border-radius:999px;
+    padding:6px 14px; font-size:14px; font-weight:800; color:var(--ink)}
+  .use .yen b{color:var(--teal)}
+  .use ul{list-style:none; padding:0; margin:14px 0 0; text-align:left}
+  .use li{font-size:13px; color:var(--ink); padding:5px 0 5px 22px; position:relative}
+  .use li::before{content:"✓"; position:absolute; left:2px; color:var(--teal); font-weight:800}
+  .use .reward{margin:14px 0 0; font-size:13px; color:var(--note); font-style:normal}
+
+  /* CTA */
+  .cta{margin-top:28px; display:flex; flex-direction:column; gap:10px}
+  .btn{display:block; text-align:center; text-decoration:none; border-radius:10px; padding:15px 16px; font-size:15px; font-weight:800}
+  .btn-primary{background:var(--coralBtn); color:var(--white)}
+  .menu-hint{margin:14px 4px 0; font-size:12.5px; color:var(--note); text-align:center; line-height:1.7}
+  .menu-hint b{color:var(--teal)}
+  .foot{margin-top:26px; text-align:center; font-size:11px; letter-spacing:.16em; color:var(--note)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="hero">
+      <p class="kicker">JCJ MILE</p>
+      <h1>マイルについて</h1>
+      <p class="catch">一杯が、一歩になる。</p>
+      <p class="lead">JCJマイルは、コーヒーで日本を旅した“記録”です。</p>
+    </div>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">1</span><h2>マイルってなに？</h2></div>
+      <p class="sec-lead">貯めることが目的ではありません。マイルは「ロースターへ会いに行った証」であり、次に行く“理由”。チェックインするたび、あなたのパスポートに旅の記録として残っていきます。</p>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">2</span><h2>どうやって貯まる？</h2></div>
+
+      <div class="card">
+        <p class="cap">旅マイル　<small>お店でチェックイン</small></p>
+        <div class="row"><div class="lbl">初めて行くロースター<small>自宅の県から店までの距離（km）。最低10マイル・遠いほど多い</small></div><div class="val">距離マイル</div></div>
+        <div class="row"><div class="lbl">同じ店にもう一度</div><div class="val">10マイル</div></div>
+        <div class="row"><div class="lbl">イベント会場</div><div class="val">5マイル</div></div>
+        <p class="hint">遠くへ行くほど、マイルは貯まる。例：東京→群馬で<b>約100マイル</b>／大阪→長崎で<b>550マイル以上</b>。</p>
+      </div>
+
+      <div class="card">
+        <p class="cap">つながりマイル　<small>登録・紹介</small></p>
+        <div class="row"><div class="lbl">JCJに初めて登録</div><div class="val">50マイル</div></div>
+        <div class="row"><div class="lbl">紹介した友だちが登録</div><div class="val">＋50マイル</div></div>
+        <div class="row"><div class="lbl">紹介から登録（あなた）</div><div class="val">＋30マイル</div></div>
+        <div class="row"><div class="lbl">紹介した友だちが“紹介元の店”へ初来店<small>紹介したあなたに（一度きり）</small></div><div class="val">＋100マイル</div></div>
+        <p class="hint">友だちを誘うほど、マイルは増える。</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">3</span><h2>貯めたマイルの使い方</h2></div>
+      <p class="sec-lead">貯めたマイルは「マイル特典」に交換できます。</p>
+      <div class="use">
+        <p class="conv"><span class="m">250マイル</span> → マイル特典 1枚</p>
+        <span class="arrow">＝</span>
+        <span class="yen">豆のお会計から <b>¥200分</b> おトク</span>
+        <ul>
+          <li>交換は 月2枚 まで</li>
+          <li>発行から 180日（約半年）有効</li>
+          <li>全国の参加ロースターの“豆”に使える（持ち帰りのごほうび）</li>
+        </ul>
+        <p class="reward">お店の値引きではなく、旅で貯めたあなたへの“ごほうび”です。</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">4</span><h2>次の一歩</h2></div>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://liff.line.me/2008851980-70LKkgEw">🎁　マイル特典を見る</a>
+      </div>
+      <p class="menu-hint"><b>ロースターを探す</b>・<b>パスポート</b>は、<br>画面下のメニューからいつでも開けます。</p>
+    </section>
+
+    <p class="foot">JAPAN COFFEE JOURNEY</p>
+  </div>
+</body>
+</html>
