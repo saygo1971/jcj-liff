@@ -40,6 +40,14 @@
     .refbtn{width:100%;margin-top:12px;height:50px;border-radius:12px;border:none;font-size:15px;font-weight:700;color:#fff;background:var(--brand)}
     .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
     .total{font-size:13px;color:var(--muted);text-align:center}
+    .bsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    .btrack{height:12px;background:#EDE7DF;border-radius:6px;overflow:hidden}
+    .bfill{height:100%;background:#6F4E37;border-radius:6px}
+    .bnote{font-size:13px;color:#6F4E37;margin-top:8px;text-align:center}
+    .bnote b{font-weight:800}
+    .bready{font-size:14px;font-weight:800;color:#6F4E37;margin-top:10px;text-align:center}
+    .bnext{font-size:11px;color:var(--hint);margin-top:6px;text-align:center}
+    .bbtn{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:12px;color:#fff;background:#6F4E37;font-weight:700;font-size:15px}
     .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
     .thd{font-size:14px;color:#444;font-weight:700;display:flex;align-items:center;gap:6px}
     .stepper{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
@@ -185,6 +193,31 @@
       '<div class="fine" style="margin-top:12px">※ ずるを防ぐための仕組みです。ご協力ありがとうございます</div>';
   }
 
+  // 🎁 豆クーポン進捗バーのHTMLを組む。値は全てサーバ(r)から。couponMile=0/未設定なら空文字（非表示）。
+  //    Y(=合計マイル)に対し、あと△マイルで1枚。Y≧couponMile なら「交換できます＋交換ボタン」に切替。
+  function beansProgressHtml(r){
+    const couponMile = Number(r && r.couponMile) || 0;
+    if (couponMile <= 0) return "";
+    const y = Number(r.newTotal) || 0;
+    const prog = y % couponMile;                 // 次の1枚に向けた進捗
+    const remain = couponMile - prog;            // あと何マイルで次の1枚
+    const canEx = Math.floor(y / couponMile) >= 1;
+    const disc = Number(r.beansDiscountYen) || 0;
+    const discTxt = disc > 0 ? '（¥' + disc + '引き）' : '';
+    const pct = Math.max(0, Math.min(100, Math.round(prog / couponMile * 100)));
+    const exUrl = String((r && r.beansExchangeUrl) || '');
+    const bar = '<div class="btrack"><div class="bfill" style="width:' + pct + '%"></div></div>';
+    let bottom;
+    if (canEx) {
+      bottom = '<div class="bready">🎁 豆クーポンと交換できます！</div>' +
+        (exUrl ? '<a class="bbtn" href="' + esc(exUrl) + '">🎁 マイルを交換する</a>' : '') +
+        '<div class="bnext">あと ' + remain + ' マイルで、次の1枚</div>';
+    } else {
+      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 🎁 豆クーポン' + discTxt + '</div>';
+    }
+    return '<div class="bsec">' + bar + bottom + '</div>';
+  }
+
   // ② 完了 →（対応店＆残あり）チケット案内
   function renderDone(r){
     // 位置が確認できずマイル保留のときは保留画面へ
@@ -203,6 +236,10 @@
     const mileHtml = r.alreadyToday
       ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
       : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
+
+    // 🎁 豆クーポン進捗バー：マイル合計に対し「あと△マイルで豆クーポン」を可視化。
+    //    値は全てサーバ(apiCheckinDo)が config から読んで渡す＝ここに数値を書かない。couponMile=0 なら非表示。
+    const beansProgHtml = beansProgressHtml(r);
 
     let ticketHtml = "";
     if (r.ticketEnabled && Number(r.ticketBalance) > 0){
@@ -231,7 +268,7 @@
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + ticketHtml +
+      mileHtml + beansProgHtml + ticketHtml +
       '<a class="link" href="#" id="about">試飲チケットについて</a>' +
       '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;
