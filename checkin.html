@@ -203,17 +203,18 @@
     const remain = couponMile - prog;            // あと何マイルで次の1枚
     const canEx = Math.floor(y / couponMile) >= 1;
     const disc = Number(r.beansDiscountYen) || 0;
-    const discTxt = disc > 0 ? '（¥' + disc + '引き）' : '';
+    const discTxt = disc > 0 ? '（¥' + disc + '割引）' : '';
     const pct = Math.max(0, Math.min(100, Math.round(prog / couponMile * 100)));
     const exUrl = String((r && r.beansExchangeUrl) || '');
     const bar = '<div class="btrack"><div class="bfill" style="width:' + pct + '%"></div></div>';
     let bottom;
     if (canEx) {
-      bottom = '<div class="bready">🎁 豆クーポンと交換できます！</div>' +
-        (exUrl ? '<a class="bbtn" href="' + esc(exUrl) + '">🎁 マイルを交換する</a>' : '') +
-        '<div class="bnext">あと ' + remain + ' マイルで、次の1枚</div>';
+      // 交換できる：文字自体をタップで交換ページへ（ボタンは増やさない）。呼称は「マイル特典」（"豆"はユーザー向けに出さない）。
+      const ready = '<div class="bready">🎁 マイル特典と交換できます！（タップで交換）</div>' +
+        '<div class="bnext">あと ' + remain + ' マイルで、次の特典</div>';
+      bottom = exUrl ? '<a href="' + esc(exUrl) + '" style="text-decoration:none;display:block">' + ready + '</a>' : ready;
     } else {
-      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 🎁 豆クーポン' + discTxt + '</div>';
+      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 🎁 マイル特典' + discTxt + '</div>';
     }
     return '<div class="bsec">' + bar + bottom + '</div>';
   }
