@@ -53,7 +53,10 @@
   .dream{margin-top:14px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:16px;padding:16px 16px;text-align:center}
   .dream .moon{font-size:20px}
   .dream .t{font-size:14px;font-weight:800;margin-top:4px;line-height:1.6}
-  .dream .s{font-size:11.5px;color:#b9c6d8;margin-top:6px;line-height:1.7}
+  .dream .s{font-size:12px;color:#c7d3e4;margin-top:8px;font-weight:700}
+  .moontrack{margin-top:8px;height:8px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
+  .moonfill{height:8px;background:linear-gradient(90deg,#cdd7ea,#9fb4d6);border-radius:999px;width:0;transition:width .9s ease}
+  .moonremain{font-size:11px;color:#b9c6d8;margin-top:7px;line-height:1.6}
 
   /* 次の一歩 */
   .next{margin-top:18px}
@@ -93,24 +96,20 @@
     <div class="meter">
       <div class="globe">🌏</div>
       <div class="big"><span id="totalKm">0</span><span class="u">km</span></div>
-      <div class="cap">日本じゅうの旅人が足した距離の合計</div>
+      <div class="cap">日本中の旅人が足した距離の合計</div>
 
       <div class="track"><div id="fill" class="fill"></div></div>
       <div class="goal">
-        <span>いま</span>
+        <span id="asOf">今日</span>
         <span id="goalLabel">地球一周 40,075km</span>
       </div>
       <div id="remain" class="remain"></div>
     </div>
 
     <div class="row2">
-      <div class="tile you">
+      <div class="tile you" style="flex:1">
         <div class="l">あなたが足した</div>
         <div class="v"><span id="yourKm">0</span><span class="u">km</span></div>
-      </div>
-      <div class="tile">
-        <div class="l">いっしょに旅する仲間</div>
-        <div class="v"><span id="members">0</span><span class="u">人</span></div>
       </div>
     </div>
 
@@ -118,8 +117,10 @@
 
     <div class="dream">
       <div class="moon">🌙</div>
-      <div class="t">いつか、日本のコーヒーを宇宙へ。</div>
-      <div class="s">地球一周のその先、月を目指して。<br>今日も日本のコーヒーの道を旅する。</div>
+      <div class="t">いつか、日本のコーヒー旅を宇宙へ。</div>
+      <div class="s">月を目指して</div>
+      <div class="moontrack"><div id="moonfill" class="moonfill"></div></div>
+      <div class="moonremain" id="moonRemain"></div>
     </div>
 
     <div class="next">
@@ -170,6 +171,8 @@
     return await res.json();
   }
 
+  const MOON_KM = 384400; // 地球〜月の距離（憧れのゴール・演出のみ）
+
   function fmt(n){ return (Number(n)||0).toLocaleString(); }
 
   function renderMeter(d){
@@ -180,15 +183,23 @@
 
     $("totalKm").textContent = fmt(total);
     $("yourKm").textContent  = fmt(you);
-    $("members").textContent = fmt(d.memberCount);
     $("goalLabel").textContent = "地球一周 " + fmt(goal) + "km";
     setTimeout(()=>{ $("fill").style.width = (pct>0?pct:1) + "%"; }, 60);
+
+    // 数字の「時点」＝今日の日付（集計日があればそれ、無ければ今日）
+    const asOf = d.updatedAt ? new Date(d.updatedAt) : new Date();
+    $("asOf").textContent = (asOf.getMonth()+1) + "月" + asOf.getDate() + "日時点";
 
     if (total >= goal){
       $("remain").textContent = "🎉 地球一周 達成！";
     } else {
       $("remain").textContent = "地球一周まで あと約 " + fmt(goal - total) + "km";
     }
+
+    // 🌙 月を目指すバー（地球〜月＝384,400km。今はごく僅か＝憧れの演出）
+    const moonPct = Math.max(0, Math.min(100, total/MOON_KM*100));
+    setTimeout(()=>{ $("moonfill").style.width = (moonPct>0?moonPct:0.5) + "%"; }, 120);
+    $("moonRemain").textContent = "月まで あと約 " + fmt(Math.max(0, MOON_KM - total)) + "km";
 
     // あなたの一行（自分ごとスイッチ）
     const yl = $("youline");
