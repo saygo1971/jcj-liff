@@ -221,8 +221,7 @@
 
   // ② 完了 →（対応店＆残あり）チケット案内
   function renderDone(r){
-    // 位置が確認できずマイル保留のときは保留画面へ
-    if (r && r.pending){ renderHold(r); return; }
+    // 位置は記録用に取得を試みるが「保留」で弾かない＝結果に関わらず完了画面へ進めマイル確定（本部v31 2026-08-22）。
     $("hero").classList.add("hidden");
     // 完了時の一番上：新規チェックインは店ごとの完了カード画像(checkin.jpg)。
     // 画像が無い店は onerror で従来の緑帯にフォールバック（画面が崩れない保険）。
@@ -239,7 +238,7 @@
       : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
 
     // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
-    const noteHtml = '<div style="font-size:13px;color:#8A7A6A;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
+    const noteHtml = '<div style="font-size:13px;color:#332822;font-weight:500;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
 
     // 🎁 豆クーポン進捗バー：マイル合計に対し「あと△マイルで豆クーポン」を可視化。
     //    値は全てサーバ(apiCheckinDo)が config から読んで渡す＝ここに数値を書かない。couponMile=0 なら非表示。
