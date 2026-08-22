@@ -238,6 +238,9 @@
       ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
       : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
 
+    // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
+    const noteHtml = '<div style="font-size:13px;color:#8A7A6A;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
+
     // 🎁 豆クーポン進捗バー：マイル合計に対し「あと△マイルで豆クーポン」を可視化。
     //    値は全てサーバ(apiCheckinDo)が config から読んで渡す＝ここに数値を書かない。couponMile=0 なら非表示。
     const beansProgHtml = beansProgressHtml(r);
@@ -269,7 +272,7 @@
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + beansProgHtml + ticketHtml +
+      mileHtml + noteHtml + beansProgHtml + ticketHtml +
       '<a class="link" href="#" id="about">試飲チケットについて</a>' +
       '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;

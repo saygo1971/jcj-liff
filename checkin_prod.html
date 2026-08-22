@@ -50,6 +50,13 @@
     .status{color:var(--muted);font-size:13px;padding:34px 0;text-align:center}
     .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* 🎁 マイル特典 進捗バー（メッセージ方式カードと同じ見せ方） */
+    .bsec{margin-top:14px}
+    .pbar{width:100%;height:12px;background:#EDE7DF;border-radius:6px;overflow:hidden}
+    .pfill{height:100%;background:#6F4E37;border-radius:6px}
+    .bready{display:block;text-align:center;margin-top:10px;font-size:14px;font-weight:800;color:#6F4E37;text-decoration:none}
+    .bnext{text-align:center;margin-top:4px;font-size:11px;color:#8A7A6A}
+    .bmore{text-align:center;margin-top:10px;font-size:13px;color:#6F4E37;font-weight:700}
     .hidden{display:none}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -185,6 +192,33 @@
       ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
       : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
 
+    // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
+    const noteHtml = '<div style="font-size:13px;color:#8A7A6A;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
+
+    // 🎁 マイル特典（豆クーポン）進捗バー：合計マイルに対し「あと△で🎁マイル特典」。
+    //   checkin_do の couponMile / beansDiscountYen / beansExchangeUrl(=CONFIG beans_liff_id 由来) を使う。config未設定(0/空)なら非表示。
+    let beansHtml = "";
+    const couponMile = Number(r.couponMile) || 0;
+    if (couponMile > 0) {
+      const yTotal = Number(r.newTotal) || 0;
+      const prog = yTotal % couponMile;
+      const remain = couponMile - prog;
+      const ready = Math.floor(yTotal / couponMile) >= 1;
+      const discYen = Number(r.beansDiscountYen) || 0;
+      const discText = discYen > 0 ? "（¥" + discYen + "割引）" : "";
+      const fillPct = Math.max(0, Math.min(100, Math.round(prog / couponMile * 100)));
+      const exUrl = String(r.beansExchangeUrl || "").trim();
+      const bar = '<div class="pbar"><div class="pfill" style="width:' + fillPct + '%"></div></div>';
+      if (ready && exUrl) {
+        beansHtml = '<div class="bsec">' + bar +
+          '<a id="beansEx" class="bready" href="' + esc(exUrl) + '">🎁 マイル特典と交換できます！（タップで交換）</a>' +
+          '<div class="bnext">あと ' + remain + ' マイルで、次の特典</div></div>';
+      } else {
+        beansHtml = '<div class="bsec">' + bar +
+          '<div class="bmore">あと ' + remain + ' マイルで 🎁 マイル特典' + discText + '</div></div>';
+      }
+    }
+
     let ticketHtml = "";
     if (r.ticketEnabled && Number(r.ticketBalance) > 0){
       const bal = Number(r.ticketBalance);
@@ -207,7 +241,7 @@
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + ticketHtml + refHtml;
+      mileHtml + noteHtml + beansHtml + ticketHtml + refHtml;
       // 「試飲チケットについて」リンク＋説明は削除（試飲を隠す方針＝豆割引1本／本部v21 2026-08-16）。
       // 試飲チケット本体(ticketHtml)は ticketEnabled&&残>0 の時だけ描画＝本番は試飲販売なしのため実質非表示。
 
@@ -224,6 +258,15 @@
     if (rb) rb.onclick = function(){
       // 送る側ページへ「いまチェックインした店ID」を渡す（share_prod は shopId 必須）。
       const url = SHARE_URL + "?shopId=" + encodeURIComponent(st.shopId || SPOT || "");
+      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: url, external: false });
+      else location.href = url;
+    };
+
+    // 🎁 マイル特典 交換リンク：LINE内はアプリ内ウィンドウで交換ページ(mame)を開く。
+    const bx = document.getElementById("beansEx");
+    if (bx) bx.onclick = function(ev){
+      ev.preventDefault();
+      const url = bx.getAttribute("href");
       if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: url, external: false });
       else location.href = url;
     };
