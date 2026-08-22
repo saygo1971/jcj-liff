@@ -294,10 +294,6 @@
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
     $("about").onclick = (ev)=>{ ev.preventDefault(); $("aboutInfo").classList.toggle("hidden"); };
-
-    // 🗒️ 完了カードをトークへ"無料で"残す（新規チェックインのみ）。本日重複(alreadyToday)や
-    //    サーバがカードを返さなかった時(r.talkCard=null)は投稿しない。二重投稿は起きない設計。
-    if (!r.alreadyToday && r.talkCard) sendCheckinCardToTalk(r.talkCard);
   }
 
   function wireTicket(bal){
@@ -379,18 +375,6 @@
     try{
       if(!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
       await liff.sendMessages([ buildReceiptFlex(d) ]);
-    }catch(e){}
-  }
-
-  // ★チェックイン完了カードをトークへ"置く"（新型URLチェックインでも結果を無料でトークに残す）。
-  //   カードはサーバ(apiCheckinDo)が既存 getCheckinSuccessCard で組んで r.talkCard で渡す＝旧チェックインと同一の見た目。
-  //   控えカード(sendReceiptToTalk)と同じ安全設計＝LINE内(isInClient)＆送信API可のときだけ。送れない環境は黙ってスルー（画面表示が主役）。
-  async function sendCheckinCardToTalk(card){
-    try{
-      if(!card) return;
-      if(!(liff.isInClient && liff.isInClient())) return;
-      if(!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
-      await liff.sendMessages([ card ]);
     }catch(e){}
   }
 
