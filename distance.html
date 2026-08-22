@@ -107,9 +107,13 @@
     </div>
 
     <div class="row2">
-      <div class="tile you" style="flex:1">
+      <div class="tile you">
         <div class="l">あなたが足した</div>
         <div class="v"><span id="yourKm">0</span><span class="u">km</span></div>
+      </div>
+      <div class="tile">
+        <div class="l">いっしょに旅する仲間</div>
+        <div class="v"><span id="members">0</span><span class="u">人</span></div>
       </div>
     </div>
 
@@ -183,6 +187,7 @@
 
     $("totalKm").textContent = fmt(total);
     $("yourKm").textContent  = fmt(you);
+    $("members").textContent = fmt(d.memberCount);
     $("goalLabel").textContent = "地球一周 " + fmt(goal) + "km";
     setTimeout(()=>{ $("fill").style.width = (pct>0?pct:1) + "%"; }, 60);
 
