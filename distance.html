@@ -16,66 +16,66 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--cream);color:var(--ink);
     font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
-  .wrap{max-width:440px;margin:0 auto;padding:0 16px 28px}
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 18px}
 
   .status{color:var(--sub);font-size:14px;padding:60px 0;text-align:center}
   .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .hidden{display:none}
 
-  .head{padding:18px 4px 8px;text-align:center}
-  .head .kicker{font-size:12px;color:var(--brown);letter-spacing:.10em;font-weight:700}
-  .head .h1{font-size:20px;font-weight:800;margin-top:6px;line-height:1.5}
+  .head{padding:12px 4px 6px;text-align:center}
+  .head .kicker{font-size:11px;color:var(--brown);letter-spacing:.10em;font-weight:700}
+  .head .h1{font-size:17px;font-weight:800;margin-top:4px;line-height:1.4}
 
   /* みんなの距離カード */
-  .meter{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:22px 18px 18px;text-align:center;box-shadow:0 4px 16px rgba(120,95,60,.08);margin-top:12px}
-  .meter .globe{font-size:26px}
-  .meter .big{font-size:40px;font-weight:800;color:var(--teal);line-height:1.1;margin-top:2px;letter-spacing:-.01em}
-  .meter .big .u{font-size:18px;font-weight:800;color:var(--teal);margin-left:3px}
-  .meter .cap{font-size:12.5px;color:var(--sub);margin-top:4px;font-weight:700}
+  .meter{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 16px 13px;text-align:center;box-shadow:0 4px 16px rgba(120,95,60,.08);margin-top:8px}
+  .meter .globe{font-size:20px;line-height:1}
+  .meter .big{font-size:33px;font-weight:800;color:var(--teal);line-height:1.05;margin-top:1px;letter-spacing:-.01em}
+  .meter .big .u{font-size:15px;font-weight:800;color:var(--teal);margin-left:3px}
+  .meter .cap{font-size:12px;color:var(--sub);margin-top:3px;font-weight:700}
 
-  .track{margin-top:16px;height:12px;background:var(--track);border-radius:999px;overflow:hidden}
-  .fill{height:12px;background:linear-gradient(90deg,#2c8f74,#1f6b57);border-radius:999px;width:0;transition:width .8s ease}
-  .goal{display:flex;justify-content:space-between;margin-top:7px;font-size:11.5px;color:var(--sub);font-weight:700}
-  .remain{margin-top:12px;font-size:14px;font-weight:800;color:var(--teal-d)}
+  .track{margin-top:11px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
+  .fill{height:10px;background:linear-gradient(90deg,#2c8f74,#1f6b57);border-radius:999px;width:0;transition:width .8s ease}
+  .goal{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--sub);font-weight:700}
+  .remain{margin-top:9px;font-size:13.5px;font-weight:800;color:var(--teal-d)}
 
   /* あなた／仲間 */
-  .row2{display:flex;gap:10px;margin-top:12px}
-  .tile{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 12px;text-align:center}
-  .tile .l{font-size:11.5px;color:var(--sub);font-weight:700}
-  .tile .v{font-size:22px;font-weight:800;color:var(--ink);margin-top:3px}
-  .tile .v .u{font-size:13px;font-weight:800;margin-left:2px}
+  .row2{display:flex;gap:9px;margin-top:9px}
+  .tile{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+  .tile .l{font-size:11px;color:var(--sub);font-weight:700}
+  .tile .v{font-size:20px;font-weight:800;color:var(--ink);margin-top:2px}
+  .tile .v .u{font-size:12px;font-weight:800;margin-left:2px}
   .tile.you .v{color:var(--teal)}
 
-  .youline{background:#f4faf7;border:1px solid #dcebe4;border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13.5px;color:var(--teal-d);font-weight:700;line-height:1.6;text-align:center}
+  .youline{background:#f4faf7;border:1px solid #dcebe4;border-radius:12px;padding:9px 12px;margin-top:9px;font-size:12.5px;color:var(--teal-d);font-weight:700;line-height:1.55;text-align:center}
 
   /* 憧れ（夢・演出のみ／実物の約束はしない） */
-  .dream{margin-top:14px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:16px;padding:16px 16px;text-align:center}
-  .dream .moon{font-size:20px}
-  .dream .t{font-size:14px;font-weight:800;margin-top:4px;line-height:1.6}
-  .dream .s{font-size:12px;color:#c7d3e4;margin-top:8px;font-weight:700}
-  .moontrack{margin-top:8px;height:8px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
-  .moonfill{height:8px;background:linear-gradient(90deg,#cdd7ea,#9fb4d6);border-radius:999px;width:0;transition:width .9s ease}
-  .moonremain{font-size:11px;color:#b9c6d8;margin-top:7px;line-height:1.6}
+  .dream{margin-top:9px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
+  .dream .moon{font-size:16px;line-height:1}
+  .dream .t{font-size:13.5px;font-weight:800;margin-top:3px;line-height:1.5}
+  .dream .s{font-size:11.5px;color:#c7d3e4;margin-top:6px;font-weight:700}
+  .moontrack{margin-top:6px;height:7px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
+  .moonfill{height:7px;background:linear-gradient(90deg,#cdd7ea,#9fb4d6);border-radius:999px;width:0;transition:width .9s ease}
+  .moonremain{font-size:11px;color:#b9c6d8;margin-top:6px;line-height:1.5}
 
   /* 次の一歩 */
-  .next{margin-top:18px}
-  .next .ttl{font-size:13px;font-weight:800;color:var(--brown-d);margin:0 2px 9px}
-  .shop{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-  .shop .photo{position:relative;height:160px;background:linear-gradient(135deg,#b99a6f,#6f5b44)}
+  .next{margin-top:11px}
+  .next .ttl{font-size:12.5px;font-weight:800;color:var(--brown-d);margin:0 2px 7px}
+  .shop{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .shop .photo{position:relative;height:118px;background:linear-gradient(135deg,#b99a6f,#6f5b44)}
   .shop .photo img{width:100%;height:100%;object-fit:cover;display:block}
-  .shop .badge{position:absolute;left:12px;top:12px;background:rgba(31,107,87,.9);color:#fff;font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px}
-  .shop .dist{position:absolute;right:12px;bottom:12px;background:var(--teal);color:#fff;font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px}
-  .shop .body{padding:13px 15px 15px}
+  .shop .badge{position:absolute;left:10px;top:10px;background:rgba(31,107,87,.9);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .shop .dist{position:absolute;right:10px;bottom:10px;background:var(--teal);color:#fff;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
+  .shop .body{padding:10px 14px 12px}
   .shop .pref{font-size:12px;color:var(--sub);font-weight:700}
-  .shop .name{font-size:19px;font-weight:800;margin-top:3px;line-height:1.35}
-  .shop .roaster{font-size:12.5px;color:var(--sub);margin-top:3px}
+  .shop .name{font-size:18px;font-weight:800;margin-top:2px;line-height:1.3}
+  .shop .roaster{font-size:12px;color:var(--sub);margin-top:2px}
 
-  .btn{display:block;width:100%;height:52px;line-height:52px;text-align:center;border-radius:14px;border:none;font-size:16px;font-weight:800;text-decoration:none;cursor:pointer;margin-top:12px}
+  .btn{display:block;width:100%;height:48px;line-height:48px;text-align:center;border-radius:12px;border:none;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;margin-top:10px}
   .btn.primary{background:var(--teal);color:#fff;box-shadow:0 6px 16px rgba(31,107,87,.28)}
-  .btn.ghost{background:transparent;color:var(--teal-d);border:1.5px solid var(--teal);height:46px;line-height:44px;font-size:14.5px}
+  .btn.ghost{background:transparent;color:var(--teal-d);border:1.5px solid var(--teal);height:44px;line-height:42px;font-size:14px}
 
-  .foot{margin-top:18px;text-align:center;font-size:11px;color:#a3937d;line-height:1.7}
+  .foot{margin-top:11px;text-align:center;font-size:10.5px;color:#a3937d;line-height:1.6}
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
