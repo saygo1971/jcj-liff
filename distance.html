@@ -47,8 +47,6 @@
   .tile .v .u{font-size:12px;font-weight:800;margin-left:2px}
   .tile.you .v{color:var(--teal)}
 
-  .youline{background:#f4faf7;border:1px solid #dcebe4;border-radius:12px;padding:9px 12px;margin-top:9px;font-size:12.5px;color:var(--teal-d);font-weight:700;line-height:1.55;text-align:center}
-
   /* 憧れ（夢・演出のみ／実物の約束はしない） */
   .dream{margin-top:9px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
   .dream .moon{font-size:16px;line-height:1}
@@ -116,8 +114,6 @@
         <div class="v"><span id="members">0</span><span class="u">人</span></div>
       </div>
     </div>
-
-    <div id="youline" class="youline hidden"></div>
 
     <div class="dream">
       <div class="moon">🌙</div>
@@ -205,15 +201,7 @@
     const moonPct = Math.max(0, Math.min(100, total/MOON_KM*100));
     setTimeout(()=>{ $("moonfill").style.width = (moonPct>0?moonPct:0.5) + "%"; }, 120);
     $("moonRemain").textContent = "月まで あと約 " + fmt(Math.max(0, MOON_KM - total)) + "km";
-
-    // あなたの一行（自分ごとスイッチ）
-    const yl = $("youline");
-    if (you > 0){
-      yl.textContent = "あなたが足したのは " + fmt(you) + "km。ありがとう、その距離も旅の一部です。";
-    } else {
-      yl.textContent = "あなたの旅は、ここから。まずは一軒、行ってみませんか？";
-    }
-    yl.classList.remove("hidden");
+    // ※「あなたが足した◯km」は上のタイルで表示。次の一歩は下のお店カード＋ボタンが担う。
   }
 
   function renderNext(you, nudge){
