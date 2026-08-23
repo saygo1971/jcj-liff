@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>みんなの距離メーター</title>
+<style>
+  :root{
+    --cream:#faf5ee; --paper:#ffffff; --ink:#3a2f25; --sub:#8a7a68;
+    --teal:#1f6b57; --teal-d:#17513f; --brown:#9f866a; --brown-d:#6f5b44;
+    --gold:#c0a768; --bean:#BA7517; --line:#ece3d6; --track:#DCE7D8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 18px}
+
+  .status{color:var(--sub);font-size:14px;padding:60px 0;text-align:center}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+
+  .head{padding:12px 4px 6px;text-align:center}
+  .head .kicker{font-size:11px;color:var(--brown);letter-spacing:.10em;font-weight:700}
+  .head .h1{font-size:17px;font-weight:800;margin-top:4px;line-height:1.4}
+
+  /* みんなの距離カード */
+  .meter{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 16px 13px;text-align:center;box-shadow:0 4px 16px rgba(120,95,60,.08);margin-top:8px}
+  .meter .globe{font-size:20px;line-height:1}
+  .meter .big{font-size:33px;font-weight:800;color:var(--teal);line-height:1.05;margin-top:1px;letter-spacing:-.01em}
+  .meter .big .u{font-size:15px;font-weight:800;color:var(--teal);margin-left:3px}
+  .meter .cap{font-size:12px;color:var(--sub);margin-top:3px;font-weight:700}
+
+  .track{margin-top:11px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
+  .fill{height:10px;background:linear-gradient(90deg,#2c8f74,#1f6b57);border-radius:999px;width:0;transition:width .8s ease}
+  .goal{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--sub);font-weight:700}
+  .remain{margin-top:9px;font-size:13.5px;font-weight:800;color:var(--teal-d)}
+
+  /* あなた／仲間 */
+  .row2{display:flex;gap:9px;margin-top:9px}
+  .tile{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+  .tile .l{font-size:11px;color:var(--sub);font-weight:700}
+  .tile .v{font-size:20px;font-weight:800;color:var(--ink);margin-top:2px}
+  .tile .v .u{font-size:12px;font-weight:800;margin-left:2px}
+  .tile.you .v{color:var(--teal)}
+
+  /* 憧れ（夢・演出のみ／実物の約束はしない） */
+  .dream{margin-top:9px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
+  .dream .moon{font-size:16px;line-height:1}
+  .dream .t{font-size:13.5px;font-weight:800;margin-top:3px;line-height:1.5}
+  .dream .s{font-size:11.5px;color:#c7d3e4;margin-top:6px;font-weight:700}
+  .moontrack{margin-top:6px;height:7px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
+  .moonfill{height:7px;background:linear-gradient(90deg,#cdd7ea,#9fb4d6);border-radius:999px;width:0;transition:width .9s ease}
+  .moonremain{font-size:11px;color:#b9c6d8;margin-top:6px;line-height:1.5}
+
+  /* 次の一歩 */
+  .next{margin-top:11px}
+  .next .ttl{font-size:12.5px;font-weight:800;color:var(--brown-d);margin:0 2px 7px}
+  .shop{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .shop .photo{position:relative;height:118px;background:linear-gradient(135deg,#b99a6f,#6f5b44)}
+  .shop .photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .shop .badge{position:absolute;left:10px;top:10px;background:rgba(31,107,87,.9);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .shop .dist{position:absolute;right:10px;bottom:10px;background:var(--teal);color:#fff;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
+  .shop .body{padding:10px 14px 12px}
+  .shop .pref{font-size:12px;color:var(--sub);font-weight:700}
+  .shop .name{font-size:18px;font-weight:800;margin-top:2px;line-height:1.3}
+  .shop .roaster{font-size:12px;color:var(--sub);margin-top:2px}
+
+  .btn{display:block;width:100%;height:48px;line-height:48px;text-align:center;border-radius:12px;border:none;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;margin-top:10px}
+  .btn.primary{background:var(--teal);color:#fff;box-shadow:0 6px 16px rgba(31,107,87,.28)}
+  .btn.ghost{background:transparent;color:var(--teal-d);border:1.5px solid var(--teal);height:44px;line-height:42px;font-size:14px}
+
+  .foot{margin-top:11px;text-align:center;font-size:10.5px;color:#a3937d;line-height:1.6}
+</style>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="status" class="status">
+    <div id="spin" class="spin"></div>
+    <div id="statusText">起動中…</div>
+  </div>
+
+  <div id="main" class="hidden">
+    <div class="head">
+      <div class="kicker">JAPAN COFFEE JOURNEY</div>
+      <div class="h1">みんなで旅した距離</div>
+    </div>
+
+    <div class="meter">
+      <div class="globe">🌏</div>
+      <div class="big"><span id="totalKm">0</span><span class="u">km</span></div>
+      <div class="cap">日本中の旅人が足した距離の合計</div>
+
+      <div class="track"><div id="fill" class="fill"></div></div>
+      <div class="goal">
+        <span id="asOf">今日</span>
+        <span id="goalLabel">地球一周 40,075km</span>
+      </div>
+      <div id="remain" class="remain"></div>
+    </div>
+
+    <div class="row2">
+      <div class="tile you">
+        <div class="l">あなたが足した</div>
+        <div class="v"><span id="yourKm">0</span><span class="u">km</span></div>
+      </div>
+      <div class="tile">
+        <div class="l">いっしょに旅する仲間</div>
+        <div class="v"><span id="members">0</span><span class="u">人</span></div>
+      </div>
+    </div>
+
+    <div class="dream">
+      <div class="moon">🌙</div>
+      <div class="t">いつか、日本のコーヒー旅を宇宙へ。</div>
+      <div class="s">月を目指して</div>
+      <div class="moontrack"><div id="moonfill" class="moonfill"></div></div>
+      <div class="moonremain" id="moonRemain"></div>
+    </div>
+
+    <div class="next">
+      <div class="ttl" id="nextTtl">次の一歩</div>
+
+      <div id="shop" class="shop hidden">
+        <div class="photo">
+          <img id="photo" alt="お店の写真" onerror="this.style.display='none'">
+          <div class="badge" id="shopBadge">行きたいに保存中</div>
+          <div id="dist" class="dist hidden"></div>
+        </div>
+        <div class="body">
+          <div id="pref" class="pref"></div>
+          <div id="name" class="name"></div>
+          <div id="roaster" class="roaster"></div>
+        </div>
+      </div>
+
+      <a id="mapBtn" class="btn primary hidden" target="_blank" rel="noopener">このお店への行き方を見る</a>
+      <button id="findBtn" class="btn ghost hidden">ロースターを探す</button>
+    </div>
+
+    <div class="foot">数字は毎朝1回の集計です。あなたのチェックインが、みんなの旅を前に進めます。<br>（スタッフ・テスト用の記録は合計に含めていません）</div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 設定ここだけ（本番環境）=====  ★リリース番が下記2つを埋める★
+  // LIFF_ID：本番の距離メーター用LIFF（本番ログインチャネル 2010671952 配下）。
+  //          このページのURLを LINE Developers のエンドポイントに登録して発行されたID。
+  const LIFF_ID = "2010671952-XXXXXXXX"; // TODO(リリース番): 本番の距離メーターLIFF IDに差し替え
+  // GAS_URL：本番GASの「distance_meter / saved_nudge を含む・誰でもアクセス可・バージョン付き」デプロイ(/exec)。
+  //          ※本番GAS(@740rorcl)を distance_meter.js 反映版で再配備した後のwebhook URL。
+  //            匿名スモークOKの確認＝?action=distance_meter が {"ok":true,...} をJSON返却すること。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbXXXXXXXX_PROD_REPLACE/exec"; // TODO(リリース番): 本番webhook URLに差し替え
+  // FIND_URL：「ロースターを探す」導線（保存が無い/全部行った人向け）。空ならボタンを隠す。
+  const FIND_URL = ""; // 任意: 検索/リッチメニューのURLがあれば設定
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  let USER_ID = "";
+
+  function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
+
+  async function api(action, extra){
+    const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
+    const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    return await res.json();
+  }
+
+  const MOON_KM = 384400; // 地球〜月の距離（憧れのゴール・演出のみ）
+
+  function fmt(n){ return (Number(n)||0).toLocaleString(); }
+
+  function renderMeter(d){
+    const total = Number(d.totalKm)||0;
+    const goal  = Number(d.goalKm)||40075;
+    const you   = Number(d.yourKm)||0;
+    const pct   = Math.max(0, Math.min(100, goal>0 ? (total/goal*100) : 0));
+
+    $("totalKm").textContent = fmt(total);
+    $("yourKm").textContent  = fmt(you);
+    $("members").textContent = fmt(d.memberCount);
+    $("goalLabel").textContent = "地球一周 " + fmt(goal) + "km";
+    setTimeout(()=>{ $("fill").style.width = (pct>0?pct:1) + "%"; }, 60);
+
+    // 数字の「時点」＝今日の日付（集計日があればそれ、無ければ今日）
+    const asOf = d.updatedAt ? new Date(d.updatedAt) : new Date();
+    $("asOf").textContent = (asOf.getMonth()+1) + "月" + asOf.getDate() + "日時点";
+
+    if (total >= goal){
+      $("remain").textContent = "🎉 地球一周 達成！";
+    } else {
+      $("remain").textContent = "地球一周まで あと約 " + fmt(goal - total) + "km";
+    }
+
+    // 🌙 月を目指すバー（地球〜月＝384,400km。今はごく僅か＝憧れの演出）
+    const moonPct = Math.max(0, Math.min(100, total/MOON_KM*100));
+    setTimeout(()=>{ $("moonfill").style.width = (moonPct>0?moonPct:0.5) + "%"; }, 120);
+    $("moonRemain").textContent = "月まで あと約 " + fmt(Math.max(0, MOON_KM - total)) + "km";
+    // ※「あなたが足した◯km」は上のタイルで表示。次の一歩は下のお店カード＋ボタンが担う。
+  }
+
+  function renderNext(you, nudge){
+    const t = nudge && nudge.ok ? nudge.target : null;
+    if (t){
+      // 0kmの人は「最寄りの保存店」、行ったことがある人は「次に行きたい保存店」
+      $("nextTtl").textContent = (you > 0) ? "次に行きたい、保存したお店" : "あなたの旅の、はじめの一歩に";
+      $("shopBadge").textContent = "行きたいに保存中";
+      if (t.photo){ $("photo").src = t.photo; } else { $("photo").style.display = "none"; }
+      $("pref").textContent = t.pref || "";
+      $("name").textContent = t.name || "お店";
+      $("roaster").textContent = t.roaster || "";
+      if (t.distanceKm != null){ $("dist").textContent = "約 " + t.distanceKm + "km"; $("dist").classList.remove("hidden"); }
+      $("shop").classList.remove("hidden");
+      if (t.mapUrl){ $("mapBtn").href = t.mapUrl; $("mapBtn").classList.remove("hidden"); }
+    } else {
+      // 保存が無い／全部行った → 探す導線
+      $("nextTtl").textContent = "次の一歩";
+      if (FIND_URL){ $("findBtn").onclick = ()=>{ location.href = FIND_URL; }; $("findBtn").classList.remove("hidden"); }
+    }
+  }
+
+  async function load(){
+    showLoading("みんなの距離を集計しています…");
+    const d = await api("distance_meter");
+    if(!d || !d.ok){ showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return; }
+    renderMeter(d);
+    // 次の一歩の店（既存の保存ナッジを再利用）。失敗しても本体は出す。
+    let nudge = null;
+    try { nudge = await api("saved_nudge"); } catch(_){}
+    renderNext(Number(d.yourKm)||0, nudge);
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function main(){
+    showLoading("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+    await load();
+  }
+
+  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); });
+</script>
+</body>
+</html>
