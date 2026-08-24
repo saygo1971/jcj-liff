@@ -129,6 +129,7 @@
 
     <div class="next">
       <div class="ttl" id="nextTtl">次の一歩</div>
+      <div id="nextLoading" class="nextEmpty">近くのお店を探しています…</div>
 
       <div id="shop" class="shop hidden">
         <div class="photo">
@@ -213,6 +214,7 @@
   }
 
   function renderNext(you, nudge){
+    $("nextLoading").classList.add("hidden");   // 読み込み表示を消す
     const t = nudge && nudge.ok ? nudge.target : null;
     if (t){
       // 0kmの人は「最寄りの保存店」、行ったことがある人は「次に行きたい保存店」
@@ -238,15 +240,20 @@
 
   async function load(){
     showLoading("みんなの距離を集計しています…");
-    const d = await api("distance_meter");
+    // ⚡️高速化：距離集計と保存店ナッジを"同時に"取りに行く（順番待ちを無くす）。
+    const pMeter = api("distance_meter");
+    const pNudge = api("saved_nudge").catch(()=>null);   // 失敗しても本体は出す
+
+    // 距離が返った時点で、まず本体(メーター)を表示＝待ち時間を体感で短縮。
+    const d = await pMeter;
     if(!d || !d.ok){ showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return; }
     renderMeter(d);
-    // 次の一歩の店（既存の保存ナッジを再利用）。失敗しても本体は出す。
-    let nudge = null;
-    try { nudge = await api("saved_nudge"); } catch(_){}
-    renderNext(Number(d.yourKm)||0, nudge);
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
+
+    // 「次の一歩」の店は、少し遅れて埋める（メーター表示は待たせない）。
+    const nudge = await pNudge;
+    renderNext(Number(d.yourKm)||0, nudge);
   }
 
   async function main(){
