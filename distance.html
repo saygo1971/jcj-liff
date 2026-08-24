@@ -68,6 +68,10 @@
   .shop .pref{font-size:12px;color:var(--sub);font-weight:700}
   .shop .name{font-size:18px;font-weight:800;margin-top:2px;line-height:1.3}
   .shop .roaster{font-size:12px;color:var(--sub);margin-top:2px}
+  .photo .noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:0 16px}
+  .photo .noimg .ic{font-size:26px}
+  .photo .noimg .nm{font-size:16px;font-weight:800;margin-top:4px;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.28)}
+  .nextEmpty{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;font-size:13px;color:var(--sub);line-height:1.7}
 
   .btn{display:block;width:100%;height:48px;line-height:48px;text-align:center;border-radius:12px;border:none;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;margin-top:10px}
   .btn.primary{background:var(--teal);color:#fff;box-shadow:0 6px 16px rgba(31,107,87,.28)}
@@ -128,7 +132,8 @@
 
       <div id="shop" class="shop hidden">
         <div class="photo">
-          <img id="photo" alt="お店の写真" onerror="this.style.display='none'">
+          <img id="photo" alt="お店の写真">
+          <div id="noimg" class="noimg hidden"><div class="ic">🫘</div><div class="nm" id="noimgName"></div></div>
           <div class="badge" id="shopBadge">行きたいに保存中</div>
           <div id="dist" class="dist hidden"></div>
         </div>
@@ -138,6 +143,8 @@
           <div id="roaster" class="roaster"></div>
         </div>
       </div>
+
+      <div id="nextEmpty" class="nextEmpty hidden">気になるロースターを「行きたい」に保存すると、ここに次の一歩が出ます。</div>
 
       <a id="mapBtn" class="btn primary hidden" target="_blank" rel="noopener">このお店への行き方を見る</a>
       <button id="findBtn" class="btn ghost hidden">ロースターを探す</button>
@@ -155,8 +162,9 @@
   // GAS_URL：distance_meter / saved_nudge を含む「誰でもアクセス可（ログイン不要）」のバージョン付きデプロイURL。
   //          ※本部の再配備でこのメーター対応版に更新される（デプロイURL自体は版固定で不変）。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
-  // FIND_URL：「ロースターを探す」導線（保存が無い/全部行った人向け）。空ならボタンを隠す。
-  const FIND_URL = ""; // TODO: 検索/リッチメニューのURLがあれば設定
+  // FIND_URL：「ロースターを探す」導線（保存が無い/全部行った人向け）。
+  //   OA(テスト @957zdear)に「ロースターを探す」メッセージを送る＝GAS側 userText.includes("ロースターを探す") で検索起動。
+  const FIND_URL = "https://line.me/R/oaMessage/@957zdear/?" + encodeURIComponent("ロースターを探す");
   // ====================================
 
   const $ = id => document.getElementById(id);
@@ -210,16 +218,20 @@
       // 0kmの人は「最寄りの保存店」、行ったことがある人は「次に行きたい保存店」
       $("nextTtl").textContent = (you > 0) ? "次に行きたい、保存したお店" : "あなたの旅の、はじめの一歩に";
       $("shopBadge").textContent = "行きたいに保存中";
-      if (t.photo){ $("photo").src = t.photo; } else { $("photo").style.display = "none"; }
-      $("pref").textContent = t.pref || "";
       $("name").textContent = t.name || "お店";
+      $("pref").textContent = t.pref || "";
       $("roaster").textContent = t.roaster || "";
+      // 写真が無い/読めない店は、色地に店名を出して“空っぽ”に見せない
+      const showNoImg = ()=>{ $("photo").style.display="none"; $("noimgName").textContent = t.name || "お店"; $("noimg").classList.remove("hidden"); };
+      if (t.photo){ $("photo").style.display=""; $("noimg").classList.add("hidden"); $("photo").onerror=showNoImg; $("photo").src=t.photo; }
+      else { showNoImg(); }
       if (t.distanceKm != null){ $("dist").textContent = "約 " + t.distanceKm + "km"; $("dist").classList.remove("hidden"); }
       $("shop").classList.remove("hidden");
       if (t.mapUrl){ $("mapBtn").href = t.mapUrl; $("mapBtn").classList.remove("hidden"); }
     } else {
-      // 保存が無い／全部行った → 探す導線
+      // 保存がまだ無い／全部行った人：空にせず、探す導線を出す
       $("nextTtl").textContent = "次の一歩";
+      $("nextEmpty").classList.remove("hidden");
       if (FIND_URL){ $("findBtn").onclick = ()=>{ location.href = FIND_URL; }; $("findBtn").classList.remove("hidden"); }
     }
   }
