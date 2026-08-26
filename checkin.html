@@ -144,7 +144,7 @@
           var reason = (err && err.code===1) ? "denied" : ((err && err.code===3) ? "timeout" : "unavailable");
           resolve({ ok:false, reason:reason });
         },
-        { enableHighAccuracy:true, timeout:10000, maximumAge:60000 }
+        { enableHighAccuracy:false, timeout:2500, maximumAge:60000 }
       );
     });
   }

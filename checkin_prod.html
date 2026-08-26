@@ -123,7 +123,8 @@
 
   // 位置情報を取得して checkin_do に付ける（サーバ側 parseGeoParam_ / recordUrlCheckin_ の300m判定に使う）。
   // 成功→{lat,lng,acc}／拒否・失敗→{geo:denied|timeout|unavailable}。取れない時もサーバは従来どおり満額(フェイルオープン)。
-  // options＝enableHighAccuracy=false/timeout25s/maximumAge60s：iOS LINE内webviewでの取得成功率を優先（300m判定に高精度GPS不要／geotestで19m取得を実証）。
+  // options＝enableHighAccuracy=false/timeout2.5s/maximumAge60s：iOS LINE内webviewでの取得成功率を優先（300m判定に高精度GPS不要／geotestで19m取得を実証）。
+  //   ※2026-08-26 速度改善：サーバは現在 位置確認OFF(CHECKIN_GEO_ENFORCE=false)＝geoを判定に使わない。25s待ちは待ち損だったので timeout 25000→2500 に短縮（取れなければ即 checkin_do・満額成立）。位置確認を将来ONに戻す時は timeout を戻す。
   //   粗い測位でaccが大きくても、サーバ側が実効半径 300+min(acc,500) で店客を誤保留にしない（コード.js recordUrlCheckin_ のacc考慮）。
   function getGeoParams(){
     return new Promise((resolve)=>{
@@ -131,7 +132,7 @@
       navigator.geolocation.getCurrentPosition(
         (pos)=> resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round((pos.coords && pos.coords.accuracy) || 0) }),
         (err)=> resolve({ geo: (err && err.code === 1) ? "denied" : ((err && err.code === 3) ? "timeout" : "unavailable") }),
-        { enableHighAccuracy: false, timeout: 25000, maximumAge: 60000 }
+        { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
       );
     });
   }
