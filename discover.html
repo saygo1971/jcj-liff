@@ -591,8 +591,8 @@
       if(d&&d.ok&&d.target){ showNudgeFrom(d.target,false); return; }
       $("nudge").classList.add("hidden");
     }catch(e){
-      // プレビュー（LINE外）＝先頭店でお知らせ箱の見た目だけ見せる
-      if(IS_SAMPLE&&SHOPS.length){ showNudgeFrom(SHOPS[0],true); } else { $("nudge").classList.add("hidden"); }
+      // プレビュー（LINE外・未ログイン）＝先頭店でお知らせ箱の"見た目"だけ見せる（本番LINEでは本人の保存店に置換）
+      if(SHOPS.length){ showNudgeFrom(SHOPS[0],true); } else { $("nudge").classList.add("hidden"); }
     }
   }
 
