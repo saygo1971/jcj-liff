@@ -38,7 +38,8 @@
   .sec-h .h{font-weight:800;font-size:18px}
   .sec-h .c{font-size:11.5px;color:var(--sub);font-weight:700}
 
-  .seg{margin:10px 16px 0;background:#f0e7da;border-radius:12px;padding:3px;display:flex;position:relative}
+  .segbar{position:sticky;top:0;z-index:15;background:var(--cream);padding:9px 0 4px}
+  .seg{margin:0 16px;background:#f0e7da;border-radius:12px;padding:3px;display:flex;position:relative}
   .seg button{flex:1;border:none;background:none;font-family:inherit;font-size:13px;font-weight:800;color:var(--sub);padding:9px 0;border-radius:9px;cursor:pointer;z-index:1}
   .seg button.on{color:var(--ink)}
   .seg .knob{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);background:var(--paper);border-radius:9px;box-shadow:0 2px 6px rgba(120,95,60,.14);transition:transform .22s ease}
@@ -83,7 +84,7 @@
   .prefhdr{font-size:11.5px;font-weight:800;color:var(--brown-d);padding:6px 2px 0;display:flex;align-items:center;gap:6px}
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
-  .card .pho{width:92px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:24px;overflow:hidden}
+  .card .pho{width:124px;min-height:104px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;overflow:hidden}
   .card .pho img{width:100%;height:100%;object-fit:cover}
   .card .in{padding:10px 12px;flex:1;min-width:0}
   .card .pref{font-size:11px;color:var(--sub);font-weight:700}
@@ -137,10 +138,12 @@
 
     <div class="sec-h"><div class="h">ロースターを探す</div><div class="c" id="count">—</div></div>
 
-    <div class="seg" id="seg">
-      <span class="knob"></span>
-      <button class="on" id="segMap" onclick="setView('map')">🗺 地図</button>
-      <button id="segList" onclick="setView('list')">☰ 一覧</button>
+    <div class="segbar">
+      <div class="seg" id="seg">
+        <span class="knob"></span>
+        <button class="on" id="segMap" onclick="setView('map')">🗺 地図</button>
+        <button id="segList" onclick="setView('list')">☰ 一覧</button>
+      </div>
     </div>
 
     <div class="filters">
@@ -427,6 +430,9 @@
   function FN(code){var n=NAME[code];if(code===1)return n;if(code===13)return n+"都";if(code===26||code===27)return n+"府";return n+"県";}
   const PREF2CODE={}; for(var c=1;c<=47;c++){PREF2CODE[FN(c)]=c;}
   const CODE2AREA={}; (function(){var m={"北海道・東北":[1,2,3,4,5,6,7],"関東":[8,9,10,11,12,13,14],"甲信越":[15,19,20],"北陸":[16,17,18],"東海":[21,22,23],"近畿":[24,25,26,27,28,29,30],"中国・四国":[31,32,33,34,35,36,37,38,39],"九州・沖縄":[40,41,42,43,44,45,46,47]};Object.keys(m).forEach(function(a){m[a].forEach(function(cc){CODE2AREA[cc]=a;});});})();
+  // 都道府県の基準点(県庁所在地の緯度,経度)＝実座標ピン配置の錨
+  const CAP={1:[43.06417,141.34694],2:[40.82444,140.74],3:[39.70361,141.1525],4:[38.26889,140.87194],5:[39.71861,140.1025],6:[38.24056,140.36333],7:[37.75,140.46778],8:[36.34139,140.44667],9:[36.56583,139.88361],10:[36.39111,139.06083],11:[35.85694,139.64889],12:[35.60472,140.12333],13:[35.68944,139.69167],14:[35.44778,139.6425],15:[37.90222,139.02361],16:[36.69528,137.21139],17:[36.59444,136.62556],18:[36.06528,136.22194],19:[35.66389,138.56833],20:[36.65139,138.18111],21:[35.39111,136.72222],22:[34.97694,138.38306],23:[35.18028,136.90667],24:[34.73028,136.50861],25:[35.00444,135.86833],26:[35.02139,135.75556],27:[34.68639,135.52],28:[34.69139,135.18306],29:[34.68528,135.83278],30:[34.22694,135.1675],31:[35.50361,134.23833],32:[35.47222,133.05056],33:[34.66167,133.935],34:[34.39639,132.45944],35:[34.18583,131.47139],36:[34.06583,134.55944],37:[34.34028,134.04333],38:[33.84167,132.76611],39:[33.55972,133.53111],40:[33.60639,130.41806],41:[33.24944,130.29889],42:[32.74472,129.87361],43:[32.78972,130.74167],44:[33.23806,131.6125],45:[31.91111,131.42389],46:[31.56028,130.55806],47:[26.2125,127.68111]};
+  function slope(X,Y){var n=X.length,sx=0,sy=0,i;for(i=0;i<n;i++){sx+=X[i];sy+=Y[i];}var mx=sx/n,my=sy/n,num=0,den=0;for(i=0;i<n;i++){num+=(X[i]-mx)*(Y[i]-my);den+=(X[i]-mx)*(X[i]-mx);}return den?num/den:0;}
 
   // 窓口が未反映のときのプレビュー用サンプル（本番反映後は実データに置き換わる）
   const SAMPLE=[
@@ -466,14 +472,23 @@
       if(byCode[code])g.classList.add("has");
       g.style.cursor="pointer";g.addEventListener("click",function(){onPref(code);});
     });
+    // 各県の地図上の中心(SVG座標)を測る
+    var cen={};for(var code in prefEls){try{cen[code]=centroid(prefEls[code]);}catch(e){}}
+    // 「経度→X」「緯度→Y」の縮尺を、県庁座標と地図上の中心から学習（沖縄=別枠なので除外）
+    var lons=[],xs=[],lats=[],ys=[];
+    Object.keys(cen).forEach(function(cd){cd=+cd;if(cd===47)return;var cap=CAP[cd];if(!cap)return;lons.push(cap[1]);xs.push(cen[cd].x);lats.push(cap[0]);ys.push(cen[cd].y);});
+    var ax=slope(lons,xs),ay=slope(lats,ys); // ay は負（緯度が上がる＝Yは小さく）
+    // ピンを実座標で配置（県の中心を錨に、県庁からの実際のズレ分だけ移動）
     pinsG=document.createElementNS("http://www.w3.org/2000/svg","g");svg.appendChild(pinsG);pinEls=[];
     Object.keys(byCode).forEach(function(code){
-      var arr=byCode[code],ctr;try{ctr=centroid(prefEls[code]);}catch(e){return;}
+      code=+code;var arr=byCode[code],anchor=cen[code];if(!anchor)return;var cap=CAP[code];
       arr.forEach(function(s,k){
-        var ang=(k/arr.length)*6.283,rad=arr.length>1?12:0;
+        var x=anchor.x,y=anchor.y;
+        if(s.lat!=null&&s.lng!=null&&cap){ x=anchor.x+ax*(s.lng-cap[1]); y=anchor.y+ay*(s.lat-cap[0]); }
+        else if(arr.length>1){ var ang=(k/arr.length)*6.283; x+=Math.cos(ang)*12; y+=Math.sin(ang)*12; }
         var el=document.createElementNS("http://www.w3.org/2000/svg","circle");
-        el.setAttribute("cx",ctr.x+Math.cos(ang)*rad);el.setAttribute("cy",ctr.y+Math.sin(ang)*rad);
-        el.setAttribute("r",7);el.setAttribute("class","pin");el.dataset.i=s.idx;
+        el.setAttribute("cx",x);el.setAttribute("cy",y);
+        el.setAttribute("r",6.5);el.setAttribute("class","pin");el.dataset.i=s.idx;
         el.addEventListener("click",function(ev){ev.stopPropagation();onPin(s.idx);});
         pinsG.appendChild(el);pinEls.push(el);
       });
