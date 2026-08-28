@@ -266,7 +266,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑫</div>
+  <div class="verbadge">更新 8/29 ⑬</div>
 
 </div>
 
@@ -387,10 +387,12 @@
 
   function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
   function ph(s){return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";}
+  // 定休日ガード：定休日らしい文字だけ表示（キャンペーン文/ハッシュタグ/@等の混入を弾く）
+  function cd(s){ var v=(s.closed||"").trim(); if(!v)return""; if(v.length>24)return""; if(/[#@]|https?:|一周|km|。/.test(v))return""; return /(曜|休)/.test(v)?v:""; }
   function factsHTML(s){
-    var f='';
+    var f='', c=cd(s);
     if(s.access) f+='<div>'+s.access+'</div>';
-    if(s.closed) f+='<div>🗓 定休日：'+s.closed+'</div>';
+    if(c) f+='<div>🗓 定休日：'+c+'</div>';
     return f?'<div class="facts">'+f+'</div>':'';
   }
   function cardHTML(s){
@@ -420,7 +422,7 @@
     $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
     if(s.copy){$("sdCopy").textContent=s.copy;$("sdCopy").classList.remove("hidden");}else{$("sdCopy").classList.add("hidden");}
     setRow("sdAccessRow","sdAccess",s.access);
-    setRow("sdClosedRow","sdClosed",s.closed);
+    setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",s.address);
     setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
     if(s.mapUrl){$("sdGo").href=s.mapUrl;$("sdGo").style.display="";}else{$("sdGo").removeAttribute("href");$("sdGo").style.display=IS_SAMPLE?"":"none";}
