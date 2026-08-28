@@ -86,13 +86,15 @@
   .prefhdr{font-size:11.5px;font-weight:800;color:var(--brown-d);padding:6px 2px 0;display:flex;align-items:center;gap:6px}
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
-  .card .pho{width:176px;min-height:140px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:28px;overflow:hidden}
+  .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;overflow:hidden}
   .card .pho img{width:100%;height:100%;object-fit:cover}
   .card .in{padding:10px 12px;flex:1;min-width:0}
   .card .pref{font-size:11px;color:var(--sub);font-weight:700}
   .card .nm{font-size:15px;font-weight:800;line-height:1.3;margin-top:1px}
   .card .ro{font-size:11.5px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+  .card .facts{font-size:11px;color:#5c4d3d;margin-top:5px;line-height:1.55}
+  .card .facts div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
   .empty{padding:30px 20px;text-align:center;color:var(--sub);font-size:12.5px;display:none}
@@ -264,7 +266,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑪</div>
+  <div class="verbadge">更新 8/29 ⑫</div>
 
 </div>
 
@@ -385,10 +387,16 @@
 
   function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
   function ph(s){return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";}
+  function factsHTML(s){
+    var f='';
+    if(s.access) f+='<div>'+s.access+'</div>';
+    if(s.closed) f+='<div>🗓 定休日：'+s.closed+'</div>';
+    return f?'<div class="facts">'+f+'</div>':'';
+  }
   function cardHTML(s){
     return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+s.pref+'</div><div class="nm">'+s.name+'</div>'+
-      '<div class="ro">'+(s.roaster||"")+'</div><div class="tags">'+tagHTML(s)+'</div></div></div>';
+      factsHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
   }
   function renderList(){
     var wrap=$("listView"),out="",arr=SHOPS.filter(shopOK);
