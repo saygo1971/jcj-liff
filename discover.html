@@ -244,7 +244,7 @@
         <div class="ro" id="sdRo">—</div>
         <div class="copy hidden" id="sdCopy">—</div>
         <div class="info">
-          <div class="irow hidden" id="sdAccessRow"><span class="ic">🚃</span><span id="sdAccess"></span></div>
+          <div class="irow hidden" id="sdAccessRow"><span id="sdAccess"></span></div>
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
         </div>
@@ -264,7 +264,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/28 ⑩</div>
+  <div class="verbadge">更新 8/29 ⑪</div>
 
 </div>
 
@@ -409,7 +409,7 @@
   window.openSheet=function(i){
     var s=SHOPS[i];
     photoInto($("sdPhoto"),s.photo);
-    $("sdPref").textContent=s.pref+(s.place?"・"+s.place:"");$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
+    $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
     if(s.copy){$("sdCopy").textContent=s.copy;$("sdCopy").classList.remove("hidden");}else{$("sdCopy").classList.add("hidden");}
     setRow("sdAccessRow","sdAccess",s.access);
     setRow("sdClosedRow","sdClosed",s.closed);
