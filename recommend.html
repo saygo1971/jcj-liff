@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>載ってほしいお店を教える</title>
+<style>
+  :root{
+    --cream:#faf5ee; --paper:#ffffff; --ink:#3a2f25; --sub:#8a7a68;
+    --brown:#9f866a; --brown-d:#6f5b44; --accent:#c96f3f; --accent-d:#b45c2e; --line:#ece3d6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 28px}
+
+  .status{color:var(--sub);font-size:14px;padding:60px 0;text-align:center}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+
+  .head{padding:20px 4px 6px}
+  .head .kicker{font-size:12px;color:var(--brown);letter-spacing:.08em;font-weight:700}
+  .head .h1{font-size:20px;font-weight:800;margin-top:6px;line-height:1.45}
+  .head .h1 .em{color:var(--accent)}
+  .head .lead{font-size:13px;color:var(--sub);margin-top:10px;line-height:1.75;background:#faf6ef;border-radius:12px;padding:12px 13px}
+
+  label.field{display:block;margin-top:16px}
+  .lb{font-size:14px;font-weight:800}
+  .req{color:var(--accent);font-size:12px}
+  .opt{color:var(--sub);font-size:12px;font-weight:700}
+  .hint{display:block;font-size:12px;color:var(--sub);margin-top:3px;line-height:1.6}
+  input[type=text], textarea, select{width:100%;margin-top:7px;border:1.5px solid var(--line);border-radius:12px;padding:0 13px;font-size:15px;background:#fff;color:var(--ink);font-family:inherit}
+  input[type=text]{height:46px}
+  select{height:46px;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239f866a' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center}
+  select.fromMap{border-color:var(--accent);font-weight:700}
+  textarea{height:78px;padding:10px 13px;font-size:14px;resize:none}
+
+  .voicebox{margin-top:16px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px}
+  .voicebox .chk{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+  .voicebox input[type=checkbox]{width:20px;height:20px;margin-top:1px;accent-color:var(--accent);flex:none}
+  .voicebox .chk span{font-size:13.5px;line-height:1.6}
+  .voicebox .nick{display:block;margin-top:12px}
+  .voicebox .nick .lb2{font-size:12.5px;color:var(--sub);font-weight:700}
+  .voicebox .nick input{height:42px;background:#faf6ef;border-radius:10px;margin-top:6px}
+
+  .btn{display:block;width:100%;height:52px;line-height:52px;text-align:center;border-radius:14px;border:none;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 16px rgba(180,92,46,.32)}
+  .btn[disabled]{opacity:.5;cursor:default}
+  .err{color:var(--accent-d);font-size:13px;font-weight:700;margin-top:12px;text-align:center;min-height:18px}
+  .foot{margin-top:14px;text-align:center;font-size:11px;color:#a3937d;line-height:1.7}
+
+  .done{padding:40px 6px 44px;text-align:center}
+  .done .emo{font-size:46px}
+  .done .t{font-size:20px;font-weight:800;margin-top:14px;line-height:1.5}
+  .done .msg{font-size:14px;color:#5c4d3d;margin-top:16px;line-height:1.9;background:#faf6ef;border-radius:14px;padding:16px;text-align:left}
+</style>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="status" class="status">
+    <div id="spin" class="spin"></div>
+    <div id="statusText">起動中…</div>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div id="main" class="hidden">
+    <div class="head">
+      <div class="kicker">JCJパスポート</div>
+      <div id="h1" class="h1">地図に<span class="em">載ってほしいお店</span>を<br>教えてください</div>
+      <div class="lead">あなたの「ここも旅先に入れてほしい」が、地図を育てます。</div>
+    </div>
+
+    <label class="field">
+      <span class="lb">お店・ロースターの名前 <span class="req">必須</span></span>
+      <input id="shopName" type="text" placeholder="例：〇〇 COFFEE ROASTER" maxlength="80">
+    </label>
+
+    <label class="field">
+      <span class="lb">都道府県 <span class="opt">任意</span></span>
+      <span id="prefHint" class="hint">分かれば選んでください（分からなければ空欄でOK）</span>
+      <select id="pref">
+        <option value="">選ばない</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="lb">お店のURL か インスタ <span class="opt">任意</span></span>
+      <span class="hint">お店が分かる手がかり。分かる範囲でOK（あとはJCJが調べます）</span>
+      <input id="contact" type="text" placeholder="例：@shop_coffee ／ 公式サイト・地図リンク" maxlength="200">
+    </label>
+
+    <label class="field">
+      <span class="lb">なぜ地図に入れたい？ ひとこと <span class="opt">任意</span></span>
+      <textarea id="note" placeholder="例：豆の香りが街いちばん。旅の途中でぜひ寄ってほしい。" maxlength="300"></textarea>
+    </label>
+
+    <div class="voicebox">
+      <label class="chk">
+        <input id="voiceOk" type="checkbox">
+        <span>上のひとことを「<b>推薦者の声</b>」としてお店の紹介に載せてもOK <span class="opt">（任意）</span></span>
+      </label>
+      <label class="nick">
+        <span class="lb2">表示するニックネーム（任意）</span>
+        <input id="nickname" type="text" placeholder="例：旅する珈琲好き" maxlength="30">
+      </label>
+    </div>
+
+    <button id="submitBtn" class="btn primary">このロースターを教える</button>
+    <div id="err" class="err"></div>
+    <div class="foot">いただいた情報はJCJが確認します。<br>すべてが地図に載るわけではありません。</div>
+  </div>
+
+  <!-- 送信後 -->
+  <div id="done" class="hidden">
+    <div class="done">
+      <div class="emo">🙏</div>
+      <div class="t">教えてくれて<br>ありがとうございます</div>
+      <div class="msg">載るかどうかは、<b>丁寧に選ばせてください</b>。<br>すべてが採用されるわけではなく、お店へのご相談もあるので<b>時間がかかることもあります</b>。<br><br>もし地図に載ったら、<b>つながりマイル</b>をお贈りしてお知らせします。楽しみにお待ちください。</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 設定ここだけ（テスト環境）=====
+  // LIFF_ID：この推薦フォーム用に LINE Developers で作成するLIFFアプリID（テストのログインチャネル 2008851980 配下）。
+  const LIFF_ID = "2008851980-Xk7hOmMv"; // 推薦フォーム用LIFF（テスト・JCJ 推薦フォーム（テスト）／2026-08-29発行）
+  // GAS_URL：recommend_submit を含む「誰でもアクセス可（ログイン不要）」のバージョン付きデプロイURL。
+  //          ※@HEAD(dev)はログイン必須でLINE内から叩けない＝本部の再配備窓口で匿名デプロイに差し替える。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let USER_ID = "";
+
+  const PREFS = [
+    "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
+    "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+    "新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県",
+    "静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県",
+    "奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県",
+    "徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県",
+    "熊本県","大分県","宮崎県","鹿児島県","沖縄県"
+  ];
+
+  // 都道府県プルダウンを用意し、地図から来た場合はその県を初期選択
+  function buildPrefSelect(){
+    const sel = $("pref");
+    const fromMap = String(params.get("pref") || "").trim();
+    PREFS.forEach(function(name){
+      const o = document.createElement("option");
+      o.value = name; o.textContent = name;
+      sel.appendChild(o);
+    });
+    if (fromMap && PREFS.indexOf(fromMap) >= 0){
+      sel.value = fromMap;
+      sel.classList.add("fromMap");
+      $("prefHint").textContent = "地図から自動で入りました（変えられます）";
+    }
+  }
+
+  function showStatus(msg, spinning){
+    $("status").classList.remove("hidden");
+    $("spin").classList.toggle("hidden", !spinning);
+    $("statusText").textContent = msg;
+    $("main").classList.add("hidden");
+    $("done").classList.add("hidden");
+  }
+
+  // 入口の見出しを差し替え（src=blank_pref なら空白県用の文言）
+  function applyHeader(){
+    const src = String(params.get("src") || "").trim();
+    const pref = String(params.get("pref") || "").trim();
+    if (src === "blank_pref"){
+      $("h1").innerHTML = (pref ? pref + "の" : "この県の") +
+        '<span class="em">ロースター</span>を<br>推薦してください';
+    }
+  }
+
+  async function submit(){
+    $("err").textContent = "";
+    const shopName = $("shopName").value.trim();
+    const pref     = $("pref").value.trim();
+    const contact  = $("contact").value.trim();
+    const note     = $("note").value.trim();
+    const voiceOk  = $("voiceOk").checked ? "1" : "0";
+    const nickname = $("nickname").value.trim();
+
+    if (!shopName){ $("err").textContent = "お店・ロースターの名前を入れてください。"; return; }
+
+    $("submitBtn").disabled = true;
+    $("submitBtn").textContent = "送信中…";
+    try {
+      const q = new URLSearchParams({
+        action: "recommend_submit",
+        userId: USER_ID,
+        shopName: shopName,
+        pref: pref,
+        contact: contact,
+        note: note,
+        voiceOk: voiceOk,
+        nickname: nickname,
+        src: String(params.get("src") || ""),
+        _: Date.now()
+      });
+      const res = await fetch(GAS_URL + "?" + q.toString(), { method: "GET" });
+      const d = await res.json();
+      if (!d || !d.ok){
+        $("submitBtn").disabled = false;
+        $("submitBtn").textContent = "このロースターを教える";
+        $("err").textContent = "送信に失敗しました。時間をおいてもう一度お試しください。";
+        return;
+      }
+      $("status").classList.add("hidden");
+      $("main").classList.add("hidden");
+      $("done").classList.remove("hidden");
+    } catch (e){
+      $("submitBtn").disabled = false;
+      $("submitBtn").textContent = "このロースターを教える";
+      $("err").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
+    }
+  }
+
+  async function main(){
+    showStatus("LINEを起動しています…", true);
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()){ showStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    if (!USER_ID){ showStatus("ユーザー情報を取得できませんでした。", false); return; }
+
+    applyHeader();
+    buildPrefSelect();
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    $("submitBtn").addEventListener("click", submit);
+  }
+
+  main().catch(err => { showStatus("エラー: " + (err && err.message || String(err)), false); });
+</script>
+</body>
+</html>
