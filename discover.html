@@ -113,10 +113,14 @@
 
   .sheet{position:fixed;left:0;right:0;top:0;bottom:0;height:100vh;height:100dvh;background:rgba(28,21,15,.34);display:none;align-items:flex-end;z-index:40}
   .sheet.show{display:flex}
-  .sheetcard{position:relative;background:var(--cream);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:up .24s ease}
+  .sheetcard{position:relative;display:flex;flex-direction:column;background:var(--cream);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;max-height:90vh;max-height:90dvh;overflow:hidden;animation:up .24s ease}
   @keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:translateY(0);opacity:1}}
   .sheetcard .x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(60,45,30,.5);color:#fff;border:none;font-size:16px;cursor:pointer;z-index:6}
-  .sd{padding:16px 16px 24px}
+  .sd{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px 16px 10px}
+  /* 一番大事なボタンは下に固定＝写真や文章がどれだけ長くても常に見える */
+  .sdfoot{flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:var(--cream);border-top:1px solid var(--line);box-shadow:0 -5px 14px rgba(120,95,60,.08)}
+  .sdfoot .go{margin-top:0}
+  .sdfoot .subrow{margin-top:8px}
   .sd .pref{font-size:11.5px;color:var(--sub);font-weight:700;padding-right:34px}
   .sd .nm{font-size:20px;font-weight:800;margin-top:2px;padding-right:34px}
   .sd .ro{font-size:12.5px;color:var(--sub);margin-top:2px}
@@ -136,9 +140,9 @@
   .sd .sw .dots{display:flex;justify-content:center;gap:6px;padding:7px 0 9px}
   .sd .sw .dots i{width:6px;height:6px;border-radius:50%;background:#d8c8b2;transition:width .2s,background .2s}
   .sd .sw .dots i.on{background:var(--accent);width:17px;border-radius:999px}
-  .sd .go{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;box-shadow:0 6px 16px rgba(180,92,46,.3);cursor:pointer}
-  .sd .subrow{display:flex;gap:9px;margin-top:8px}
-  .sd .sub{flex:1;text-align:center;height:44px;line-height:42px;border-radius:11px;background:#fff;border:1.4px solid var(--brown);color:var(--brown-d);font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:none}
+  .sheetcard .go{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;box-shadow:0 6px 16px rgba(180,92,46,.3);cursor:pointer}
+  .sheetcard .subrow{display:flex;gap:9px;margin-top:8px}
+  .sheetcard .sub{flex:1;text-align:center;height:44px;line-height:42px;border-radius:11px;background:#fff;border:1.4px solid var(--brown);color:var(--brown-d);font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:none}
   .sd .info{margin-top:10px;display:flex;flex-direction:column;gap:5px}
   .sd .irow{font-size:12.5px;color:#5c4d3d;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
   .sd .irow .ic{flex:none}
@@ -281,23 +285,25 @@
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
         </div>
-        <a class="go" id="sdGo" target="_blank" rel="noopener">Googleマップで行き方・営業時間</a>
         <div class="links" id="sdLinks">
           <a class="lk hidden" id="sdWeb" target="_blank" rel="noopener">公式サイト</a>
           <a class="lk hidden" id="sdIg" target="_blank" rel="noopener">Instagram</a>
           <a class="lk hidden" id="sdLineLink" target="_blank" rel="noopener">LINE</a>
         </div>
+        <div class="why">お店に着いたらチェックイン → 旅マイル → 貯めて豆のお会計に使える（マイル特典）</div>
+      </div>
+      <div class="sdfoot">
+        <a class="go" id="sdGo" target="_blank" rel="noopener">Googleマップで行き方・営業時間</a>
         <div class="subrow">
           <a class="sub" id="sdSave">行きたいに保存</a>
           <a class="sub" id="sdShare">友だちに教える</a>
         </div>
-        <div class="why">お店に着いたらチェックイン → 旅マイル → 貯めて豆のお会計に使える（マイル特典）</div>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ㉕</div>
+  <div class="verbadge">更新 8/29 ㉖</div>
 
 </div>
 
