@@ -122,7 +122,8 @@
   .sdfoot .go{margin-top:0}
   .sdfoot .subrow{margin-top:8px}
   .sd .pref{font-size:11.5px;color:var(--sub);font-weight:700;padding-right:34px}
-  .sd .nm{font-size:20px;font-weight:800;margin-top:2px;padding-right:34px}
+  .sd .acc{font-size:12px;color:#5c4d3d;font-weight:600;margin-top:4px;line-height:1.45;padding-right:34px}
+  .sd .nm{font-size:20px;font-weight:800;margin-top:4px;padding-right:34px}
   .sd .ro{font-size:12.5px;color:var(--sub);margin-top:2px}
   /* お店を知る：インライン横スワイプ（外観→店内→お店の人・写真＋文章） */
   .sd .sw{margin-top:13px;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -274,6 +275,7 @@
       <button class="x" onclick="closeSheet()">✕</button>
       <div class="sd">
         <div class="pref" id="sdPref">—</div>
+        <div class="acc hidden" id="sdAccessTop"></div>
         <div class="nm" id="sdName">—</div>
         <div class="sw" id="sdSwipe" style="display:none">
           <div class="track" id="sdTrack"></div>
@@ -281,7 +283,6 @@
         </div>
         <div class="sdmile" id="sdMile"></div>
         <div class="info">
-          <div class="irow hidden" id="sdAccessRow"><span id="sdAccess"></span></div>
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
         </div>
@@ -303,7 +304,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ㉗</div>
+  <div class="verbadge">更新 8/29 ㉘</div>
 
 </div>
 
@@ -558,7 +559,7 @@
     buildSwipe(s);
     $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;
     $("sdMile").innerHTML=mileHTML(s);
-    setRow("sdAccessRow","sdAccess",s.access);
+    setRow("sdAccessTop","sdAccessTop",s.access);   // アクセスはヘッダー（場所の下・店名の上）に表示
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",stripZip(s.address));
     setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
