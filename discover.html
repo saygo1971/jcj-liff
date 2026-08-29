@@ -274,7 +274,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑲</div>
+  <div class="verbadge">更新 8/29 ⑳</div>
 
 </div>
 
@@ -469,7 +469,22 @@
     $("sdLineLink").onclick=function(){logOutbound(s.id,"official_line");};
     if(s.mapUrl){$("sdGo").href=s.mapUrl;$("sdGo").style.display="";$("sdGo").onclick=function(){logOutbound(s.id,"google_map");};}else{$("sdGo").removeAttribute("href");$("sdGo").onclick=null;$("sdGo").style.display=IS_SAMPLE?"":"none";}
     $("sdShare").onclick=function(){ if(s.id){location.href="https://liff.line.me/"+SHARE_LIFF_ID+"?shopId="+encodeURIComponent(s.id)+"&source=discover_map";} };
-    $("sdSave").onclick=function(){ toast("「行きたい」に保存しました（デモ）"); };
+    $("sdSave").textContent="行きたいに保存"; $("sdSave").removeAttribute("data-busy");
+    $("sdSave").onclick=function(){
+      if(!USER_ID){ toast("LINEの中で開くと保存できます"); return; }
+      if(!s.id) return;
+      var btn=$("sdSave");
+      if(btn.getAttribute("data-busy")==="1") return;
+      btn.setAttribute("data-busy","1");
+      var org=btn.textContent; btn.textContent="保存中…";
+      fetch(GAS_URL+"?action=discover_save&spotId="+encodeURIComponent(s.id)+"&userId="+encodeURIComponent(USER_ID)+"&source=discover_map&_="+Date.now())
+        .then(function(r){return r.json();})
+        .then(function(j){
+          if(j&&j.ok){ toast(j.already?"すでに行きたいリストにあります":"「行きたい」に保存しました"); btn.textContent="保存済み ✓"; }
+          else { toast("保存できませんでした"); btn.textContent=org; btn.removeAttribute("data-busy"); }
+        })
+        .catch(function(){ toast("通信できませんでした"); btn.textContent=org; btn.removeAttribute("data-busy"); });
+    };
     $("sheet").classList.add("show");
   };
   window.closeSheet=function(){$("sheet").classList.remove("show");};
