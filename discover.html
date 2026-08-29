@@ -506,7 +506,7 @@
     var arr=(byCode[code]||[]).filter(shopOK);
     $("coPhoto").style.display="none";
     if(arr.length){$("coName").textContent=FN(code);$("coMeta").textContent=arr.length+"店 ／ 例："+arr[0].name;$("coGo").textContent="一覧で見る";$("coGo").onclick=function(){setView("list");};}
-    else{$("coName").textContent=FN(code)+"（お店がまだない県）";$("coMeta").textContent="まだお店がありません。あなたの推薦で最初の1軒を灯せます";$("coGo").textContent="この県を推薦する";$("coGo").onclick=function(){prefEls[code].classList.add("lit");$("callout").classList.remove("show");toast("推薦ありがとうございます！最初の1軒が採用されると、この県が灯ります。");};}
+    else{$("coName").textContent=FN(code)+"（お店がまだない県）";$("coMeta").textContent="まだお店がありません。あなたの推薦で最初の1軒を灯せます";$("coGo").textContent="この県を推薦（近日公開）";$("coGo").onclick=function(){$("callout").classList.remove("show");toast("推薦の受け付けは近日オープンします🙏");};}
     $("callout").classList.add("show");
   }
 
