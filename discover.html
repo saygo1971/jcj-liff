@@ -274,7 +274,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑱</div>
+  <div class="verbadge">更新 8/29 ⑲</div>
 
 </div>
 
@@ -337,6 +337,16 @@
 
   function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
   function photoInto(imgEl,url,box){ if(url){imgEl.src=url;imgEl.style.display="";} else {imgEl.style.display="none";} }
+
+  // 外部リンククリックを記録（旧UIと同じ outbound_click_log／type=google_map等・source=discover_map）。
+  // リンクは即開き、ログはfire-and-forget（keepaliveで遷移後も完了）。本人不明(LINE外)は記録しない＝従来もuserId前提。
+  function logOutbound(shopId, type){
+    try{
+      if(!USER_ID || !shopId) return;
+      var u=GAS_URL+"?action=outbound_click&spotId="+encodeURIComponent(shopId)+"&type="+encodeURIComponent(type)+"&source=discover_map&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now();
+      fetch(u,{method:"GET",mode:"no-cors",keepalive:true}).catch(function(){});
+    }catch(e){}
+  }
 
   function buildAreaChips(){
     var row=$("areaRow");
@@ -454,7 +464,10 @@
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",s.address);
     setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
-    if(s.mapUrl){$("sdGo").href=s.mapUrl;$("sdGo").style.display="";}else{$("sdGo").removeAttribute("href");$("sdGo").style.display=IS_SAMPLE?"":"none";}
+    $("sdWeb").onclick=function(){logOutbound(s.id,"official_web");};
+    $("sdIg").onclick=function(){logOutbound(s.id,"instagram");};
+    $("sdLineLink").onclick=function(){logOutbound(s.id,"official_line");};
+    if(s.mapUrl){$("sdGo").href=s.mapUrl;$("sdGo").style.display="";$("sdGo").onclick=function(){logOutbound(s.id,"google_map");};}else{$("sdGo").removeAttribute("href");$("sdGo").onclick=null;$("sdGo").style.display=IS_SAMPLE?"":"none";}
     $("sdShare").onclick=function(){ if(s.id){location.href="https://liff.line.me/"+SHARE_LIFF_ID+"?shopId="+encodeURIComponent(s.id)+"&source=discover_map";} };
     $("sdSave").onclick=function(){ toast("「行きたい」に保存しました（デモ）"); };
     $("sheet").classList.add("show");
@@ -480,7 +493,7 @@
     $("nName").textContent=t.name;
     $("nMeta").textContent=(t.pref||"")+(t.distanceKm!=null?" ／ 約 "+t.distanceKm+"km":"");
     $("nSay").textContent=isDemo?"（LINEで開くと、あなたの保存店が入ります）":"保存したお店、次はここが近いです";
-    $("nGo").onclick=function(){ if(t.mapUrl){window.open(t.mapUrl,"_blank");} else {var i=SHOPS.findIndex(function(s){return s.id===t.shopId||s.id===t.id;});if(i>=0)openSheet(i);} };
+    $("nGo").onclick=function(){ if(t.mapUrl){ logOutbound(t.shopId||t.id,"google_map"); window.open(t.mapUrl,"_blank");} else {var i=SHOPS.findIndex(function(s){return s.id===t.shopId||s.id===t.id;});if(i>=0)openSheet(i);} };
     $("nudge").classList.remove("hidden");
   }
 
