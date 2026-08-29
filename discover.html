@@ -274,7 +274,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑳</div>
+  <div class="verbadge">更新 8/29 ㉑</div>
 
 </div>
 
@@ -348,6 +348,19 @@
     }catch(e){}
   }
 
+  // アプリ内行動ログ（ファネル分析用・LINE内=USER_ID有のときだけ記録）
+  function logAction(ev, opts){
+    try{
+      if(!USER_ID || !ev) return;
+      opts=opts||{};
+      var u=GAS_URL+"?action=discover_log&event="+encodeURIComponent(ev)+"&userId="+encodeURIComponent(USER_ID)+"&source=discover_map";
+      if(opts.shopId) u+="&spotId="+encodeURIComponent(opts.shopId);
+      if(opts.mode)   u+="&mode="+encodeURIComponent(opts.mode);
+      u+="&_="+Date.now();
+      fetch(u,{method:"GET",mode:"no-cors",keepalive:true}).catch(function(){});
+    }catch(e){}
+  }
+
   function buildAreaChips(){
     var row=$("areaRow");
     var all=document.createElement("button");all.className="chip on";all.textContent="全国";all.dataset.area="全国";all.onclick=function(){setArea(all);};row.appendChild(all);
@@ -398,6 +411,7 @@
 
   function onPin(i){
     var s=SHOPS[i];
+    logAction("pin_tap",{shopId:s.id});
     photoInto($("coPhoto"),s.photo);
     $("coName").textContent=s.name;$("coMeta").textContent=s.pref;
     $("coGo").textContent="見る";$("coGo").onclick=function(){openSheet(i);};
@@ -422,6 +436,7 @@
     $("mapView").style.display=(v==="map")?"block":"none";
     $("listView").classList.toggle("show",v==="list");
     if(v==="list")renderList();
+    logAction("toggle_view",{mode:v});
   };
 
   function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
@@ -457,6 +472,7 @@
 
   window.openSheet=function(i){
     var s=SHOPS[i];
+    logAction("view_detail",{shopId:s.id});
     photoInto($("sdPhoto"),s.photo);
     $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
     $("sdMile").innerHTML=mileHTML(s);
@@ -565,6 +581,7 @@
     await loadShops();
     renderAll();                   // 地図・一覧（マイルはまだ無し＝速く出す）
     try{ await liffP; }catch(e){}
+    logAction("view_map");         // ファネル入口＝発見地図を開いた（USER_ID確定後・1回）
     loadNudge();                   // お知らせ箱（並列）
     await loadUserContext();       // 居住地＋来店履歴
     if(USER_CTX.home && $("listView").classList.contains("show")) renderList(); // 表示中の一覧をマイル付きで再描画
