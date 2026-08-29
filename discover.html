@@ -101,7 +101,12 @@
   .milerow{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .milepill{font-size:12px;font-weight:800;background:var(--accent);color:#fff;padding:4px 11px;border-radius:999px;white-space:nowrap}
   .milepill.grey{background:#f0e7da;color:var(--brown-d)}
+  .milepill.rest{background:#e1f5ee;color:#085041}
   .milekm{font-size:10.5px;color:var(--sub);font-weight:700}
+  .milerow2{margin-top:7px}
+  .milewhy{font-size:11px;color:var(--sub);font-weight:700;margin-top:4px;line-height:1.5}
+  .travelvow{font-family:inherit;font-size:12.5px;color:var(--brown-d);text-align:center;padding:12px 18px 2px;line-height:1.55;opacity:.92}
+  .linenote{font-size:11.5px;color:var(--sub);text-align:center;padding:6px 16px 0;font-weight:700}
   .sd .sdmile{margin-top:9px}
   .empty{padding:30px 20px;text-align:center;color:var(--sub);font-size:12.5px;display:none}
   .empty.show{display:block}
@@ -141,6 +146,9 @@
   <div id="status" class="status"><div class="spin"></div><div id="statusText">お店を読み込んでいます…</div></div>
 
   <div id="main" class="hidden">
+
+    <div class="travelvow">コーヒーを飲みに、日本を旅しよう。<br>遠いほど、物語は濃い。</div>
+    <div id="lineNote" class="linenote hidden">マイルはLINEアプリの中で見られます</div>
 
     <div id="nudge" class="nudge hidden">
       <div class="kick">次の1軒</div>
@@ -274,7 +282,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ㉑</div>
+  <div class="verbadge">更新 8/29 ㉒</div>
 
 </div>
 
@@ -325,14 +333,23 @@
     var full=Math.max(10,km);
     return {km:km,eligible:eligible,mile:eligible?full:10,full:full,nextDate:eligible?null:new Date(last+NINETY_DAYS)};
   }
+  // 距離マイルを"旅の勲章"の言葉に（遠いほど誇らしく）。数字＝もらえるマイルであり旅した距離でもある
+  function tierLabel(mile){
+    if(mile<=15) return '☕ ご近所の一杯';
+    if(mile<=49) return '🚶 ＋'+mile+'マイルの寄り道';
+    if(mile<=149) return '🧭 ＋'+mile+'マイルの旅';
+    return '⛰ 片道'+mile+'マイルの冒険';
+  }
   function mileHTML(s){
     var m=mileInfo(s); if(!m) return '';
-    var approx=USER_CTX.homePrecise?'':'（おおよそ）';
+    var approx=USER_CTX.homePrecise?'（おおよそ）':'';
     if(m.eligible){
-      return '<div class="milerow"><span class="milepill">行くと +'+m.mile+'マイル</span><span class="milekm">家から 約'+m.km+'km'+approx+'</span></div>';
+      return '<div class="milerow"><span class="milepill">'+tierLabel(m.mile)+'</span><span class="milekm">行けば貯まる ・ 約'+m.km+'km先'+approx+'</span></div>';
     }
-    var d=m.nextDate, md=(d.getMonth()+1)+'/'+d.getDate();
-    return '<div class="milerow"><span class="milepill grey">今は +10マイル</span><span class="milekm">'+md+'から また最大 +'+m.full+'</span></div>';
+    // 最近行ったばかり（90日以内）＝数字だけだと"バグ?"と考えさせる→理由を一言そえる
+    var d=m.nextDate, md=(d.getMonth()+1)+'月'+d.getDate()+'日';
+    return '<div class="milerow2"><span class="milepill rest">☕ ひと休み中</span>'+
+      '<div class="milewhy">最近行ったばかり。今行くと +10マイル<br>'+md+'から、また +'+m.full+'マイルに戻ります</div></div>';
   }
 
   function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
@@ -581,6 +598,7 @@
     await loadShops();
     renderAll();                   // 地図・一覧（マイルはまだ無し＝速く出す）
     try{ await liffP; }catch(e){}
+    if(!USER_ID) $("lineNote").classList.remove("hidden"); // LINE外＝マイル非表示なので一言案内
     logAction("view_map");         // ファネル入口＝発見地図を開いた（USER_ID確定後・1回）
     loadNudge();                   // お知らせ箱（並列）
     await loadUserContext();       // 居住地＋来店履歴
