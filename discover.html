@@ -121,6 +121,7 @@
   .sd .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
   .sd .lk{font-size:12px;font-weight:800;color:var(--brown-d);background:#fff;border:1.3px solid var(--brown);border-radius:9px;padding:7px 13px;text-decoration:none}
   .sd .why{font-size:10.5px;color:var(--sub);text-align:center;margin-top:13px;line-height:1.6}
+  .sd .sheetback{display:block;width:100%;margin-top:14px;height:46px;border-radius:12px;background:#f0e7da;border:none;color:var(--brown-d);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
 
   .verbadge{position:fixed;right:8px;bottom:8px;background:rgba(58,47,37,.72);color:#fff8ee;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;z-index:60;pointer-events:none;letter-spacing:.02em}
   .toast{position:fixed;left:16px;right:16px;bottom:24px;max-width:448px;margin:0 auto;background:var(--ink);color:#fff8ee;font-size:12.5px;font-weight:700;line-height:1.5;padding:11px 14px;border-radius:12px;text-align:center;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:50}
@@ -137,7 +138,7 @@
 
     <div id="nudge" class="nudge hidden">
       <div class="kick">次の1軒</div>
-      <div class="pho"><img id="nPhoto" alt="" onerror="this.style.display='none'"></div>
+      <div class="pho"><img id="nPhoto" alt="" onerror="this.parentElement.style.display='none'"></div>
       <div class="mid">
         <div class="say" id="nSay">保存したお店、次はここが近いです</div>
         <div class="nm" id="nName">—</div>
@@ -244,7 +245,6 @@
         <div class="pref" id="sdPref">—</div>
         <div class="nm" id="sdName">—</div>
         <div class="ro" id="sdRo">—</div>
-        <div class="copy hidden" id="sdCopy">—</div>
         <div class="info">
           <div class="irow hidden" id="sdAccessRow"><span id="sdAccess"></span></div>
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
@@ -261,12 +261,13 @@
           <a class="sub" id="sdShare">友だちに教える</a>
         </div>
         <div class="why">お店に着いたらチェックイン → 旅マイル → 貯めて豆のお会計に使える（マイル特典）</div>
+        <button class="sheetback" onclick="closeSheet();setView('list')">☰ 一覧にもどる</button>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑭</div>
+  <div class="verbadge">更新 8/29 ⑮</div>
 
 </div>
 
@@ -420,7 +421,6 @@
     var s=SHOPS[i];
     photoInto($("sdPhoto"),s.photo);
     $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
-    if(s.copy){$("sdCopy").textContent=s.copy;$("sdCopy").classList.remove("hidden");}else{$("sdCopy").classList.add("hidden");}
     setRow("sdAccessRow","sdAccess",s.access);
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",s.address);
@@ -447,6 +447,7 @@
   function showNudgeFrom(t,isDemo){
     if(!t){$("nudge").classList.add("hidden");return;}
     photoInto($("nPhoto"),t.photo);
+    $("nPhoto").parentElement.style.display = t.photo ? "" : "none";  // 画像が無い時は左の四角ごと消す
     $("nName").textContent=t.name;
     $("nMeta").textContent=(t.pref||"")+(t.distanceKm!=null?" ／ 約 "+t.distanceKm+"km":"");
     $("nSay").textContent=isDemo?"（LINEで開くと、あなたの保存店が入ります）":"保存したお店、次はここが近いです";
@@ -494,9 +495,10 @@
   }
 
   async function main(){
-    await initLiff();
+    var liffP = initLiff();        // LIFF起動は店取得と並列（待ち時間を重ねる）
     await loadShops();
     renderAll();
+    try{ await liffP; }catch(e){}
     await loadNudge();
   }
   main().catch(function(err){ $("statusText").textContent="読み込みに失敗しました。時間をおいてお試しください。"; $("spin").classList.add("hidden"); });
