@@ -111,9 +111,9 @@
   .empty{padding:30px 20px;text-align:center;color:var(--sub);font-size:12.5px;display:none}
   .empty.show{display:block}
 
-  .sheet{position:fixed;inset:0;background:rgba(28,21,15,.34);display:none;align-items:flex-end;z-index:40}
+  .sheet{position:fixed;left:0;right:0;top:0;bottom:0;height:100vh;height:100dvh;background:rgba(28,21,15,.34);display:none;align-items:flex-end;z-index:40}
   .sheet.show{display:flex}
-  .sheetcard{position:relative;background:var(--cream);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:up .24s ease}
+  .sheetcard{position:relative;background:var(--cream);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:up .24s ease}
   @keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:translateY(0);opacity:1}}
   .sheetcard .x{position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(60,45,30,.5);color:#fff;border:none;font-size:16px;cursor:pointer;z-index:6}
   .sd{padding:16px 16px 24px}
@@ -126,8 +126,8 @@
   .sd .sw .track::-webkit-scrollbar{display:none}
   .sd .sw .sl{flex:0 0 100%;scroll-snap-align:start}
   .sd .sw .pic{position:relative;background:linear-gradient(135deg,#c3a57c,#6f5b44)}
-  .sd .sw .pic img{width:100%;height:178px;object-fit:cover;display:block}
-  .sd .sw .pic.noimg{height:178px}
+  .sd .sw .pic img{width:100%;height:205px;object-fit:cover;display:block}
+  .sd .sw .pic.noimg{height:205px}
   .sd .sw .lb{position:absolute;left:11px;top:11px;background:rgba(28,21,15,.68);color:#fff8ee;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;z-index:2}
   .sd .sw .arrowR{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--brown-d);font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:2;transition:opacity .2s;pointer-events:none}
   .sd .sw .cap{padding:9px 14px 2px}
@@ -136,16 +136,16 @@
   .sd .sw .dots{display:flex;justify-content:center;gap:6px;padding:7px 0 9px}
   .sd .sw .dots i{width:6px;height:6px;border-radius:50%;background:#d8c8b2;transition:width .2s,background .2s}
   .sd .sw .dots i.on{background:var(--accent);width:17px;border-radius:999px}
-  .sd .go{display:block;text-align:center;text-decoration:none;margin-top:13px;height:52px;line-height:52px;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;box-shadow:0 6px 16px rgba(180,92,46,.3);cursor:pointer}
-  .sd .subrow{display:flex;gap:9px;margin-top:10px}
-  .sd .sub{flex:1;text-align:center;height:46px;line-height:44px;border-radius:11px;background:#fff;border:1.4px solid var(--brown);color:var(--brown-d);font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:none}
-  .sd .info{margin-top:12px;display:flex;flex-direction:column;gap:6px}
-  .sd .irow{font-size:12.5px;color:#5c4d3d;line-height:1.55;display:flex;gap:6px;align-items:flex-start}
+  .sd .go{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:13px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;box-shadow:0 6px 16px rgba(180,92,46,.3);cursor:pointer}
+  .sd .subrow{display:flex;gap:9px;margin-top:8px}
+  .sd .sub{flex:1;text-align:center;height:44px;line-height:42px;border-radius:11px;background:#fff;border:1.4px solid var(--brown);color:var(--brown-d);font-size:12.5px;font-weight:800;cursor:pointer;text-decoration:none}
+  .sd .info{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+  .sd .irow{font-size:12.5px;color:#5c4d3d;line-height:1.5;display:flex;gap:6px;align-items:flex-start}
   .sd .irow .ic{flex:none}
-  .sd .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
-  .sd .lk{font-size:12px;font-weight:800;color:var(--brown-d);background:#fff;border:1.3px solid var(--brown);border-radius:9px;padding:7px 13px;text-decoration:none}
-  .sd .why{font-size:10.5px;color:var(--sub);text-align:center;margin-top:13px;line-height:1.6}
-  .sd .sheetback{display:block;width:100%;margin-top:14px;height:46px;border-radius:12px;background:#f0e7da;border:none;color:var(--brown-d);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .sd .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+  .sd .lk{font-size:12px;font-weight:800;color:var(--brown-d);background:#fff;border:1.3px solid var(--brown);border-radius:9px;padding:6px 13px;text-decoration:none}
+  .sd .why{font-size:10.5px;color:var(--sub);text-align:center;margin-top:9px;line-height:1.55}
+  .sd .sheetback{display:block;width:100%;margin-top:9px;height:42px;border-radius:12px;background:#f0e7da;border:none;color:var(--brown-d);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
 
   .verbadge{position:fixed;right:8px;bottom:8px;background:rgba(58,47,37,.72);color:#fff8ee;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;z-index:60;pointer-events:none;letter-spacing:.02em}
   .toast{position:fixed;left:16px;right:16px;bottom:24px;max-width:448px;margin:0 auto;background:var(--ink);color:#fff8ee;font-size:12.5px;font-weight:700;line-height:1.5;padding:11px 14px;border-radius:12px;text-align:center;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:50}
@@ -299,7 +299,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ㉓</div>
+  <div class="verbadge">更新 8/29 ㉔</div>
 
 </div>
 
@@ -372,6 +372,8 @@
   function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
   function photoInto(imgEl,url,box){ if(url){imgEl.src=url;imgEl.style.display="";} else {imgEl.style.display="none";} }
 
+  // 住所の先頭の郵便番号（〒NNN-NNNN／NNN-NNNN）を落とす＝住所が2行に折り返しにくくする
+  function stripZip(a){ return String(a||"").replace(/^\s*〒?\s*[0-9０-９]{3}\s*[-–—－ー]?\s*[0-9０-９]{4}\s*/,"").trim(); }
   // 文字列を安全にHTMLへ（店名・文章がタグを含んでも壊れない・崩れない）
   function esc(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   // 外観写真URL(.../exterior.jpg)から店内/お店の人の規則URLを作る（T/U列が空でもフォールバック）
@@ -390,8 +392,8 @@
 
     var last=slides.length-1;
     track.innerHTML=slides.map(function(sl,idx){
-      var cap = sl.text ? ('<div class="cap"><div class="ct">'+esc(sl.title)+'</div><div class="cx">'+esc(sl.text)+'</div></div>')
-                        : ('<div class="cap"><div class="ct">'+esc(sl.title)+'</div></div>'); // 文章が空なら見出しのみ
+      // 見出し(店名/ロースター名)はカード上部と重複するので出さない＝「写真＋その説明文」だけ。文章が空ならラベルのみ。
+      var cap = sl.text ? ('<div class="cap"><div class="cx">'+esc(sl.text)+'</div></div>') : '';
       var arrow = idx<last ? '<span class="arrowR">›</span>' : '';
       return '<div class="sl">'
            +   '<div class="pic"><img src="'+esc(sl.url)+'" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'noimg\')"><span class="lb">'+esc(sl.label)+'</span>'+arrow+'</div>'
@@ -551,7 +553,7 @@
     $("sdMile").innerHTML=mileHTML(s);
     setRow("sdAccessRow","sdAccess",s.access);
     setRow("sdClosedRow","sdClosed",cd(s));
-    setRow("sdAddrRow","sdAddr",s.address);
+    setRow("sdAddrRow","sdAddr",stripZip(s.address));
     setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
     $("sdWeb").onclick=function(){logOutbound(s.id,"official_web");};
     $("sdIg").onclick=function(){logOutbound(s.id,"instagram");};
