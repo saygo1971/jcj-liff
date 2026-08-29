@@ -97,6 +97,11 @@
   .card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
+  .milerow{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .milepill{font-size:12px;font-weight:800;background:var(--accent);color:#fff;padding:4px 11px;border-radius:999px;white-space:nowrap}
+  .milepill.grey{background:#f0e7da;color:var(--brown-d)}
+  .milekm{font-size:10.5px;color:var(--sub);font-weight:700}
+  .sd .sdmile{margin-top:9px}
   .empty{padding:30px 20px;text-align:center;color:var(--sub);font-size:12.5px;display:none}
   .empty.show{display:block}
 
@@ -245,6 +250,7 @@
         <div class="pref" id="sdPref">—</div>
         <div class="nm" id="sdName">—</div>
         <div class="ro" id="sdRo">—</div>
+        <div class="sdmile" id="sdMile"></div>
         <div class="info">
           <div class="irow hidden" id="sdAccessRow"><span id="sdAccess"></span></div>
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
@@ -267,7 +273,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ⑮</div>
+  <div class="verbadge">更新 8/29 ⑯</div>
 
 </div>
 
@@ -306,6 +312,27 @@
 
   var svg, pinsG, pinEls=[], SHOPS=[], byCode={}, prefEls={}, PREFCOUNT=0;
   var curArea="全国", curBeans=false, USER_ID="", IS_SAMPLE=false;
+  var USER_CTX={home:null,homePrecise:false,visited:{},now:0};
+  var NINETY_DAYS=90*24*60*60*1000;
+  function haversineKm(a1,o1,a2,o2){var R=6371,dA=(a2-a1)*Math.PI/180,dO=(o2-o1)*Math.PI/180,h=Math.sin(dA/2)*Math.sin(dA/2)+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)*Math.sin(dO/2);return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
+  // 距離マイルの計算（現行GAS仕様：満額=max(10,floor(km))／直近90日訪問=10／起点=居住地）
+  function mileInfo(s){
+    if(!USER_CTX.home||s.lat==null||s.lng==null) return null;
+    var km=Math.floor(haversineKm(USER_CTX.home[0],USER_CTX.home[1],s.lat,s.lng));
+    var last=USER_CTX.visited[s.id];
+    var eligible=(!last)||((USER_CTX.now||Date.now())-last)>=NINETY_DAYS;
+    var full=Math.max(10,km);
+    return {km:km,eligible:eligible,mile:eligible?full:10,full:full,nextDate:eligible?null:new Date(last+NINETY_DAYS)};
+  }
+  function mileHTML(s){
+    var m=mileInfo(s); if(!m) return '';
+    var approx=USER_CTX.homePrecise?'':'（おおよそ）';
+    if(m.eligible){
+      return '<div class="milerow"><span class="milepill">行くと +'+m.mile+'マイル</span><span class="milekm">家から 約'+m.km+'km'+approx+'</span></div>';
+    }
+    var d=m.nextDate, md=(d.getMonth()+1)+'/'+d.getDate();
+    return '<div class="milerow"><span class="milepill grey">今は +10マイル</span><span class="milekm">'+md+'から また最大 +'+m.full+'</span></div>';
+  }
 
   function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
   function photoInto(imgEl,url,box){ if(url){imgEl.src=url;imgEl.style.display="";} else {imgEl.style.display="none";} }
@@ -399,7 +426,7 @@
   function cardHTML(s){
     return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+s.pref+'</div><div class="nm">'+s.name+'</div>'+
-      factsHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
+      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
   }
   function renderList(){
     var wrap=$("listView"),out="",arr=SHOPS.filter(shopOK);
@@ -421,6 +448,7 @@
     var s=SHOPS[i];
     photoInto($("sdPhoto"),s.photo);
     $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
+    $("sdMile").innerHTML=mileHTML(s);
     setRow("sdAccessRow","sdAccess",s.access);
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",s.address);
@@ -494,12 +522,23 @@
     }catch(e){ /* LINE外・未設定でも地図は出す */ }
   }
 
+  async function loadUserContext(){
+    try{
+      if(!USER_ID) return;   // LINE外＝本人不明＝マイル非表示
+      var res=await fetch(GAS_URL+"?action=user_context&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now());
+      var d=await res.json();
+      if(d&&d.ok){ USER_CTX={home:d.home||null,homePrecise:!!d.homePrecise,visited:d.visited||{},now:d.now||Date.now()}; }
+    }catch(e){}
+  }
+
   async function main(){
     var liffP = initLiff();        // LIFF起動は店取得と並列（待ち時間を重ねる）
     await loadShops();
-    renderAll();
+    renderAll();                   // 地図・一覧（マイルはまだ無し＝速く出す）
     try{ await liffP; }catch(e){}
-    await loadNudge();
+    loadNudge();                   // お知らせ箱（並列）
+    await loadUserContext();       // 居住地＋来店履歴
+    if(USER_CTX.home && $("listView").classList.contains("show")) renderList(); // 表示中の一覧をマイル付きで再描画
   }
   main().catch(function(err){ $("statusText").textContent="読み込みに失敗しました。時間をおいてお試しください。"; $("spin").classList.add("hidden"); });
 </script>
