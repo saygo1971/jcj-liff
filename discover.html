@@ -271,7 +271,6 @@
       <div class="sd">
         <div class="pref" id="sdPref">—</div>
         <div class="nm" id="sdName">—</div>
-        <div class="ro" id="sdRo">—</div>
         <div class="sw" id="sdSwipe" style="display:none">
           <div class="track" id="sdTrack"></div>
           <div class="dots" id="sdDots"></div>
@@ -293,13 +292,12 @@
           <a class="sub" id="sdShare">友だちに教える</a>
         </div>
         <div class="why">お店に着いたらチェックイン → 旅マイル → 貯めて豆のお会計に使える（マイル特典）</div>
-        <button class="sheetback" onclick="closeSheet();setView('list')">☰ 一覧にもどる</button>
       </div>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="verbadge">更新 8/29 ㉔</div>
+  <div class="verbadge">更新 8/29 ㉕</div>
 
 </div>
 
@@ -383,17 +381,20 @@
   function buildSwipe(s){
     var track=$("sdTrack"), dots=$("sdDots"), box=$("sdSwipe");
     var slides=[
-      {url:s.photo,                                   label:"外観",     title:s.name,               text:s.exteriorText},
-      {url:s.interiorPhoto||derivePhoto(s.photo,"interior"), label:"店内",     title:s.name,               text:s.interiorText},
-      {url:s.roasterPhoto ||derivePhoto(s.photo,"roaster"),  label:"お店の人", title:s.roaster||s.name,    text:s.roasterVoice}
+      {url:s.photo,                                          label:"外観",     head:"",          text:s.exteriorText},
+      {url:s.interiorPhoto||derivePhoto(s.photo,"interior"), label:"店内",     head:"",          text:s.interiorText},
+      {url:s.roasterPhoto ||derivePhoto(s.photo,"roaster"),  label:"お店の人", head:s.roaster||"", text:s.roasterVoice}
     ].filter(function(x){return x.url;});   // 写真URLが空の枚はスキップ（前アプリの .filter(url) と同じ）
 
     if(!slides.length){ box.style.display="none"; track.innerHTML=""; dots.innerHTML=""; return; }
 
     var last=slides.length-1;
     track.innerHTML=slides.map(function(sl,idx){
-      // 見出し(店名/ロースター名)はカード上部と重複するので出さない＝「写真＋その説明文」だけ。文章が空ならラベルのみ。
-      var cap = sl.text ? ('<div class="cap"><div class="cx">'+esc(sl.text)+'</div></div>') : '';
+      // 外観/店内は「写真＋説明文」だけ（見出しはカード上部と重複）。お店の人だけロースター名を見出しに出す。
+      var inner="";
+      if(sl.head) inner+='<div class="ct">'+esc(sl.head)+'</div>';
+      if(sl.text) inner+='<div class="cx">'+esc(sl.text)+'</div>';
+      var cap = inner ? ('<div class="cap">'+inner+'</div>') : '';
       var arrow = idx<last ? '<span class="arrowR">›</span>' : '';
       return '<div class="sl">'
            +   '<div class="pic"><img src="'+esc(sl.url)+'" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'noimg\')"><span class="lb">'+esc(sl.label)+'</span>'+arrow+'</div>'
@@ -549,7 +550,7 @@
     var s=SHOPS[i];
     logAction("view_detail",{shopId:s.id});
     buildSwipe(s);
-    $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;$("sdRo").textContent=s.roaster||"";
+    $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;
     $("sdMile").innerHTML=mileHTML(s);
     setRow("sdAccessRow","sdAccess",s.access);
     setRow("sdClosedRow","sdClosed",cd(s));
