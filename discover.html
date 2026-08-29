@@ -342,7 +342,7 @@
   }
   function mileHTML(s){
     var m=mileInfo(s); if(!m) return '';
-    var approx=USER_CTX.homePrecise?'（おおよそ）':'';
+    var approx=USER_CTX.homePrecise?'':'（おおよそ）';
     if(m.eligible){
       return '<div class="milerow"><span class="milepill">'+tierLabel(m.mile)+'</span><span class="milekm">行けば貯まる ・ 約'+m.km+'km先'+approx+'</span></div>';
     }
