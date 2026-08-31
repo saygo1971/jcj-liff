@@ -19,6 +19,9 @@
   .wrap{max-width:480px;margin:0 auto;padding:16px 14px 44px}
   .hidden{display:none!important}
   #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--brand-deep);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .refresh{text-align:center;font-size:11px;color:var(--ink-sub);background:var(--paper);padding:5px 8px;border-radius:8px;margin:0 0 10px}
   .book-top{text-align:center;margin:4px 0 4px}
   .book-top .big{font-size:36px;font-weight:900;color:var(--ink);line-height:1}
   .book-top .big .sub{font-size:17px;color:var(--ink-sub)}
@@ -65,9 +68,10 @@
 </head>
 <body>
 <div class="bar"><span>ロゴ帳</span></div>
-<div id="status">読み込んでいます…</div>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
+  <div id="refresh" class="refresh hidden">最新に更新中…</div>
   <div class="book-top">
     <div class="big"><span id="nGot">0</span> <span class="sub">/ <span id="nTot">0</span></span></div>
     <div class="lab">集めたロースター</div>
@@ -207,12 +211,18 @@
   }
 
   async function load(){
+    // 前回分を先に出す＝体感ゼロ待ち（2回目以降）。無ければスピナーのまま裏で取得。
+    let cached=null;
+    try{ const c=localStorage.getItem("jcj_logo_"+USER_ID); if(c) cached=JSON.parse(c); }catch(e){}
+    if(cached && cached.roasters){ render(cached); $("refresh").classList.remove("hidden"); }
     try{
       const res = await fetch(GAS_URL+"?action=logobook&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now());
       const d = await res.json();
-      if(!d||!d.ok){ $("status").textContent="読み込みに失敗しました。時間をおいて開き直してください。"; return; }
+      if(!d||!d.ok){ if(!cached) $("status").textContent="読み込みに失敗しました。時間をおいて開き直してください。"; $("refresh").classList.add("hidden"); return; }
       render(d);
-    }catch(e){ $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; }
+      try{ localStorage.setItem("jcj_logo_"+USER_ID, JSON.stringify(d)); }catch(e){}
+      $("refresh").classList.add("hidden");
+    }catch(e){ if(!cached) $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; $("refresh").classList.add("hidden"); }
   }
 
   async function main(){
