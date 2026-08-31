@@ -21,7 +21,7 @@
     <div id="status" class="muted">起動中…</div>
 
     <div id="main" style="display:none;">
-      <div class="muted">現在ポイント</div>
+      <div class="muted">いまのマイル</div>
       <div id="total" class="big">-</div>
 
       <div class="row"><div>店舗チェックイン回数</div><div id="shopCount">-</div></div>
@@ -79,7 +79,7 @@
 
     // LINE内で開く（重要：userId取得のため）
     if (!liff.isInClient()){
-      setStatus("LINE内で開いてください（外部ブラウザだとポイント表示できません）", false);
+      setStatus("LINEアプリの中から開いてください。", false);
       return;
     }
 
@@ -91,7 +91,7 @@
     const profile = await liff.getProfile();
     const userId = profile.userId || "";
     if(!userId){
-      setStatus("userIdが取得できませんでした", false);
+      setStatus("うまく読み込めませんでした。もう一度お試しください。", false);
       return;
     }
 
@@ -100,7 +100,8 @@
 
     showDebug({ userId, data });
     if(!data.ok){
-      setStatus("取得失敗：" + (data.error || "unknown"), false);
+      console.log("point fetch failed:", data.error);
+      setStatus("うまく読み込めませんでした。少し時間をおいてお試しください。", false);
       return;
     }
 
@@ -112,12 +113,13 @@
       const d2 = await fetchPoint(userId);
       showDebug({ userId, d2 });
       if(d2.ok) { render(d2); setStatus("更新しました"); }
-      else { setStatus("更新失敗：" + (d2.error || "unknown"), false); }
+      else { console.log("point refresh failed:", d2.error); setStatus("更新できませんでした。もう一度お試しください。", false); }
     };
   }
 
   main().catch(err=>{
-    setStatus("エラー: " + (err?.message || String(err)), false);
+    console.log(err);
+    setStatus("うまく読み込めませんでした。もう一度お試しください。", false);
     showDebug(err);
   });
 </script>
