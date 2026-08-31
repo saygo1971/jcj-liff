@@ -312,6 +312,7 @@
   const LIFF_ID       = "2008851980-9MKW9F8W"; // 発見地図用テストLIFF（JCJテスト環境2008851980配下・エンドポイント=discover.html）
   const GAS_URL       = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec"; // テスト匿名デプロイ（discover_shops反映後に有効）
   const SHARE_LIFF_ID = "2008851980-V8WaCaZw"; // 友だちに教える（テスト）
+  const REC_LIFF_ID   = "2008851980-Xk7hOmMv"; // 推薦フォーム（テスト）※本番反映時にリリース番が本番 2010671952-SBmKAAzv へ差替
   // ============================
 
   const $ = id => document.getElementById(id);
@@ -506,7 +507,7 @@
     var arr=(byCode[code]||[]).filter(shopOK);
     $("coPhoto").style.display="none";
     if(arr.length){$("coName").textContent=FN(code);$("coMeta").textContent=arr.length+"店 ／ 例："+arr[0].name;$("coGo").textContent="一覧で見る";$("coGo").onclick=function(){setView("list");};}
-    else{$("coName").textContent=FN(code)+"（お店がまだない県）";$("coMeta").textContent="まだお店がありません。あなたの推薦で最初の1軒を灯せます";$("coGo").textContent="この県を推薦（近日公開）";$("coGo").onclick=function(){$("callout").classList.remove("show");toast("推薦の受け付けは近日オープンします🙏");};}
+    else{$("coName").textContent=FN(code)+"（お店がまだない県）";$("coMeta").textContent="まだお店がありません。あなたの推薦で最初の1軒を灯せます";$("coGo").textContent="この県を推薦する";$("coGo").onclick=function(){ location.href="https://liff.line.me/"+REC_LIFF_ID+"?src=blank_pref&pref="+encodeURIComponent(FN(code)); };}
     $("callout").classList.add("show");
   }
 
