@@ -64,6 +64,19 @@
     .status{color:var(--muted);font-size:13px;padding:34px 0;text-align:center}
     .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* 完了カードの頭：ロゴ左＋右に店名・マイル縦積み */
+    .cihead{display:flex;align-items:center;gap:12px;margin-top:4px}
+    .cilogo{width:60px;height:60px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--paper);border:1px solid var(--line)}
+    .cilogo.fallback{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px;font-weight:800}
+    .cimeta{min-width:0}
+    .cishop{font-size:17px;font-weight:800;line-height:1.25}
+    .cimile{margin-top:2px}
+    .cimile .pl{font-size:14px;color:var(--muted)}
+    .cimile .n{font-size:24px;font-weight:800;color:var(--ink)}
+    .cimile .u{font-size:13px;color:var(--muted)}
+    .citotal{font-size:12px;color:var(--muted);margin-left:6px}
+    .areaprog{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;text-align:center;font-size:13px;color:var(--ink)}
+    .areaprog b{color:var(--ink);font-weight:800}
     .hidden{display:none}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -92,6 +105,11 @@
   const SHARE_URL = "https://liff.line.me/2008851980-V8WaCaZw";
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
+  // 記録（今日の一杯）への遷移用LIFF。※オーナーが新規LIFF発行後にIDを入れる（それまで枠だけ・遷移は無効）。
+  const LOG_DRINK_LIFF_ID = ""; // 例 "2008851980-xxxx"（エンドポイント= .../log_drink.html）
+  // 店ロゴ画像（ロゴ帳と同じ在りか）。ファイル名はロゴ帳の部屋の確定待ち＝暫定 logo.png・404時はフォールバック（頭文字）。
+  const LOGO_BASE = CHECKIN_CARD_BASE;   // .../shop/
+  const LOGO_FILE = "logo.png";
   // ============================
 
   const $ = id => document.getElementById(id);
@@ -268,13 +286,48 @@
         '<button id="refBtn" class="refbtn">このお店を友だちに教える</button>' +
       '</div></div>';
 
+    // 頭＝ロゴ（左）＋右に店名・マイル縦積み
+    const logoUrl = LOGO_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/" + LOGO_FILE;
+    const initial = esc(String(r.shopName || "?").trim().slice(0,1) || "?");
+    const cimile = r.alreadyToday
+      ? '<div class="citotal">同じ日の重複はマイルを二重に付けません</div>'
+      : '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>';
+    const headerHtml =
+      '<div class="cihead">' +
+        '<img class="cilogo" src="' + esc(logoUrl) + '" alt="" onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\'">' +
+        '<div class="cilogo fallback" style="display:none">' + initial + '</div>' +
+        '<div class="cimeta"><div class="cishop">' + esc(r.shopName) + '</div>' + cimile + '</div>' +
+      '</div>';
+    // 主＝記録（今日の一杯）。LIFF未発行のあいだは遷移なし（枠のみ）。
+    const recUrl = LOG_DRINK_LIFF_ID
+      ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || "") + '&pref=' + encodeURIComponent(st.pref || ""))
+      : "";
+    const recordHtml =
+      '<a id="recordBtn" class="go" style="display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>今日の一杯を残す</a>' +
+      '<div class="fine" style="text-align:center;margin-top:6px">まだ味が残っているうちに。</div>';
+    const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
+
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
-      '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + noteHtml + beansProgHtml + ticketHtml +
+      headerHtml +
+      recordHtml +
+      areaHtml +
+      beansProgHtml +
+      noteHtml + ticketHtml +
       '<a class="link" href="#" id="about">試飲チケットについて</a>' +
       '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;
+
+    // 地域コンプリート進捗（豆割の上）。endpoint未デプロイ・非対象時は静かに非表示。
+    (async ()=>{
+      try{
+        const ap = await api("area_progress", { shopId: st.shopId || SPOT || "" });
+        if (ap && ap.ok && ap.area){
+          $("areaProg").innerHTML = 'あと <b>' + (Number(ap.remaining)||0) + '</b> 店で ' + esc(ap.area) + ' コンプリート（' + (Number(ap.got)||0) + '/' + (Number(ap.total)||0) + '）';
+          $("areaProg").classList.remove("hidden");
+        }
+      }catch(e){ /* 未デプロイ・非対象は何も出さない */ }
+    })();
 
     // バナーをカード先頭に
     const card = document.querySelector(".card");
