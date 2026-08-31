@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>今日の一杯</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .bar .rt{font-size:11px;font-weight:700;background:rgba(255,255,255,.95);color:var(--brand-deep);
+    padding:3px 9px;border-radius:8px}
+  .wrap{max-width:460px;margin:0 auto;padding:16px 16px 40px}
+  .hidden{display:none!important}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .chk{background:var(--done-tint);color:var(--state-done);font-size:12.5px;font-weight:700;border-radius:10px;
+    padding:9px 11px;display:flex;gap:6px;align-items:center;margin-bottom:14px}
+  .store{font-size:19px;font-weight:800;margin:2px 0 1px;color:var(--ink)}
+  .store-pl{font-size:12.5px;color:var(--ink-sub);margin-bottom:16px}
+  .q{font-size:15px;font-weight:800;margin:0 0 4px;color:var(--ink)}
+  .sub{font-size:12px;color:var(--ink-sub);margin:0 0 14px;line-height:1.7}
+  .sec{font-size:13px;font-weight:800;margin:16px 0 9px;color:var(--ink)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:var(--bg);border-radius:20px;padding:8px 15px;
+    font-size:13.5px;color:var(--ink);cursor:pointer;user-select:none;transition:.12s}
+  .chip.sel{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff;font-weight:700}
+  .more{margin:20px 0 0;border-top:1px solid var(--line);padding-top:14px;
+    display:flex;justify-content:space-between;align-items:center;font-size:13.5px;
+    font-weight:700;color:var(--ink);cursor:pointer;user-select:none}
+  .more .chev{color:var(--ink-sub);font-size:12.5px}
+  .detail{margin-top:12px}
+  textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
+    font-family:inherit;resize:vertical;min-height:64px;background:var(--bg);color:var(--ink)}
+  .btn{background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
+    border-radius:12px;padding:14px;box-shadow:0 4px 10px rgba(192,74,85,.28);border:0;width:100%;cursor:pointer}
+  .btn:disabled{opacity:.55}
+  .later{display:block;text-align:center;color:var(--ink-sub);font-size:13px;margin-top:14px;
+    font-weight:600;text-decoration:none}
+  .err{color:var(--state-error);font-size:12.5px;margin-top:10px;text-align:center;min-height:16px}
+  .tiny{text-align:center;color:var(--ink-sub);font-size:10.5px;margin-top:16px;line-height:1.7}
+  #done{text-align:center;padding:70px 24px}
+  #done .emo{font-size:44px}
+  #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:var(--state-done)}
+  #done .msg{font-size:13.5px;color:var(--ink-sub);line-height:1.8}
+  #done .goHist{display:inline-block;margin-top:22px;background:var(--brand-deep);color:#fff;
+    text-decoration:none;font-weight:800;border-radius:12px;padding:12px 22px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="bar"><span>今日の一杯</span><span class="rt">自分だけ</span></div>
+
+<div id="status">読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <div class="chk">✓ <span id="chkStore">お店</span> に来ました</div>
+
+  <div class="q">今日の一杯は？</div>
+  <div class="sub">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
+
+  <div class="sec">飲みもの</div>
+  <div class="chips" id="drinkChips"></div>
+
+  <div class="sec">生産国</div>
+  <div class="chips" id="countryChips"></div>
+
+  <div class="more" id="moreToggle"><span>詳しく記録する</span><span class="chev" id="moreChev">＋ ひらく ▾</span></div>
+  <div class="detail hidden" id="detail">
+    <div class="sec">精製方法</div>
+    <div class="chips" id="processChips"></div>
+    <div class="sec">ひとことメモ</div>
+    <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
+  </div>
+
+  <button class="btn" id="submitBtn">今日の一杯を残す</button>
+  <a class="later" id="laterLink" href="#">あとで</a>
+  <div class="err" id="err"></div>
+  <div class="tiny">任意・マイルは付きません／自分だけに表示（お店のページには出ません）</div>
+</div>
+
+<div id="done" class="hidden">
+  <div class="emo">☕️</div>
+  <div class="t" id="doneT">記録しました</div>
+  <div class="msg">この一杯が、あなたの旅の記録になりました。<br>次のお店でも、ぜひ残してください。</div>
+  <a class="goHist" id="goHist" href="#">旅の記録を見る</a>
+</div>
+
+<script>
+  // ===== 設定（テスト環境）=====
+  // LIFF_ID：この記録フォーム用に LINE Developers で作成するLIFFアプリID（テストのログインチャネル 2008851980 配下）。
+  //          エンドポイントURL＝ https://saygo1971.github.io/jcj-liff/log_drink.html
+  const LIFF_ID = "2008851980-XXXXXXXX"; // ★オーナーがLINEで発行後に差し替え
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // 旅の記録（訪問履歴）ページのLIFF（発行後に差し替え）。未設定なら「旅の記録を見る」は非表示。
+  const HISTORY_LIFF_ID = "2008851980-YYYYYYYY";
+  // ============================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let USER_ID = "";
+  const SHOP_ID   = String(params.get("shop") || "").trim();
+  const SHOP_NAME = String(params.get("name") || "").trim();
+  const SHOP_PREF = String(params.get("pref") || "").trim();
+
+  const DRINKS   = ["ドリップ","エスプレッソ","カフェラテ","アメリカーノ","水出し","その他"];
+  const COUNTRIES= ["エチオピア","ケニア","コロンビア","ブラジル","グアテマラ","コスタリカ","ホンジュラス","パナマ","インドネシア","ルワンダ","ブレンド","その他","わからない"];
+  const PROCESSES= ["ウォッシュト","ナチュラル","ハニー","アナエロビック","わからない"];
+
+  const sel = { drink:"", country:"", process:"" };
+
+  function buildChips(box, items, key){
+    const el = $(box);
+    items.forEach(function(it){
+      const c = document.createElement("span");
+      c.className = "chip"; c.textContent = it;
+      c.onclick = function(){
+        if (sel[key] === it){ sel[key] = ""; c.classList.remove("sel"); return; }
+        sel[key] = it;
+        [...el.children].forEach(x => x.classList.remove("sel"));
+        c.classList.add("sel");
+      };
+      el.appendChild(c);
+    });
+  }
+
+  function showStatus(msg){ $("status").textContent = msg; $("status").classList.remove("hidden"); }
+
+  async function submit(){
+    $("err").textContent = "";
+    const memo = $("memo").value.trim();
+    if (!sel.drink && !sel.country && !sel.process && !memo){
+      $("err").textContent = "飲みものか生産国を1つえらんでください。";
+      return;
+    }
+    $("submitBtn").disabled = true; $("submitBtn").textContent = "記録中…";
+    try {
+      const q = new URLSearchParams({
+        action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
+        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, _:Date.now()
+      });
+      const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+      const d = await res.json();
+      if (!d || !d.ok){
+        $("submitBtn").disabled = false; $("submitBtn").textContent = "今日の一杯を残す";
+        $("err").textContent = "記録に失敗しました。もう一度お試しください。";
+        return;
+      }
+      // 書いた結果が返ってくる＝「◯杯目の一杯」（次も書きたくなる）
+      if (d.count) $("doneT").textContent = d.count + "杯目の一杯です";
+      $("main").classList.add("hidden");
+      $("done").classList.remove("hidden");
+    } catch(e){
+      $("submitBtn").disabled = false; $("submitBtn").textContent = "今日の一杯を残す";
+      $("err").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
+    }
+  }
+
+  function closeApp(){ try{ if(liff && liff.isInClient && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){} history.length>1?history.back():window.close(); }
+
+  function wire(){
+    $("chkStore").textContent = SHOP_NAME || "お店";
+    buildChips("drinkChips", DRINKS, "drink");
+    buildChips("countryChips", COUNTRIES, "country");
+    buildChips("processChips", PROCESSES, "process");
+    $("moreToggle").onclick = function(){
+      const dt = $("detail"); const open = dt.classList.toggle("hidden") === false;
+      $("moreChev").textContent = open ? "－ とじる ▴" : "＋ ひらく ▾";
+    };
+    $("submitBtn").addEventListener("click", submit);
+    $("laterLink").onclick = function(ev){ ev.preventDefault(); closeApp(); };
+    // 旅の記録リンク（履歴LIFF未発行なら隠す）
+    if (/^\d+-/.test(HISTORY_LIFF_ID) && HISTORY_LIFF_ID.indexOf("YYYYYYYY")<0){
+      $("goHist").href = "https://liff.line.me/" + HISTORY_LIFF_ID;
+    } else { $("goHist").classList.add("hidden"); }
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function main(){
+    showStatus("読み込んでいます…");
+    // LINE外プレビュー用フォールバック（LIFF未発行でも画面確認できる）
+    const previewUid = String(params.get("uid") || "").trim();
+    const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
+    if (!liffReady){
+      USER_ID = previewUid; // プレビューは uid 無しでもUIは動く（送信は失敗しうる）
+      wire(); return;
+    }
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || previewUid;
+    if (!USER_ID){ showStatus("ユーザー情報を取得できませんでした。"); return; }
+    wire();
+  }
+  main().catch(err => showStatus("エラー: " + (err && err.message || String(err))));
+</script>
+</body>
+</html>

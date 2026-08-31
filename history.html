@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>旅の記録</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .bar .rt{font-size:11px;font-weight:700;background:rgba(255,255,255,.95);color:var(--brand-deep);padding:3px 9px;border-radius:8px}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 16px 44px}
+  .hidden{display:none!important}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .hlead{font-size:12.5px;color:var(--ink);font-weight:700;text-align:center;margin:2px 0 14px}
+  .summ{display:flex;gap:8px;margin-bottom:16px}
+  .summ .s{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:12px;text-align:center;padding:10px 4px}
+  .summ .s b{display:block;font-size:22px;color:var(--ink);font-weight:900}
+  .summ .s span{font-size:10.5px;color:var(--ink-sub)}
+  .hrow{display:flex;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
+  .hdate{font-size:11px;color:var(--ink-sub);width:66px;flex:0 0 66px;font-weight:700;padding-top:2px}
+  .hbody{flex:1}
+  .hname{font-size:14px;font-weight:800;line-height:1.35;color:var(--ink)}
+  .hpl{font-size:11px;color:var(--ink-sub);margin:1px 0 7px}
+  .htags{display:flex;gap:6px;flex-wrap:wrap}
+  .tag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700}
+  .tag.drink{background:var(--paper);color:var(--ink)}
+  .tag.ctry{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
+  .tag.dist{background:var(--done-tint);color:var(--state-done)}
+  .tag.norec{background:var(--bg);border:1px dashed var(--line);color:var(--ink-sub);font-weight:600}
+  #empty{text-align:center;padding:64px 24px}
+  #empty .emo{font-size:40px}
+  #empty .t{font-size:17px;font-weight:800;margin:14px 0 8px;color:var(--ink)}
+  #empty .m{font-size:13px;color:var(--ink-sub);line-height:1.8}
+</style>
+</head>
+<body>
+<div class="bar"><span>旅の記録</span><span class="rt">あなたの旅</span></div>
+<div id="status">読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <div class="hlead">これまでの一杯と、歩いた道のり。</div>
+  <div class="summ">
+    <div class="s"><b id="nVisit">0</b><span>訪問した回数</span></div>
+    <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
+    <div class="s"><b id="nPref">0</b><span>行った県</span></div>
+  </div>
+  <div id="list"></div>
+</div>
+
+<div id="empty" class="wrap hidden">
+  <div class="emo">☕️</div>
+  <div class="t">最初の一杯は、どこで飲みますか？</div>
+  <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここに旅の記録が並んでいきます。</div>
+</div>
+
+<script>
+  const LIFF_ID = "2008851980-XXXXXXXX"; // ★旅の記録用LIFF（オーナー発行後に差し替え／endpoint=…/jcj-liff/history.html）
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let USER_ID = "";
+
+  function render(d){
+    const checkins = (d.checkins||[]);
+    const drinks = (d.drinks||[]);
+    if (!checkins.length){ $("status").classList.add("hidden"); $("empty").classList.remove("hidden"); return; }
+
+    // 同じ店・同じ日の記録を来店に紐づける
+    const byKey = {};
+    drinks.forEach(x => { const k = x.shopId+"|"+x.date; if(!byKey[k]) byKey[k]=x; });
+    const rows = checkins.map(c => ({ c:c, d:byKey[c.shopId+"|"+c.date]||null }));
+    rows.sort((a,b)=> (b.c.ms||0)-(a.c.ms||0));
+
+    // まとめ
+    const shops = {}, prefs = {};
+    checkins.forEach(c => { if(c.shopId) shops[c.shopId]=1; if(c.pref) prefs[c.pref]=1; });
+    $("nVisit").textContent = checkins.length;
+    $("nShop").textContent = Object.keys(shops).length;
+    $("nPref").textContent = Object.keys(prefs).length;
+
+    $("list").innerHTML = rows.map(r=>{
+      const c=r.c, dr=r.d;
+      let tags="";
+      if (dr){
+        if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
+        if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
+      } else {
+        tags += '<span class="tag norec">記録なし</span>';
+      }
+      if (c.km!=null) tags += '<span class="tag dist">約'+c.km+'km</span>';
+      return '<div class="hrow"><div class="hdate">'+esc(c.date)+'</div>'+
+        '<div class="hbody"><div class="hname">'+esc(c.shopName||"お店")+'</div>'+
+        '<div class="hpl">'+esc(c.pref||"")+'</div>'+
+        '<div class="htags">'+tags+'</div></div></div>';
+    }).join("");
+
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function load(){
+    try{
+      const res = await fetch(GAS_URL+"?action=my_history&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now());
+      const d = await res.json();
+      if(!d||!d.ok){ $("status").textContent="読み込みに失敗しました。時間をおいて開き直してください。"; return; }
+      render(d);
+    }catch(e){ $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; }
+  }
+
+  async function main(){
+    const previewUid = String(params.get("uid")||"").trim();
+    const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
+    if(!liffReady){ USER_ID = previewUid; return load(); }
+    await liff.init({ liffId: LIFF_ID });
+    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || previewUid;
+    if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
+    load();
+  }
+  main().catch(err => $("status").textContent = "エラー: "+(err&&err.message||String(err)));
+</script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>ロゴ帳</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5}
+  .bar .rt{font-size:11px;font-weight:700;background:rgba(255,255,255,.95);color:var(--brand-deep);padding:3px 9px;border-radius:8px}
+  .wrap{max-width:480px;margin:0 auto;padding:16px 14px 44px}
+  .hidden{display:none!important}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .book-top{text-align:center;margin:4px 0 4px}
+  .book-top .big{font-size:36px;font-weight:900;color:var(--ink);line-height:1}
+  .book-top .big .sub{font-size:17px;color:var(--ink-sub)}
+  .book-top .lab{font-size:11px;color:var(--ink-sub);margin-top:3px}
+  .hint{text-align:center;font-size:10.5px;color:var(--ink-sub);margin:8px 0 2px}
+  .area{margin-top:18px}
+  .area-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--ink);margin:0 2px 10px;border-bottom:1px solid var(--line);padding-bottom:5px}
+  .area-h .mine{font-size:9.5px;background:var(--brand-deep);color:#fff;border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;vertical-align:1px}
+  .area-n{font-size:11px;color:var(--ink-sub);font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px}
+  .circle{text-align:center;position:relative;cursor:pointer}
+  .circle .ph{display:block;width:60px;height:60px;border-radius:50%;margin:0 auto;overflow:hidden}
+  .circle.got .ph{background:var(--state-done);border:2.5px solid var(--state-done);
+    box-shadow:0 3px 8px rgba(47,122,87,.3);display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:900;font-size:18px;letter-spacing:.5px}
+  .circle.got .ph img{width:100%;height:100%;object-fit:cover;background:#fff}
+  .circle.lock .ph{background:var(--paper);border:2px dashed var(--line);box-shadow:inset 0 2px 6px rgba(110,101,94,.12)}
+  .circle .cap{display:block;font-size:9px;color:var(--ink-sub);margin-top:6px;line-height:1.18;
+    height:22px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .circle.lock .cap{color:#a79a8d}
+  .cnt{position:absolute;top:-4px;right:calc(50% - 34px);background:var(--brand-deep);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  /* tap sheet */
+  .sheet-bg{position:fixed;inset:0;background:rgba(34,28,26,.42);display:none;z-index:20}
+  .sheet-bg.on{display:block}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:20px 20px 0 0;
+    padding:20px 20px 24px;box-shadow:0 -8px 24px rgba(0,0,0,.2);max-width:480px;margin:0 auto}
+  .sheet .sname{font-size:18px;font-weight:800;margin:2px 0 2px;color:var(--ink)}
+  .sheet .splace{font-size:12px;color:var(--ink-sub);margin-bottom:9px}
+  .sheet .scopy{font-size:13px;color:var(--ink);line-height:1.6;background:var(--paper);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+  .sheet .sstat{display:inline-block;font-size:11px;font-weight:700;border-radius:8px;padding:3px 10px;margin-bottom:14px}
+  .sheet .sstat.got{background:var(--done-tint);color:var(--state-done)}
+  .sheet .sstat.mada{background:var(--paper);color:var(--ink-sub)}
+  .sheet .btnP{display:block;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15px;
+    border-radius:12px;padding:13px;text-decoration:none;box-shadow:0 4px 10px rgba(192,74,85,.25);margin-bottom:9px;border:0;width:100%;cursor:pointer}
+  .sheet .btnO{display:block;width:100%;background:var(--bg);color:var(--brand-deep);border:1.5px solid var(--brand-deep);
+    text-align:center;font-weight:800;font-size:14.5px;border-radius:12px;padding:11px;margin-bottom:9px;cursor:pointer}
+  .sheet .btnO.saved{background:var(--done-tint);color:var(--state-done);border-color:var(--done-tint)}
+  .sheet .sublink{display:block;text-align:center;color:var(--brand-deep);font-size:13px;margin:4px 0 2px;font-weight:600;text-decoration:underline;cursor:pointer}
+  .sheet .refer{display:none;background:var(--paper);border-radius:10px;padding:9px 11px;margin:8px 0 2px;font-size:12px;color:var(--ink);text-align:center}
+  .sheet .refer.on{display:block}
+  .sheet .refer b{color:var(--brand-deep)}
+  .sheet .sclose{display:block;text-align:center;color:var(--ink-sub);font-size:12.5px;margin-top:12px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="bar"><span>ロゴ帳</span><span class="rt">御朱印帳</span></div>
+<div id="status">読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <div class="book-top">
+    <div class="big"><span id="nGot">0</span> <span class="sub">/ <span id="nTot">0</span></span></div>
+    <div class="lab">集めたロースター</div>
+  </div>
+  <div class="hint" id="hint">丸をタップすると、お店を知る画面が開きます</div>
+  <div id="areas"></div>
+</div>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <div class="sname" id="shName">お店</div>
+    <div class="splace" id="shPlace"></div>
+    <div class="scopy" id="shCopy"></div>
+    <div class="sstat" id="shStat"></div>
+    <button class="btnP" id="btnStore">お店を見る（店舗紹介）</button>
+    <button class="btnO" id="btnSave">行きたいに保存する</button>
+    <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>とマイルがたまります</div>
+    <span class="sublink" id="btnMap">行き方を見る（Googleマップ）</span>
+    <div class="sclose" id="btnClose">とじる</div>
+  </div>
+</div>
+
+<script>
+  const LIFF_ID = "2008851980-XXXXXXXX"; // ★ロゴ帳用LIFF（オーナー発行後に差し替え／endpoint=…/jcj-liff/logobook.html）
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const AREA_ORDER = ["北海道・東北","関東","甲信越","東海","近畿","中国・四国","九州・沖縄"];
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let USER_ID = "";
+  let CUR = null; // 現在シートで開いている店
+
+  function mono(name){
+    const toks = String(name||"").split(/[ .&/,\-]+/).filter(Boolean);
+    if (toks.length>=2 && /[A-Za-z]/.test(toks[0]) && /[A-Za-z]/.test(toks[1])) return (toks[0][0]+toks[1][0]).toUpperCase();
+    const s = String(name||"").replace(/\s/g,"");
+    return /[A-Za-z]/.test(s) ? s.slice(0,2).toUpperCase() : s.slice(0,2);
+  }
+
+  function openExt(url){
+    if(!url) return;
+    try{ if(liff&&liff.isInClient&&liff.isInClient()){ liff.openWindow({url:url,external:true}); return; } }catch(e){}
+    window.open(url,"_blank");
+  }
+  function logClick(spotId,type){
+    try{ fetch(GAS_URL+"?action=outbound_click&spotId="+encodeURIComponent(spotId)+"&type="+encodeURIComponent(type)+"&source=logobook&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now()); }catch(e){}
+  }
+
+  // ロゴは店IDから自己修復で解決：①shop/<ID>/logo.png（各店フォルダ・本来の形）→②R列(r.logo)→③外観写真→④頭文字。
+  function logoCands(r){
+    const base = "https://japancoffeejourney.com/jcj_passport_img/shop/"+encodeURIComponent(r.id)+"/";
+    return [base+"logo.png", r.logo||"", base+"exterior.jpg"].filter(Boolean);
+  }
+  function circleHtml(r, cnt){
+    const got = cnt>0;
+    const cap = '<span class="cap">'+esc(r.name)+'</span>';
+    if(got){
+      const badge = cnt>1 ? '<span class="cnt">×'+cnt+'</span>' : '';
+      const inner = '<img class="lg" alt="" data-cands="'+esc(logoCands(r).join("|"))+'" data-mono="'+esc(mono(r.name))+'">';
+      return '<div class="circle got" data-id="'+esc(r.id)+'"><span class="ph">'+inner+'</span>'+badge+cap+'</div>';
+    }
+    return '<div class="circle lock" data-id="'+esc(r.id)+'"><span class="ph"></span>'+cap+'</div>';
+  }
+  // ロゴ画像を候補順に試し、全滅したら頭文字に置き換える（緑の印の中に白文字）。
+  function wireLogos(){
+    [...document.querySelectorAll("img.lg")].forEach(img=>{
+      const cands = (img.getAttribute("data-cands")||"").split("|").filter(Boolean);
+      const mo = img.getAttribute("data-mono")||"";
+      let i = 0;
+      const toMono = ()=>{ const sp=document.createElement("span"); sp.textContent=mo; img.replaceWith(sp); };
+      img.onerror = ()=>{ i++; if(i<cands.length){ img.src=cands[i]; } else { toMono(); } };
+      if(cands.length){ img.src=cands[0]; } else { toMono(); }
+    });
+  }
+
+  let ROByArea = {}, ROById = {}, VIS = {};
+  function render(d){
+    const roasters = d.roasters||[]; VIS = d.visited||{};
+    $("nGot").textContent = d.got||0; $("nTot").textContent = d.total||roasters.length;
+
+    ROByArea = {}; ROById = {};
+    roasters.forEach(r=>{ (ROByArea[r.area]=ROByArea[r.area]||[]).push(r); ROById[r.id]=r; });
+
+    // 並び：自分の地域を先頭に、あとは既定の地理順
+    const home = d.homeArea||"";
+    let order = AREA_ORDER.slice();
+    if(home && order.indexOf(home)>=0){ order = [home].concat(order.filter(a=>a!==home)); }
+    Object.keys(ROByArea).forEach(a=>{ if(order.indexOf(a)<0) order.push(a); });
+
+    let html="";
+    order.forEach(a=>{
+      const list = ROByArea[a]; if(!list||!list.length) return;
+      const gotIn = list.filter(r=>VIS[r.id]).length;
+      const mine = (a===home) ? ' <span class="mine">あなたの地域</span>' : '';
+      html += '<div class="area"><div class="area-h"><span>'+esc(a)+mine+'</span><span class="area-n">'+gotIn+'/'+list.length+'</span></div>'+
+              '<div class="grid">'+ list.map(r=>circleHtml(r, VIS[r.id]||0)).join("") +'</div></div>';
+    });
+    $("areas").innerHTML = html;
+    wireLogos();
+
+    // 初回のみヒント
+    try{ if(localStorage.getItem("jcj_logobook_hint")){ $("hint").classList.add("hidden"); } else { localStorage.setItem("jcj_logobook_hint","1"); } }catch(e){}
+
+    [...document.querySelectorAll(".circle")].forEach(el=>{ el.onclick=()=>openSheet(el.getAttribute("data-id")); });
+    $("status").classList.add("hidden"); $("main").classList.remove("hidden");
+  }
+
+  function openSheet(id){
+    const r = ROById[id]; if(!r) return; CUR = r;
+    const cnt = VIS[id]||0, got = cnt>0;
+    $("shName").textContent = r.name;
+    $("shPlace").textContent = r.place||r.pref||"";
+    $("shCopy").textContent = r.intro||"";
+    $("shCopy").style.display = r.intro ? "" : "none";
+    const st = $("shStat"); st.className="sstat "+(got?"got":"mada");
+    st.textContent = got ? ("✓ "+cnt+"回 行きました") : "行くと、ここに印が灯ります";
+    // 未訪問だけ「保存」を出す（既に行った店は保存不要）
+    $("btnSave").style.display = got ? "none" : "";
+    $("btnSave").className="btnO"; $("btnSave").textContent="行きたいに保存する"; $("referBox").className="refer";
+    $("sheetBg").classList.add("on");
+  }
+  function closeSheet(){ $("sheetBg").classList.remove("on"); }
+
+  function wireSheet(){
+    $("btnClose").onclick = closeSheet;
+    $("sheetBg").onclick = e=>{ if(e.target===$("sheetBg")) closeSheet(); };
+    $("btnStore").onclick = ()=>{ if(!CUR) return; logClick(CUR.id,"store"); openExt(CUR.storeUrl||CUR.mapUrl); };
+    $("btnMap").onclick   = ()=>{ if(!CUR) return; logClick(CUR.id,"map"); openExt(CUR.mapUrl); };
+    $("btnSave").onclick  = ()=>{
+      if(!CUR) return;
+      try{ fetch(GAS_URL+"?action=discover_save&spotId="+encodeURIComponent(CUR.id)+"&userId="+encodeURIComponent(USER_ID)+"&source=logobook&_="+Date.now()); }catch(e){}
+      $("btnSave").className="btnO saved"; $("btnSave").textContent="保存しました";
+      $("referBox").className="refer on";
+    };
+  }
+
+  async function load(){
+    try{
+      const res = await fetch(GAS_URL+"?action=logobook&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now());
+      const d = await res.json();
+      if(!d||!d.ok){ $("status").textContent="読み込みに失敗しました。時間をおいて開き直してください。"; return; }
+      render(d);
+    }catch(e){ $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; }
+  }
+
+  async function main(){
+    wireSheet();
+    const previewUid = String(params.get("uid")||"").trim();
+    const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
+    if(!liffReady){ USER_ID = previewUid; return load(); }
+    await liff.init({ liffId: LIFF_ID });
+    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || previewUid;
+    if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
+    load();
+  }
+  main().catch(err => $("status").textContent = "エラー: "+(err&&err.message||String(err)));
+</script>
+</body>
+</html>
