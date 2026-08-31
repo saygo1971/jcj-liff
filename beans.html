@@ -6,9 +6,9 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>マイル特典</title>
+  <title>豆割</title>
   <style>
-    :root{ --brand:#34595A; --brand2:#DCE7D8; --line:#e6e6e6; --muted:#666; --hint:#999; --wood:#8a6d4b; }
+    :root{ --brand:#C04A55; --brand2:#F5C4B3; --green:#2F7A57; --ink:#221C1A; --paper:#F4EADD; --line:#DDD6CE; --muted:#6E655E; --hint:#999; --wood:#8a6d4b; }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
     .wrap{max-width:480px;margin:0 auto;padding:14px}
@@ -19,11 +19,11 @@
     .tabs{display:flex;gap:8px;margin-bottom:14px}
     .tabs button{flex:1;height:42px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:#555}
     .tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
-    .bal{background:#f7f7f5;border-radius:12px;padding:14px;text-align:center}
+    .bal{background:var(--paper);border-radius:12px;padding:14px;text-align:center}
     .bal .lbl{font-size:13px;color:var(--muted)}
     .bal .num{font-size:30px;font-weight:800;margin-top:2px}
     .bal .num small{font-size:15px;color:var(--muted);font-weight:600}
-    .ratecard{background:#f7f7f5;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+    .ratecard{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
     .ratecard .lbl{font-size:12px;color:var(--muted);margin-bottom:10px}
     .ratecard .row{display:flex;align-items:center;justify-content:space-between;text-align:center}
     .ratecard .col{flex:1}
@@ -73,11 +73,22 @@
     .coupon .foot{border-top:1px solid var(--brand2);padding:12px 14px}
     .confirm{width:100%;height:48px;border-radius:10px;background:var(--brand);color:#fff;border:none;font-size:16px;font-weight:800}
     .confirm:disabled{opacity:.4}
-    .used{border:1px solid var(--brand2);border-radius:16px;background:#fff;text-align:center;padding:22px 16px}
-    .used .mk{font-size:40px;color:var(--brand)}
+    .used{border:1px solid var(--green);border-radius:16px;background:#fff;text-align:center;padding:22px 16px}
+    .used .mk{font-size:40px;color:var(--green)}
     .used .t{font-size:18px;font-weight:800;margin-top:6px}
     .used .d{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}
-    .ghost{width:100%;height:46px;border-radius:12px;background:#fff;border:1px solid #ccc;color:#555;font-size:15px;font-weight:700;margin-top:14px}
+    .ghost{width:100%;height:46px;border-radius:12px;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:15px;font-weight:700;margin-top:14px}
+    /* 使う：見せるカード（白地＋中ベージュ・割引額を大きく） */
+    .showcard{border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+    .showlbl{font-size:12px;color:var(--muted)}
+    .showoff{margin-top:2px;font-size:40px;font-weight:800;color:var(--ink);line-height:1.1}
+    .showoff .yen{font-size:22px;color:var(--muted);font-weight:700}
+    .showshop{font-size:13px;color:var(--muted);margin-top:4px}
+    .staffnote{background:var(--paper);border-radius:10px;padding:10px 12px;margin-top:12px;font-size:13px;color:var(--ink)}
+    .showlead{margin-top:12px;font-size:13px;color:var(--ink);font-weight:700}
+    .showexp{font-size:12px;color:var(--muted);margin-top:4px}
+    .usehint{text-align:center;font-size:12px;color:var(--muted);margin:12px 0 8px}
+    .usefine{text-align:center;font-size:11px;color:var(--muted);margin-top:6px}
     .hidden{display:none !important}
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center;z-index:50}
     .sheet{background:#fff;width:100%;max-width:480px;border-radius:16px 16px 0 0;padding:18px 18px 24px;animation:slideup .18s ease-out}
@@ -96,7 +107,7 @@
 <div class="wrap">
   <div class="head">
     <div class="sub">JCJパスポート</div>
-    <div class="ttl">マイル特典</div>
+    <div class="ttl">豆割</div>
   </div>
 
   <div class="card">
@@ -123,9 +134,9 @@
           <div class="row">
             <div class="col"><div class="v" id="rateMile">-</div><div class="u">マイル</div></div>
             <div class="eq">=</div>
-            <div class="col"><div class="v brand">クーポン1枚</div><div class="u"><span id="rateYen">-</span>分</div></div>
+            <div class="col"><div class="v brand">豆割1枚</div><div class="u"><span id="rateYen">-</span>分</div></div>
           </div>
-          <div class="desc" id="rateDesc">貯めたマイルを、豆のお会計に使えるクーポン1枚と交換できます。</div>
+          <div class="desc" id="rateDesc">貯めたマイルを、豆のお会計に使える豆割1枚と交換できます。</div>
         </div>
 
         <div class="sec">
@@ -140,18 +151,18 @@
           </div>
         </div>
 
-        <button id="go" class="go" type="button">クーポン1枚に換える</button>
+        <button id="go" class="go" type="button">豆割1枚に換える</button>
         <div id="msg" class="msg hidden"></div>
 
         <div class="have">
-          <div class="l">持っているクーポン</div>
-          <div class="r"><span id="coupon">-</span>枚 <small style="font-size:12px;color:#999;font-weight:600">有効</small></div>
+          <div class="l">持っている豆割</div>
+          <div class="r"><span id="coupon">-</span>枚 <small style="font-size:12px;color:var(--muted);font-weight:600">有効</small></div>
         </div>
 
         <div class="fine">
-          ・換えたクーポンは豆のお会計にだけ使えます<br>
-          ・使えるのは<b>1回のお会計でクーポン1枚まで</b>です<br>
-          ・クーポンは発行から<span id="days">30</span>日で失効します
+          ・換えた豆割は豆のお会計にだけ使えます<br>
+          ・使えるのは<b>1回のお会計で豆割1枚まで</b>です<br>
+          ・豆割は発行から<span id="days">180</span>日で失効します
         </div>
       </div>
 
@@ -160,10 +171,10 @@
         <!-- A: 店選び -->
         <div id="useSelect">
           <div class="bal">
-            <div class="lbl">持っているクーポン</div>
+            <div class="lbl">持っている豆割</div>
             <div class="num"><span id="uCoupon">-</span> <small>枚</small></div>
           </div>
-          <div class="fine" style="margin-top:10px">1回のお会計で使えるのは <b>クーポン1枚（¥<span id="uYen">200</span>分）</b> までです</div>
+          <div class="fine" style="margin-top:10px">1回のお会計で使えるのは <b>豆割1枚（¥<span id="uYen">200</span>分）</b> までです</div>
           <div class="sec">
             <div class="lbl">いまどのお店にいますか？</div>
             <select id="shop"><option value="">お店を選ぶ…</option></select>
@@ -173,31 +184,22 @@
           <div id="useMsg" class="msg hidden"></div>
         </div>
 
-        <!-- B: 見せる -->
+        <!-- B: 見せる（白カード＋割引額を大きく／カウントダウンは出さない） -->
         <div id="useShow" class="hidden">
-          <div class="coupon">
-            <div class="top">
-              <div class="hint">この画面をお店の人に見せてください</div>
-              <div class="off">¥<span id="showYen">200</span>分</div>
-              <div class="shop" id="showShop">-</div>
-            </div>
-            <div class="staffbox">
-              <div class="lb">お店の方へ</div>
-              <div class="bg">この金額をお会計からお引きください</div>
-            </div>
-            <div class="mid">
-              <div class="lead">マイル特典（クーポン1枚）</div>
-              <div class="clock" id="clock">03:00</div>
-              <div class="exp" id="expHint">この時間内にお店の人が確認します</div>
-              <div class="sep"></div>
-              <div class="codelbl">確認コード</div>
-              <div class="code" id="code">-</div>
-            </div>
-            <div class="foot">
-              <button id="confirm" class="confirm" type="button">クーポンを使う</button>
-            </div>
+          <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:10px">お店の人に見せてください</div>
+          <div class="showcard">
+            <div class="showlbl">お会計からの割引</div>
+            <div class="showoff">−<span class="yen">¥</span><span id="showYen">200</span></div>
+            <div class="showshop" id="showShop">-</div>
+            <div class="staffnote">お店の方へ：このぶんを、お会計から引いてください</div>
+            <div class="showlead">豆割 1枚</div>
+            <div class="showexp" id="expHint">この画面を開いたまま、確認を受けてください</div>
+            <div id="clock" class="hidden"></div>
           </div>
-          <button id="cancelUse" class="ghost" type="button">やめる（戻る）</button>
+          <div class="usehint">まだ使っていません。お店の人が確認したら、下のボタンを押してください。</div>
+          <button id="confirm" class="confirm" type="button">豆割を使う</button>
+          <div class="usefine">押すと使い終わりになります（元に戻せません）</div>
+          <button id="cancelUse" class="ghost" type="button">やめる</button>
           <div id="showMsg" class="msg hidden"></div>
         </div>
 
@@ -205,7 +207,7 @@
         <div id="useDone" class="hidden">
           <div class="used">
             <div class="mk">✓</div>
-            <div class="t">クーポン1枚を使いました</div>
+            <div class="t">豆割を1枚使いました</div>
             <div class="d" id="doneShop">-</div>
           </div>
           <button id="doneBack" class="ghost" type="button">閉じる</button>
@@ -287,7 +289,7 @@
     $("days").textContent = Number(stateEx.expiryDays)||30;
     $("rateMile").textContent = rate.toLocaleString();
     $("rateYen").textContent = "¥" + yen.toLocaleString();
-    $("rateDesc").innerHTML = "たまった<b>" + rate.toLocaleString() + "マイル</b>で、全国の加盟ロースターの<b>豆のお会計に使えるクーポン1枚</b>と交換できます。";
+    $("rateDesc").innerHTML = "たまった<b>" + rate.toLocaleString() + "マイル</b>で、全国の加盟ロースターの<b>豆のお会計に使える豆割1枚</b>と交換できます。";
 
     const max = maxExchangeable();
     if (count > max) count = max;
@@ -298,7 +300,7 @@
       showMsg($("msg"), "ただいま準備中です。もうしばらくお待ちください。", false);
       $("go").disabled = true;
     } else if (max < 1){
-      showMsg($("msg"), "クーポン1枚に必要なマイルがまだ足りません。チェックインや紹介でマイルを貯めましょう。", false);
+      showMsg($("msg"), "豆割1枚に必要なマイルがまだ足りません。チェックインや紹介でマイルを貯めましょう。", false);
       $("go").disabled = true;
     } else {
       clearMsg($("msg"));
@@ -313,7 +315,7 @@
     const max = maxExchangeable();
     $("minus").disabled = busy || count <= 1;
     $("plus").disabled  = busy || count >= max;
-    $("go").textContent = busy ? "処理中…" : (count>0 ? ("クーポン"+count+"枚に換える") : "クーポンに換える");
+    $("go").textContent = busy ? "処理中…" : (count>0 ? ("豆割"+count+"枚に換える") : "豆割に換える");
   }
 
   async function loadExchange(){
@@ -343,7 +345,7 @@
       stateEx.couponBalance = d.couponBalanceAfter;
       stateEx.canExchangeNow = d.canExchangeNow;
       busy = false; renderExchange();
-      showMsg($("msg"), d.issuedCount + "枚を交換しました。クーポンが" + d.couponBalanceAfter + "枚になりました。", true);
+      showMsg($("msg"), d.issuedCount + "枚を交換しました。豆割が" + d.couponBalanceAfter + "枚になりました。", true);
     } catch(err){
       dlog("[flow] 送信catch（通信失敗） " + String(err));
       busy = false; renderCount();
@@ -356,7 +358,7 @@
     const e = String(err||"");
     if (e.indexOf("マイルが足りません") >= 0) return "マイルが足りません。チェックインや紹介でマイルを貯めましょう。";
     if (e.indexOf("停止中") >= 0 || e.indexOf("OFF") >= 0) return "ただいま準備中です。もうしばらくお待ちください。";
-    if (e.indexOf("使える豆割引クーポンがありません") >= 0) return "使えるクーポンがありません。先に「マイルを交換」で受け取ってください。";
+    if (e.indexOf("使える豆割引クーポンがありません") >= 0) return "使える豆割がありません。先に「マイルを交換」で受け取ってください。";
     return "うまくいきませんでした。時間をおいてもう一度お試しください。";
   }
 
@@ -368,7 +370,7 @@
   }
 
   async function loadUse(){
-    showLoading("クーポンを確認しています…");
+    showLoading("豆割を確認しています…");
     const d = await api("beans_use_state");
     showDebug(d);
     if(!d.ok){ showStatusText("読み込みに失敗しました：" + (d.error||"unknown")); return; }
@@ -406,7 +408,7 @@
     });
     clearMsg($("useMsg"));
     const has = (Number(stateUse.couponBalance)||0) >= 1;
-    if (!has){ showMsg($("useMsg"), "使えるクーポンがありません。先に「マイルを交換」で受け取ってください。", false); }
+    if (!has){ showMsg($("useMsg"), "使える豆割がありません。先に「マイルを交換」で受け取ってください。", false); }
     updateUseGo();
   }
 
@@ -423,7 +425,6 @@
     opId = "OP-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
     $("showYen").textContent = yen.toLocaleString();
     $("showShop").textContent = shopName;
-    $("code").textContent = makeCode(opId);
     clearMsg($("showMsg"));
     $("confirm").disabled = false;
     $("useSelect").classList.add("hidden");
@@ -448,7 +449,7 @@
       if (remain <= 0){
         stopClock(); renderClock(0);
         $("confirm").disabled = true;
-        $("expHint").textContent = "時間切れです。お手数ですがもう一度お試しください。";
+        $("expHint").textContent = "時間が経ちました。お手数ですが、開き直してください。";
         return;
       }
       renderClock(remain);
@@ -471,7 +472,7 @@
       if(!d.ok){ useBusy=false; $("confirm").disabled=false; showMsg($("showMsg"), friendlyError(d.error), false); return; }
       stopClock();
       useBusy = false;
-      $("doneShop").innerHTML = (d.spotName||"") + "<br>残りのクーポン " + (Number(d.couponBalanceAfter)||0) + "枚";
+      $("doneShop").innerHTML = (d.spotName||"") + "<br>残りの豆割 " + (Number(d.couponBalanceAfter)||0) + "枚";
       $("useShow").classList.add("hidden");
       $("useDone").classList.remove("hidden");
       stateUse.couponBalance = Number(d.couponBalanceAfter)||0;

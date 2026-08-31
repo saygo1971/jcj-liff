@@ -8,17 +8,17 @@
   <meta http-equiv="Expires" content="0" />
   <title>JCJ チェックイン</title>
   <style>
-    :root{ --brand:#0F6E56; --brand2:#DCE7D8; --amber:#BA7517; --line:#e6e6e6; --muted:#666; --hint:#999; }
+    :root{ --brand:#0F6E56; --coral:#C04A55; --green:#2F7A57; --ink:#221C1A; --paper:#F4EADD; --brand2:#DCE7D8; --amber:#BA7517; --line:#DDD6CE; --muted:#6E655E; --hint:#999; }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
     .wrap{max-width:480px;margin:0 auto;padding:14px}
     .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
     .hero{width:100%;height:170px;object-fit:cover;display:block;background:#C9D6DC}
     .body{padding:16px}
-    .brand{font-size:12px;color:var(--brand);font-weight:700}
+    .brand{font-size:12px;color:var(--muted);font-weight:700}
     .shop{font-size:19px;font-weight:800;margin:3px 0}
     .pref{font-size:13px;color:var(--muted)}
-    .go{width:100%;margin-top:16px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
+    .go{width:100%;margin-top:16px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--coral)}
     .go:disabled{opacity:.5}
     .fine{font-size:11px;color:var(--hint);margin-top:8px;text-align:center}
     .ask{margin-top:14px;background:#eef6f2;border:1px solid #cfe4da;border-radius:12px;padding:12px 13px;font-size:13.5px;line-height:1.75;color:#215}
@@ -27,27 +27,27 @@
     .holdmsg{margin:14px 12px 4px;background:#fff7ea;border:1px solid #f0d9a8;border-radius:12px;padding:12px 13px;font-size:13px;line-height:1.75;color:#6b4c12}
     .holdmsg b{color:var(--amber)}
     .done{padding:18px;text-align:center;color:#fff}
-    .done.ci{background:var(--brand)}
+    .done.ci{background:var(--green)}
     .done.today{background:var(--amber)}
     .done.hold{background:var(--amber)}
     .done .ic{font-size:30px;line-height:1}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
     .donecard{width:100%;height:auto;display:block;background:#C9D6DC}
     .refcard{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
-    .refbox{background:#f2f8f5;border:1px solid #d6e7de;border-radius:12px;padding:14px}
-    .reftitle{font-size:14px;font-weight:800;color:var(--brand);text-align:center}
-    .refdesc{font-size:12px;color:#555;text-align:center;margin-top:6px;line-height:1.7}
-    .refbtn{width:100%;margin-top:12px;height:50px;border-radius:12px;border:none;font-size:15px;font-weight:700;color:#fff;background:var(--brand)}
-    .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
+    .refbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+    .reftitle{font-size:14px;font-weight:800;color:var(--ink);text-align:center}
+    .refdesc{font-size:12px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.7}
+    .refbtn{width:100%;margin-top:12px;height:48px;border-radius:12px;border:1px solid var(--coral);font-size:15px;font-weight:700;color:var(--coral);background:#fff}
+    .mile{font-size:24px;font-weight:800;color:var(--ink);text-align:center;margin:8px 0}
     .total{font-size:13px;color:var(--muted);text-align:center}
     .bsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
-    .btrack{height:12px;background:#EDE7DF;border-radius:6px;overflow:hidden}
-    .bfill{height:100%;background:#6F4E37;border-radius:6px}
-    .bnote{font-size:13px;color:#6F4E37;margin-top:8px;text-align:center}
-    .bnote b{font-weight:800}
-    .bready{font-size:14px;font-weight:800;color:#6F4E37;margin-top:10px;text-align:center}
-    .bnext{font-size:11px;color:var(--hint);margin-top:6px;text-align:center}
-    .bbtn{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:12px;color:#fff;background:#6F4E37;font-weight:700;font-size:15px}
+    .btrack{height:12px;background:var(--paper);border-radius:6px;overflow:hidden}
+    .bfill{height:100%;background:#CB7B68;border-radius:6px}
+    .bnote{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+    .bnote b{font-weight:800;color:var(--ink)}
+    .bready{font-size:14px;font-weight:800;color:var(--coral);margin-top:10px;text-align:center}
+    .bnext{font-size:11px;color:var(--muted);margin-top:6px;text-align:center}
+    .bbtn{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:12px;color:#fff;background:var(--coral);font-weight:700;font-size:15px}
     .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
     .thd{font-size:14px;color:#444;font-weight:700;display:flex;align-items:center;gap:6px}
     .stepper{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
@@ -125,9 +125,9 @@
       '<div class="brand">JCJパスポート</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div class="pref">' + esc(st.pref) + '</div>' +
-      '<div class="ask">📍 <b>お店に来た確認のため、位置情報を使います。</b><br>次に出る画面で「許可」を押してね。<br>' +
-      '<span class="asknote">※許可しなくてもチェックインはできます（マイルは後で確認）</span></div>' +
-      '<button id="go" class="go">現在地を確認して進む</button>';
+      '<div class="ask"><b>着いたら、チェックイン。</b><br>' +
+      '<span class="asknote">「許可」を押すと、いまいる場所で記録できます。押さなくてもチェックインはできます（マイルは後で確認）。</span></div>' +
+      '<button id="go" class="go">チェックインする</button>';
     $("go").onclick = doCheckin;
   }
 
@@ -163,12 +163,12 @@
       busy = false;
       if(!r || !r.ok){
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
-        b.disabled = false; b.textContent = "現在地を確認して進む";
+        b.disabled = false; b.textContent = "チェックインする";
         showMsgInline("チェックインに失敗しました。時間をおいて再度お試しください。", false); return;
       }
       renderDone(r);
     }catch(e){
-      busy = false; b.disabled = false; b.textContent = "現在地を確認して進む";
+      busy = false; b.disabled = false; b.textContent = "チェックインする";
       showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
     }
   }
@@ -210,11 +210,11 @@
     let bottom;
     if (canEx) {
       // 交換できる：文字自体をタップで交換ページへ（ボタンは増やさない）。呼称は「マイル特典」（"豆"はユーザー向けに出さない）。
-      const ready = '<div class="bready">🎁 マイル特典と交換できます！（タップで交換）</div>' +
-        '<div class="bnext">あと ' + remain + ' マイルで、次の特典</div>';
+      const ready = '<div class="bready">豆割が1枚もらえます ›</div>' +
+        '<div class="bnext">あと ' + remain + ' マイルで、次の豆割</div>';
       bottom = exUrl ? '<a href="' + esc(exUrl) + '" style="text-decoration:none;display:block">' + ready + '</a>' : ready;
     } else {
-      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 🎁 マイル特典' + discTxt + '</div>';
+      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 豆割' + discTxt + '</div>';
     }
     return '<div class="bsec">' + bar + bottom + '</div>';
   }
@@ -263,9 +263,9 @@
     // 紹介コーナー：チェックインした今この瞬間に友だちへお店を紹介（友だち初来店で紹介者に+100マイル）。
     const refHtml =
       '<div class="refcard"><div class="refbox">' +
-        '<div class="reftitle">🎁 友だちを誘って +100マイル</div>' +
+        '<div class="reftitle">友だちを誘って ＋100マイル</div>' +
         '<div class="refdesc">今この場でお店をシェア。友だちが初めて来店すると、あなたに100マイル入ります。</div>' +
-        '<button id="refBtn" class="refbtn">このお店を紹介する</button>' +
+        '<button id="refBtn" class="refbtn">このお店を友だちに教える</button>' +
       '</div></div>';
 
     $("body").innerHTML =
@@ -385,8 +385,9 @@
     $("body").innerHTML =
       '<div class="brand">JCJパスポート</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
-      '<div class="fine" style="text-align:left;margin:12px 0;line-height:1.8;color:#555;font-size:13px">はじめての方は、先に登録が必要です。<br>登録するとこのお店に自動でチェックインされます。</div>' +
-      '<button id="reg" class="go">登録して続ける</button>';
+      '<div style="text-align:center;margin:12px 0 4px;font-size:15px;font-weight:700;color:var(--ink)">まず登録して、コーヒー旅を始めましょう</div>' +
+      '<div class="fine" style="text-align:center;margin:0 0 4px;line-height:1.8;color:var(--muted);font-size:12px">登録すると、このお店に自動でチェックインされます。</div>' +
+      '<button id="reg" class="go">はじめる</button>';
     $("reg").onclick = ()=>{
       const oa = "https://line.me/R/ti/p/@957zdear";
       if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: oa, external: false });
