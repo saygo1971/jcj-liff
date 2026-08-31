@@ -11,7 +11,7 @@
     --cream:#FFFFFF; --paper:#ffffff; --ink:#221C1A; --sub:#6E655E;
     --brown:#6E655E; --brown-d:#221C1A; --accent:#C04A55; --accent-d:#993536;
     --line:#DDD6CE; --sea:#eef2ef; --land:#EFE7D6; --land-has:#C8A46F; --land-line:#cdbb9f;
-    --sel:#F0997B; --pin:#C04A55; --pin-dim:#d9c3b2;
+    --sel:#F0997B; --pin:#C04A55; --pin-dim:#d9c3b2; --lit:#CB7B68;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -62,7 +62,7 @@
   .prefecture.has{fill:var(--land-has)}
   .prefecture.sel{fill:var(--sel)}
   .prefecture.dim{opacity:.42}
-  .prefecture.lit{fill:var(--accent) !important;transition:fill .7s ease}
+  .prefecture.lit{fill:var(--lit) !important;transition:fill .7s ease}
   .inset-box{fill:none;stroke:#b7a488;stroke-width:1.6;stroke-dasharray:5 4}
   .inset-label{fill:#6f5b44;font-size:30px;font-weight:700;font-family:"Noto Sans JP",system-ui,sans-serif}
   .pin{fill:var(--pin);stroke:#fff;stroke-width:2px;cursor:pointer;transition:.15s}
