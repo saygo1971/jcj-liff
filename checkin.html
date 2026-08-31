@@ -294,7 +294,7 @@
       : '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>';
     const headerHtml =
       '<div class="cihead">' +
-        '<img class="cilogo" src="' + esc(logoUrl) + '" data-ext="' + esc(extUrl) + '" alt="" onerror="if(this.dataset.ext&&this.src!==this.dataset.ext){this.src=this.dataset.ext;this.removeAttribute(\'data-ext\');}else{this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\';}">' +
+        '<img id="cilogoImg" class="cilogo" src="' + esc(logoUrl) + '" alt="" onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\';">' +
         '<div class="cilogo fallback" style="display:none">' + initial + '</div>' +
         '<div class="cimeta"><div class="cishop">' + esc(r.shopName) + '</div>' + cimile + '</div>' +
       '</div>';
@@ -318,11 +318,25 @@
       '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;
 
-    // 地域コンプリート進捗（豆割の上）。endpoint未デプロイ・非対象時は静かに非表示。
+    // 地域コンプリート進捗＋正しいロゴ（area_progressが logo=R列 と exterior を同梱）。未デプロイ・非対象時は静かに据え置き。
     (async ()=>{
       try{
         const ap = await api("area_progress", { shopId: st.shopId || SPOT || "" });
-        if (ap && ap.ok && ap.area){
+        if (!ap) return;
+        // ロゴ差し替え：①R列logo → ②exterior → ③頭文字
+        const img = $("cilogoImg");
+        if (img && ap.logo){
+          const alt2 = ap.exterior || extUrl;
+          img.onerror = function(){
+            if (alt2 && img.getAttribute("src") !== alt2){ img.src = alt2; }
+            else { img.style.display = "none"; var f = img.nextElementSibling; if (f) f.style.display = "flex"; }
+          };
+          img.style.display = "";
+          var fb = img.nextElementSibling; if (fb) fb.style.display = "none";
+          img.src = ap.logo;
+        }
+        // 進捗テキスト
+        if (ap.ok && ap.area){
           $("areaProg").innerHTML = 'あと <b>' + (Number(ap.remaining)||0) + '</b> 店で ' + esc(ap.area) + ' コンプリート（' + (Number(ap.got)||0) + '/' + (Number(ap.total)||0) + '）';
           $("areaProg").classList.remove("hidden");
         }
