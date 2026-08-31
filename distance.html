@@ -67,8 +67,13 @@
   .you .v .u{font-size:13px;color:var(--ink-sub);font-weight:800;margin-left:2px}
   .you .note{font-size:11px;color:var(--ink-sub);margin-top:8px;line-height:1.5;text-align:center}
 
-  /* 数字が届く前の"…"を少し薄く（枠は先に見えている） */
-  .pending{opacity:.35}
+  /* 数字が届くまでの「くるくる」（枠は先に見えている・数字が入る場所で回る） */
+  .miniSpin{display:inline-block;width:.8em;height:.8em;border:2px solid var(--line);border-top-color:var(--done);border-radius:50%;vertical-align:-.06em;animation:spin .8s linear infinite}
+  /* メーターのバーも、届くまでは緑の帯が左右に流れる（読み込み中の合図） */
+  .track.loading{position:relative}
+  .track.loading .fill{width:0 !important}
+  .track.loading::after{content:"";position:absolute;top:0;height:100%;width:30%;border-radius:999px;background:var(--done);opacity:.35;animation:track-slide 1.15s ease-in-out infinite}
+  @keyframes track-slide{0%{left:-32%}100%{left:100%}}
 
   /* 憧れ（夢・演出のみ／実物の約束はしない） */
   .dream{margin-top:14px;background:#14213a;color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
@@ -123,10 +128,10 @@
     <div class="axis">🌏 みんなの旅</div>
     <div class="meter">
       <div class="globe">🌏</div>
-      <div class="big"><span id="totalKm" class="pending">…</span><span class="u">km</span></div>
+      <div class="big"><span id="totalKm"><i class="miniSpin"></i></span><span class="u">km</span></div>
       <div class="cap">日本中の旅人が足した距離の合計</div>
 
-      <div class="track"><div id="fill" class="fill"></div></div>
+      <div id="track" class="track loading"><div id="fill" class="fill"></div></div>
       <div class="goal">
         <span id="asOf">今日</span>
         <span id="goalLabel">地球一周 40,075km</span>
@@ -135,7 +140,7 @@
 
       <div class="members">
         <span class="l">いっしょに旅する仲間</span>
-        <span class="v"><span id="members" class="pending">…</span><span class="u">人</span></span>
+        <span class="v"><span id="members"><i class="miniSpin"></i></span><span class="u">人</span></span>
       </div>
     </div>
 
@@ -144,7 +149,7 @@
     <div class="you">
       <div class="inner">
         <span class="l">あなたが足した距離</span>
-        <span class="v"><span id="yourKm" class="pending">…</span><span class="u">km</span></span>
+        <span class="v"><span id="yourKm"><i class="miniSpin"></i></span><span class="u">km</span></span>
       </div>
       <div class="note">あなたのチェックインが、みんなの旅を前に進めます。</div>
     </div>
@@ -224,10 +229,12 @@
     const pct   = Math.max(0, Math.min(100, goal>0 ? (total/goal*100) : 0));
     const done  = total >= goal;
 
-    $("totalKm").textContent = fmt(total);  $("totalKm").classList.remove("pending");
-    $("yourKm").textContent  = fmt(you);    $("yourKm").classList.remove("pending");
-    $("members").textContent = fmt(d.memberCount); $("members").classList.remove("pending");
+    // 数字が届いた＝各所の「くるくる」を数字に差し替え、バーの読み込み帯を止める
+    $("totalKm").textContent = fmt(total);
+    $("yourKm").textContent  = fmt(you);
+    $("members").textContent = fmt(d.memberCount);
     $("goalLabel").textContent = "地球一周 " + fmt(goal) + "km";
+    $("track").classList.remove("loading");
     setTimeout(()=>{ $("fill").style.width = (pct>0?pct:1) + "%"; }, 60);
 
     // 数字の「時点」＝今日の日付（集計日があればそれ、無ければ今日）
