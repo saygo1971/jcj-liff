@@ -604,9 +604,14 @@
     photoInto($("nPhoto"),t.photo);
     $("nPhoto").parentElement.style.display = t.photo ? "" : "none";  // 画像が無い時は左の四角ごと消す
     $("nName").textContent=t.name;
-    $("nMeta").textContent=(t.pref||"")+(t.distanceKm!=null?" ／ 約 "+t.distanceKm+"km":"");
-    $("nSay").textContent=isDemo?"（LINEで開くと、あなたの保存店が入ります）":"保存したお店、次はここが近いです";
-    $("nGo").onclick=function(){ if(t.mapUrl){ logOutbound(t.shopId||t.id,"google_map"); window.open(t.mapUrl,"_blank");} else {var i=SHOPS.findIndex(function(s){return s.id===t.shopId||s.id===t.id;});if(i>=0)openSheet(i);} };
+    var _i=SHOPS.findIndex(function(s){return s.id===t.shopId||s.id===t.id;});
+    var _mi=(_i>=0)?mileInfo(SHOPS[_i]):null;
+    var _km=(t.distanceKm!=null)?t.distanceKm:(_mi?_mi.km:null);
+    $("nMeta").textContent=(t.pref||"")+(_km!=null?" ／ 約 "+_km+"km":"");
+    // 選んだ理由を出す（サーバがreasonを返せばそれを、無ければ既定。将来：一番近い/しばらく行っていない保存店/おすすめ 等を出し分け）
+    $("nSay").textContent=isDemo?"おすすめのお店":(t.reason||"保存したまま、まだ行けていないお店");
+    // 「見る」＝お店のカード（店詳細）を開く。SHOPSに無い時だけ地図にフォールバック。
+    $("nGo").onclick=function(){ if(_i>=0){ openSheet(_i); } else if(t.mapUrl){ logOutbound(t.shopId||t.id,"google_map"); window.open(t.mapUrl,"_blank"); } };
     $("nudge").classList.remove("hidden");
   }
 
@@ -662,6 +667,8 @@
     var liffP = initLiff();        // LIFF起動は店取得と並列（待ち時間を重ねる）
     await loadShops();
     renderAll();                   // 地図・一覧（マイルはまだ無し＝速く出す）
+    // 🔗 ?shop=<店ID> 付きで開かれたら、その店の詳細カードを自動で開く（ロゴ帳などからの「お店を見る」導線）
+    try{ var _fs=new URLSearchParams(location.search).get("shop"); if(_fs){ var _fi=SHOPS.findIndex(function(s){return s.id===_fs;}); if(_fi>=0) openSheet(_fi); } }catch(e){}
     try{ await liffP; }catch(e){}
     if(!USER_ID) $("lineNote").classList.remove("hidden"); // LINE外＝マイル非表示なので一言案内
     logAction("view_map");         // ファネル入口＝発見地図を開いた（USER_ID確定後・1回）
