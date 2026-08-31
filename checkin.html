@@ -107,9 +107,8 @@
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   // 記録（今日の一杯）への遷移用LIFF。※オーナーが新規LIFF発行後にIDを入れる（それまで枠だけ・遷移は無効）。
   const LOG_DRINK_LIFF_ID = ""; // 例 "2008851980-xxxx"（エンドポイント= .../log_drink.html）
-  // 店ロゴ画像（ロゴ帳と同じ在りか）。ファイル名はロゴ帳の部屋の確定待ち＝暫定 logo.png・404時はフォールバック（頭文字）。
-  const LOGO_BASE = CHECKIN_CARD_BASE;   // .../shop/
-  const LOGO_FILE = "logo.png";
+  // 店ロゴ画像＝唯一の正はspots R列(COL.LOGO_URL)。GASのcheckin応答に r.logoUrl として載る想定。
+  //   フォールバック順＝①R列ロゴ(r.logoUrl) → ②外観写真(店IDで確実) → ③頭文字モノグラム。
   // ============================
 
   const $ = id => document.getElementById(id);
@@ -286,15 +285,16 @@
         '<button id="refBtn" class="refbtn">このお店を友だちに教える</button>' +
       '</div></div>';
 
-    // 頭＝ロゴ（左）＋右に店名・マイル縦積み
-    const logoUrl = LOGO_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/" + LOGO_FILE;
+    // 頭＝ロゴ（左）＋右に店名・マイル縦積み。ロゴ＝①R列(r.logoUrl)→②外観写真→③頭文字。
+    const extUrl = CHECKIN_CARD_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/exterior.jpg";
+    const logoUrl = (r && r.logoUrl) ? r.logoUrl : extUrl;
     const initial = esc(String(r.shopName || "?").trim().slice(0,1) || "?");
     const cimile = r.alreadyToday
       ? '<div class="citotal">同じ日の重複はマイルを二重に付けません</div>'
       : '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>';
     const headerHtml =
       '<div class="cihead">' +
-        '<img class="cilogo" src="' + esc(logoUrl) + '" alt="" onerror="this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\'">' +
+        '<img class="cilogo" src="' + esc(logoUrl) + '" data-ext="' + esc(extUrl) + '" alt="" onerror="if(this.dataset.ext&&this.src!==this.dataset.ext){this.src=this.dataset.ext;this.removeAttribute(\'data-ext\');}else{this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\';}">' +
         '<div class="cilogo fallback" style="display:none">' + initial + '</div>' +
         '<div class="cimeta"><div class="cishop">' + esc(r.shopName) + '</div>' + cimile + '</div>' +
       '</div>';
