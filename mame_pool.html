@@ -13,7 +13,7 @@
     body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
     .wrap{max-width:480px;margin:0 auto;padding:14px}
     .head{background:var(--brand);color:#fff;border-radius:16px 16px 0 0;padding:16px;position:relative;overflow:hidden}
-    .head::after{content:"🫘";position:absolute;right:14px;top:12px;font-size:30px;opacity:.35}
+    .head::after{content:"";position:absolute;right:14px;top:12px;font-size:30px;opacity:.35}
     .head .sub{color:var(--brand-l);font-size:12px}
     .head .ttl{font-size:18px;font-weight:700;margin-top:3px}
     .card{background:#fff;border:1px solid var(--line);border-top:none;border-radius:0 0 16px 16px;padding:18px 16px}
@@ -22,7 +22,7 @@
     .prep b{color:#6d5636}
 
     .bal .lbl{font-size:13px;color:var(--muted)}
-    .bal .num{font-size:36px;font-weight:800;line-height:1.15;margin-top:2px;color:var(--brand-d)}
+    .bal .num{font-size:36px;font-weight:800;line-height:1.15;margin-top:2px;color:#221C1A}
     .bal .sub{font-size:12px;color:var(--hint);margin-top:2px}
 
     .prog{background:var(--brand-l);border-radius:12px;padding:13px 14px;margin:16px 0}
@@ -53,7 +53,7 @@
 <body>
 <div class="wrap">
   <div class="head">
-    <div class="sub">JCJ マイル特典（豆）</div>
+    <div class="sub">JCJ 豆割</div>
     <div class="ttl"><span id="shopName">お店</span> さまの 補填の預かり</div>
   </div>
 
@@ -64,8 +64,6 @@
     </div>
 
     <div id="main" class="hidden">
-      <div class="prep">🛠 <b>はじめにお読みください：</b>いまは、お客さまがマイル特典を使うたびに <b>1枚¥<span id="perYen">120</span></b> をお店へお返しする分として記録している段階です。<b>下の金額・枚数・お振込のルールは仮のもので、これから変わる可能性があります。</b></div>
-
       <div class="bal">
         <div class="lbl">お店へお返しする 補填の預かり</div>
         <div class="num">¥<span id="bal">0</span></div>
@@ -84,7 +82,7 @@
       <div class="rule">
         <div class="h">お振込のルール</div>
         <div class="b">
-          マイル特典が <span class="y"><span id="thr2">20</span>枚（¥<span id="thrYen">2,400</span>）</span>たまったら、翌月末までにまとめてお返しします。<span id="thr3">20</span>枚に届かなくても<span id="mon">6</span>か月に一度は残額をまとめてお返しします。たまった分が消えることはありません。
+          豆割が <span class="y"><span id="thr2">20</span>枚（¥<span id="thrYen">2,400</span>）</span>たまったら、翌月末までにまとめてお返しします。<span id="thr3">20</span>枚に届かなくても<span id="mon">6</span>か月に一度は残額をまとめてお返しします。たまった分が消えることはありません。
         </div>
       </div>
 
@@ -92,6 +90,8 @@
         <div class="h">これまでのお振込</div>
         <div id="histList"></div>
       </div>
+
+      <div class="prep">※ いまは、お客さまが豆割を使うたびに <b>1枚¥<span id="perYen">120</span></b> をお店へお返しする分として記録している段階です。金額・枚数・お振込のルールは仮のもので、これから変わる可能性があります。</div>
 
       <div class="foot">🔒 このページはあなたのお店だけの専用リンクです。<br>URLを他の人に教えないようご注意ください。</div>
     </div>
@@ -122,7 +122,7 @@
 
     const per = Number(d.perCouponYen)||120;
     $("perYen").textContent = yen(per);
-    $("balSub").textContent = "（マイル特典" + (Number(d.usedCount)||0) + "枚ぶん・1枚 ¥" + yen(per) + "）";
+    $("balSub").textContent = "（豆割" + (Number(d.usedCount)||0) + "枚ぶん・1枚 ¥" + yen(per) + "）";
 
     const thr = Number(d.thresholdCount)||20;
     const cnt = Number(d.usedCount)||0;
