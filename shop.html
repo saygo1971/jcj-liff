@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>お店を見る</title>
+<style>
+  /* JCJ 新トンマナ8色 */
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;position:sticky;top:0;z-index:5}
+  #status{text-align:center;padding:90px 20px;color:var(--ink-sub);font-size:14px}
+  .wrap{max-width:520px;margin:0 auto;padding:0 0 40px}
+  .hidden{display:none!important}
+  .swipe{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;gap:0}
+  .swipe::-webkit-scrollbar{display:none}
+  .slide{flex:0 0 100%;scroll-snap-align:start}
+  .slide .ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--paper)}
+  .slide .cap{font-size:12px;color:var(--ink-sub);line-height:1.7;padding:9px 16px 2px}
+  .slide .cap b{color:var(--brand-deep);font-weight:800;margin-right:6px}
+  .dots{display:flex;gap:6px;justify-content:center;margin:8px 0 0}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--line);display:block}
+  .dots i.on{background:var(--brand-deep)}
+  .body{padding:14px 16px 0}
+  .copy{font-size:14px;font-weight:800;color:var(--ink);line-height:1.55;margin:2px 0 4px}
+  .name{font-size:20px;font-weight:900;margin:6px 0 2px}
+  .place{font-size:12.5px;color:var(--ink-sub);margin-bottom:14px}
+  .btnP{display:block;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15px;
+    border-radius:12px;padding:14px;text-decoration:none;box-shadow:0 4px 10px rgba(192,74,85,.25);margin-bottom:10px}
+  .links{display:flex;gap:8px;flex-wrap:wrap}
+  .links a{flex:1 1 30%;min-width:96px;text-align:center;background:var(--bg);border:1.5px solid var(--brand-deep);
+    color:var(--brand-deep);font-weight:800;font-size:13.5px;border-radius:12px;padding:11px 8px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="bar">お店を見る</div>
+<div id="status">読み込んでいます…</div>
+<div id="main" class="wrap hidden">
+  <div class="swipe" id="swipe"></div>
+  <div class="dots" id="dots"></div>
+  <div class="body">
+    <div class="copy" id="copy"></div>
+    <div class="name" id="name"></div>
+    <div class="place" id="place"></div>
+    <a class="btnP" id="mapBtn" target="_blank" rel="noopener">Googleマップで行き方・営業時間</a>
+    <div class="links" id="links"></div>
+  </div>
+</div>
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const SHOP_ID = String(new URLSearchParams(location.search).get("shop")||"").trim();
+
+  function render(s){
+    // 写真スワイプ（外観→店内→お店の人。あるものだけ）
+    const slides = [
+      {u:s.photo,         t:s.exteriorText, label:"外観"},
+      {u:s.interiorPhoto, t:s.interiorText, label:"店内"},
+      {u:s.roasterPhoto,  t:s.roasterVoice, label:"お店の人"}
+    ].filter(x=>x.u);
+    $("swipe").innerHTML = slides.map(x =>
+      '<div class="slide"><img class="ph" src="'+esc(x.u)+'" onerror="this.parentNode.style.display=\'none\'">'+
+      (x.t ? '<div class="cap"><b>'+x.label+'</b>'+esc(x.t)+'</div>' : '')+'</div>'
+    ).join("");
+    $("dots").innerHTML = slides.length>1 ? slides.map((_,i)=>'<i class="'+(i===0?"on":"")+'"></i>').join("") : "";
+    // スワイプでドット更新
+    $("swipe").onscroll = function(){
+      const i = Math.round($("swipe").scrollLeft / $("swipe").clientWidth);
+      [...$("dots").children].forEach((d,j)=>d.classList.toggle("on",j===i));
+    };
+
+    $("copy").textContent = s.copy || "";
+    $("copy").style.display = s.copy ? "" : "none";
+    $("name").textContent = s.name || "お店";
+    $("place").textContent = s.place || s.pref || "";
+    if (s.mapUrl){ $("mapBtn").href = s.mapUrl; } else { $("mapBtn").style.display="none"; }
+
+    let links="";
+    if (s.web)  links += '<a href="'+esc(s.web)+'" target="_blank" rel="noopener">公式サイト</a>';
+    if (s.ig)   links += '<a href="'+esc(s.ig)+'" target="_blank" rel="noopener">Instagram</a>';
+    if (s.line) links += '<a href="'+esc(s.line)+'" target="_blank" rel="noopener">LINE</a>';
+    $("links").innerHTML = links;
+
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function main(){
+    if(!SHOP_ID){ $("status").textContent="お店が指定されていません。"; return; }
+    try{
+      const res = await fetch(GAS_URL+"?action=discover_shops&_="+Date.now());
+      const d = await res.json();
+      const s = (d.shops||[]).find(x=>x.id===SHOP_ID);
+      if(!s){ $("status").textContent="お店が見つかりませんでした。"; return; }
+      document.title = (s.name||"お店")+" ｜ お店を見る";
+      render(s);
+    }catch(e){ $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; }
+  }
+  main();
+</script>
+</body>
+</html>

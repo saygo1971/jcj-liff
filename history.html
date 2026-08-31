@@ -109,11 +109,21 @@
         tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
       }
       if (c.km!=null) tags += '<span class="tag dist">約'+c.km+'km</span>';
-      return '<div class="hrow'+(recorded?' recorded':'')+'"><div class="hdate"><span class="d">'+esc(c.date)+'</span>'+logo+'</div>'+
+      return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(c.shopId||"")+'"><div class="hdate"><span class="d">'+esc(c.date)+'</span>'+logo+'</div>'+
         '<div class="hbody"><div class="hname">'+esc(c.shopName||"お店")+'</div>'+
         '<div class="hpl">'+esc(c.pref||"")+'</div>'+
         '<div class="htags">'+tags+'</div></div></div>';
     }).join("");
+
+    // 行をタップ→お店の詳細（「記録を追加する」ボタンを押した時はそちら優先）
+    $("list").querySelectorAll(".hrow").forEach(function(row){
+      row.style.cursor="pointer";
+      row.onclick=function(e){
+        if(e.target.closest(".addrec")) return; // 記録を追加するは自分のリンクへ
+        var id=row.getAttribute("data-shop");
+        if(id) location.href="shop.html?shop="+encodeURIComponent(id);
+      };
+    });
 
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
