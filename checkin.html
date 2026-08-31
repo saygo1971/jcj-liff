@@ -66,7 +66,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     /* 完了カードの頭：ロゴ左＋右に店名・マイル縦積み */
     .cihead{display:flex;align-items:center;gap:12px;margin-top:4px}
-    .cilogo{width:60px;height:60px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--paper);border:1px solid var(--line)}
+    .cilogo{width:60px;height:60px;border-radius:50%;flex-shrink:0;object-fit:cover;background:var(--paper);border:1px solid var(--line)}
     .cilogo.fallback{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px;font-weight:800}
     .cimeta{min-width:0}
     .cishop{font-size:17px;font-weight:800;line-height:1.25}
@@ -304,8 +304,8 @@
       : "";
     const recordHtml =
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
-      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>記録する</a>' +
-      '<div class="fine" style="text-align:center;margin-top:6px">まだ味が残っているうちに。</div>';
+      '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
+      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>記録する</a>';
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
@@ -314,7 +314,7 @@
       recordHtml +
       areaHtml +
       beansProgHtml +
-      noteHtml + ticketHtml +
+      ticketHtml +
       '<a class="link" href="#" id="about">試飲チケットについて</a>' +
       '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;
