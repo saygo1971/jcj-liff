@@ -20,11 +20,11 @@
     textarea{width:100%;box-sizing:border-box;border:1px solid #cfcfcf;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;line-height:1.5}
     .hint{font-size:11px;color:#aaa;margin:6px 2px 16px}
     .grouphint{background:#f2f0ea;border-radius:8px;padding:9px 11px;font-size:12px;color:#6a6152;line-height:1.55;margin:0 0 12px}
-    .btn{display:block;width:100%;box-sizing:border-box;background:#34595A;color:#fff;text-align:center;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+    .btn{display:block;width:100%;box-sizing:border-box;background:#C04A55;color:#fff;text-align:center;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
     .btn:disabled{opacity:.5}
     .spinner{
       display:inline-block;width:16px;height:16px;
-      border:2px solid #ddd;border-top-color:#34595A;
+      border:2px solid #ddd;border-top-color:#C04A55;
       border-radius:50%;vertical-align:middle;margin-right:8px;
       animation:spin 0.8s linear infinite;
     }
@@ -87,7 +87,7 @@
 
     const bodyContents = [
       { type: "text", text: comment, wrap: true, size: "sm", color: "#666666" },
-      { type: "text", text: data.shopName, weight: "bold", size: "xl", wrap: true, color: "#34595A", margin: "md" }
+      { type: "text", text: data.shopName, weight: "bold", size: "xl", wrap: true, color: "#221C1A", margin: "md" }
     ];
 
     if (area) {
@@ -121,7 +121,7 @@
         paddingStart: "16px", paddingEnd: "16px", paddingBottom: "16px", paddingTop: "none",
         contents: [
           {
-            type: "button", style: "primary", color: "#34595A", height: "sm",
+            type: "button", style: "primary", color: "#C04A55", height: "sm",
             action: { type: "uri", label: "お店を見てみる", uri: data.shareUrl }
           }
         ]
@@ -185,7 +185,8 @@
         setStatus("送信をキャンセルしました。");
       }
     } catch (e) {
-      setStatus("送信に失敗しました：" + (e?.message || String(e)), false);
+      console.log(e);
+      setStatus("送信できませんでした。もう一度お試しください。", false);
     }
   }
 
