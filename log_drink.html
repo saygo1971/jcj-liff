@@ -39,7 +39,7 @@
   textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
     font-family:inherit;resize:vertical;min-height:64px;background:var(--bg);color:var(--ink)}
   .btn{background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
-    border-radius:12px;padding:14px;box-shadow:0 4px 10px rgba(192,74,85,.28);border:0;width:100%;cursor:pointer}
+    border-radius:12px;padding:14px;box-shadow:0 4px 10px rgba(192,74,85,.28);border:0;width:100%;cursor:pointer;margin-top:26px}
   .btn:disabled{opacity:.55}
   .later{display:block;text-align:center;color:var(--ink-sub);font-size:13px;margin-top:14px;
     font-weight:600;text-decoration:none}
@@ -54,7 +54,7 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>今日の一杯</span><span class="rt">自分だけ</span></div>
+<div class="bar"><span>今日の一杯</span></div>
 
 <div id="status">読み込んでいます…</div>
 
@@ -152,7 +152,7 @@
         return;
       }
       // 書いた結果が返ってくる＝「◯杯目の一杯」（次も書きたくなる）
-      if (d.count) $("doneT").textContent = d.count + "杯目の一杯です";
+      if (d.count) $("doneT").textContent = d.count + "杯目を記録しました";
       $("main").classList.add("hidden");
       $("done").classList.remove("hidden");
     } catch(e){

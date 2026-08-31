@@ -63,7 +63,7 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>ロゴ帳</span><span class="rt">御朱印帳</span></div>
+<div class="bar"><span>ロゴ帳</span></div>
 <div id="status">読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
@@ -183,7 +183,10 @@
     $("shCopy").textContent = r.intro||"";
     $("shCopy").style.display = r.intro ? "" : "none";
     const st = $("shStat"); st.className="sstat "+(got?"got":"mada");
-    st.textContent = got ? ("✓ "+cnt+"回 行きました") : "行くと、ここに印が灯ります";
+    st.textContent = got ? ("✓ "+cnt+"回 行きました") : "行くと、ロゴ帳に印が灯ります";
+    // 「お店を見る」は店舗紹介ページ（旅LP/公式サイト）がある時だけ。Instagramしか無い店では出さない（誤遷移防止）。
+    var canStore = r.storeUrl && r.storeUrl.indexOf("instagram")<0;
+    $("btnStore").style.display = canStore ? "" : "none";
     // 未訪問だけ「保存」を出す（既に行った店は保存不要）
     $("btnSave").style.display = got ? "none" : "";
     $("btnSave").className="btnO"; $("btnSave").textContent="行きたいに保存する"; $("referBox").className="refer";
