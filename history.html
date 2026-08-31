@@ -24,16 +24,19 @@
   .summ .s b{display:block;font-size:22px;color:var(--ink);font-weight:900}
   .summ .s span{font-size:10.5px;color:var(--ink-sub)}
   .hrow{display:flex;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
-  .hdate{font-size:11px;color:var(--ink-sub);width:66px;flex:0 0 66px;font-weight:700;padding-top:2px}
-  .hbody{flex:1}
+  .hrow.recorded{border:1.5px solid var(--state-done)}
+  .hdate{width:66px;flex:0 0 66px;text-align:center}
+  .hdate .d{font-size:11px;color:var(--ink-sub);font-weight:700}
+  .hlogo{display:block;width:44px;height:44px;border-radius:10px;margin:8px auto 0;object-fit:contain;background:#fff;border:1px solid var(--line);padding:3px}
+  .hbody{flex:1;min-width:0}
   .hname{font-size:14px;font-weight:800;line-height:1.35;color:var(--ink)}
   .hpl{font-size:11px;color:var(--ink-sub);margin:1px 0 7px}
-  .htags{display:flex;gap:6px;flex-wrap:wrap}
+  .htags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .tag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700}
   .tag.drink{background:var(--paper);color:var(--ink)}
   .tag.ctry{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
   .tag.dist{background:var(--done-tint);color:var(--state-done)}
-  .tag.norec{background:var(--bg);border:1px dashed var(--line);color:var(--ink-sub);font-weight:600}
+  .tag.addrec{background:var(--bg);border:1px solid var(--brand-deep);color:var(--brand-deep);text-decoration:none;cursor:pointer}
   #empty{text-align:center;padding:64px 24px}
   #empty .emo{font-size:40px}
   #empty .t{font-size:17px;font-weight:800;margin:14px 0 8px;color:var(--ink)}
@@ -41,7 +44,7 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>旅の記録</span><span class="rt">あなたの旅</span></div>
+<div class="bar"><span>旅の記録</span></div>
 <div id="status">読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
@@ -62,6 +65,7 @@
 
 <script>
   const LIFF_ID = "2008851980-6s0zFwwl"; // 旅の記録（テスト・2026-08-31発行）
+  const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0"; // 今日の一杯（記録を追加する遷移先）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
   const $ = id => document.getElementById(id);
@@ -89,15 +93,22 @@
 
     $("list").innerHTML = rows.map(r=>{
       const c=r.c, dr=r.d;
+      const recorded = !!dr;
+      // 日付の下に店のロゴ（無ければ非表示）
+      const logo = c.shopId
+        ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(c.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
+        : '';
       let tags="";
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
       } else {
-        tags += '<span class="tag norec">記録なし</span>';
+        // 記録が無い来店＝「記録を追加する」で今日の一杯へ（その店を引き継ぐ）
+        const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(c.shopId||"")+"&name="+encodeURIComponent(c.shopName||"");
+        tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
       }
       if (c.km!=null) tags += '<span class="tag dist">約'+c.km+'km</span>';
-      return '<div class="hrow"><div class="hdate">'+esc(c.date)+'</div>'+
+      return '<div class="hrow'+(recorded?' recorded':'')+'"><div class="hdate"><span class="d">'+esc(c.date)+'</span>'+logo+'</div>'+
         '<div class="hbody"><div class="hname">'+esc(c.shopName||"お店")+'</div>'+
         '<div class="hpl">'+esc(c.pref||"")+'</div>'+
         '<div class="htags">'+tags+'</div></div></div>';
