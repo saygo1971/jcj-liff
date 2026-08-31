@@ -28,7 +28,7 @@
   .hrow.recorded{border:1.5px solid var(--state-done)}
   .hdate{width:66px;flex:0 0 66px;text-align:center}
   .hdate .d{font-size:11px;color:var(--ink-sub);font-weight:700}
-  .hlogo{display:block;width:44px;height:44px;border-radius:10px;margin:8px auto 0;object-fit:contain;background:#fff;border:1px solid var(--line);padding:3px}
+  .hlogo{display:block;width:46px;height:46px;margin:8px auto 0;object-fit:contain}
   .hbody{flex:1;min-width:0}
   .hname{font-size:14px;font-weight:800;line-height:1.35;color:var(--ink)}
   .hpl{font-size:11px;color:var(--ink-sub);margin:1px 0 7px}
@@ -105,7 +105,7 @@
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
       } else {
         // 記録が無い来店＝「記録を追加する」で今日の一杯へ（その店を引き継ぐ）
-        const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(c.shopId||"")+"&name="+encodeURIComponent(c.shopName||"");
+        const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(c.shopId||"")+"&name="+encodeURIComponent(c.shopName||"")+"&date="+encodeURIComponent(c.ms||"");
         tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
       }
       if (c.km!=null) tags += '<span class="tag dist">約'+c.km+'km</span>';

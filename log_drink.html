@@ -60,10 +60,10 @@
 <div id="status">読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
-  <div class="chk">✓ <span id="chkStore">お店</span> に来ました</div>
+  <div class="chk" id="chkLine">✓ <span id="chkStore">お店</span> に来ました</div>
 
-  <div class="q">今日の一杯は？</div>
-  <div class="sub">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
+  <div class="q" id="qHead">今日の一杯は？</div>
+  <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
 
   <div class="sec">飲みもの</div>
   <div class="chips" id="drinkChips"></div>
@@ -108,6 +108,8 @@
   const SHOP_ID   = String(params.get("shop") || "").trim();
   const SHOP_NAME = String(params.get("name") || "").trim();
   const SHOP_PREF = String(params.get("pref") || "").trim();
+  const REC_DATE  = String(params.get("date") || "").trim(); // 過去の来店に足す時のみ（epoch ms）
+  const IS_BACK   = REC_DATE !== "";
 
   const DRINKS   = ["ドリップ","エスプレッソ","カフェラテ","アメリカーノ","水出し","その他"];
   const COUNTRIES= ["エチオピア","ケニア","コロンビア","ブラジル","グアテマラ","コスタリカ","ホンジュラス","パナマ","インドネシア","ルワンダ","ブレンド","その他","わからない"];
@@ -143,7 +145,7 @@
     try {
       const q = new URLSearchParams({
         action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
-        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, _:Date.now()
+        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE, _:Date.now()
       });
       const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
       const d = await res.json();
@@ -153,7 +155,7 @@
         return;
       }
       // 書いた結果が返ってくる＝「◯杯目の一杯」（次も書きたくなる）
-      if (d.count) $("doneT").textContent = d.count + "杯目を記録しました";
+      $("doneT").textContent = IS_BACK ? "記録しました" : (d.count ? d.count + "杯目を記録しました" : "記録しました");
       $("main").classList.add("hidden");
       $("done").classList.remove("hidden");
     } catch(e){
@@ -166,6 +168,15 @@
 
   function wire(){
     $("chkStore").textContent = SHOP_NAME || "お店";
+    // 過去の来店に足すモード（旅の記録の「記録を追加する」）＝文言を過去向けに
+    if (IS_BACK){
+      var dt = new Date(Number(REC_DATE));
+      var ymd = isNaN(dt.getTime()) ? "" : (dt.getFullYear()+"/"+(dt.getMonth()+1)+"/"+dt.getDate());
+      $("chkLine").textContent = "🗓 " + (SHOP_NAME||"お店") + (ymd ? "（"+ymd+"）" : "") + " の記録";
+      $("qHead").textContent = "この日は何を飲みましたか？";
+      $("subLine").textContent = "あとから思い出して残せます。";
+      $("submitBtn").textContent = "この一杯を記録する";
+    }
     buildChips("drinkChips", DRINKS, "drink");
     buildChips("countryChips", COUNTRIES, "country");
     buildChips("processChips", PROCESSES, "process");
