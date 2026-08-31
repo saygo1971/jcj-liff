@@ -324,17 +324,22 @@
       try{
         const ap = await api("area_progress", { shopId: st.shopId || SPOT || "" });
         if (!ap) return;
-        // ロゴ差し替え：①R列logo → ②exterior → ③頭文字
+        // ロゴ差し替え：①derived(自社 shop/<ID>/logo.png) → ②logo(R列) → ③exterior → ④頭文字
         const img = $("cilogoImg");
-        if (img && ap.logo){
-          const alt2 = ap.exterior || extUrl;
-          img.onerror = function(){
-            if (alt2 && img.getAttribute("src") !== alt2){ img.src = alt2; }
-            else { img.style.display = "none"; var f = img.nextElementSibling; if (f) f.style.display = "flex"; }
-          };
-          img.style.display = "";
-          var fb = img.nextElementSibling; if (fb) fb.style.display = "none";
-          img.src = ap.logo;
+        if (img){
+          const seen = {}; const list = [];
+          [ap.derived, ap.logo, ap.exterior || extUrl].forEach(function(u){ if (u && !seen[u]){ seen[u] = 1; list.push(u); } });
+          if (list.length){
+            let i = 0;
+            img.onerror = function(){
+              i++;
+              if (i < list.length){ img.src = list[i]; }
+              else { img.style.display = "none"; var f = img.nextElementSibling; if (f) f.style.display = "flex"; }
+            };
+            img.style.display = "";
+            var fb = img.nextElementSibling; if (fb) fb.style.display = "none";
+            img.src = list[0];
+          }
         }
         // 進捗テキスト
         if (ap.ok && ap.area){
