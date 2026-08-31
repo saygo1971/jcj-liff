@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>保存したお店へ、次の一歩</title>
+<style>
+  :root{
+    --cream:#FFFFFF; --paper:#FFFFFF; --ink:#221C1A; --sub:#6E655E;
+    --brown:#6E655E; --brown-d:#C04A55; --accent:#C04A55; --accent-d:#993536; --line:#DDD6CE; --beige:#F4EADD;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 24px}
+
+  .status{color:var(--sub);font-size:14px;padding:60px 0;text-align:center}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+
+  .hero-head{padding:16px 4px 10px}
+  .hero-head .kicker{font-size:12px;color:var(--brown);letter-spacing:.08em;font-weight:700}
+  .hero-head .h1{font-size:19px;font-weight:800;margin-top:5px;line-height:1.5}
+  .hero-head .h1 .em{color:var(--ink)}
+
+  .shop{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .shop .photo{position:relative;height:190px;background:linear-gradient(135deg,#b99a6f,#6f5b44)}
+  .shop .photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .shop .badge{position:absolute;left:12px;top:12px;background:rgba(58,47,37,.82);color:#fff;font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px}
+  .shop .dist{position:absolute;right:12px;bottom:12px;background:var(--beige);color:var(--ink);font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px}
+  .shop .body{padding:14px 15px 16px}
+  .shop .pref{font-size:12px;color:var(--sub);font-weight:700}
+  .shop .name{font-size:20px;font-weight:800;margin-top:3px;line-height:1.35}
+  .shop .roaster{font-size:12.5px;color:var(--sub);margin-top:3px}
+  .shop .copy{font-size:13px;color:var(--ink);margin-top:10px;line-height:1.75;background:var(--beige);border-radius:10px;padding:10px 12px}
+
+  .merits{margin-top:16px}
+  .merits .ttl{font-size:13px;font-weight:800;color:var(--brown-d);margin:0 2px 9px}
+  .merit{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px}
+  .merit .t{font-size:14.5px;font-weight:800}
+  .merit .d{font-size:12px;color:var(--sub);margin-top:3px;line-height:1.6}
+  .merit .refbtn{display:block;width:100%;margin-top:11px;height:44px;line-height:44px;text-align:center;border-radius:10px;background:#fff;color:var(--accent);border:1.5px solid var(--accent);font-size:14px;font-weight:800;text-decoration:none;cursor:pointer}
+
+  .cta{margin-top:16px}
+  .btn{display:block;width:100%;height:52px;line-height:52px;text-align:center;border-radius:14px;border:none;font-size:16px;font-weight:800;text-decoration:none;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent);height:46px;line-height:44px;font-size:14.5px;margin-top:10px}
+  .more{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--accent);font-weight:700;text-decoration:none;padding:6px;background:none;border:none;width:100%;cursor:pointer}
+  .foot{margin-top:14px;text-align:center;font-size:11px;color:var(--sub);line-height:1.7}
+
+  .empty{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px 18px;text-align:center;margin-top:14px}
+  .empty .em1{font-size:16px;font-weight:800}
+  .empty .em2{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.7}
+  .empty .btn{margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto}
+</style>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="status" class="status">
+    <div id="spin" class="spin"></div>
+    <div id="statusText">起動中…</div>
+  </div>
+
+  <div id="main" class="hidden">
+    <div class="hero-head">
+      <div class="kicker">JCJパスポート</div>
+      <div class="h1">保存したあのお店、<br><span class="em">いちばん近い</span>のはここです。</div>
+    </div>
+
+    <div class="shop">
+      <div class="photo">
+        <img id="photo" alt="お店の写真" onerror="this.style.display='none'">
+        <div class="badge">行きたいに保存中</div>
+        <div id="dist" class="dist hidden"></div>
+      </div>
+      <div class="body">
+        <div id="pref" class="pref"></div>
+        <div id="name" class="name"></div>
+        <div id="roaster" class="roaster"></div>
+        <div id="copy" class="copy hidden"></div>
+      </div>
+    </div>
+
+    <div class="merits">
+      <div class="ttl">行くと、うれしいことが3つ</div>
+
+      <div class="merit">
+        <div class="t">チェックインでマイル</div>
+        <div class="d">お店に着いたらチェックイン。旅マイルが貯まります。</div>
+      </div>
+
+      <div class="merit">
+        <div class="t">友だち紹介でもマイル</div>
+        <div class="d">このお店を友だちにすすめると、つながりマイルが貯まります。</div>
+        <a id="refBtn" class="refbtn">このお店を友だちに教える</a>
+      </div>
+
+      <div class="merit">
+        <div class="t">貯めたマイルで特典</div>
+        <div class="d">貯めたマイルを、豆のお会計に使えます（豆割）。</div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <a id="mapBtn" class="btn primary" target="_blank" rel="noopener">このお店への行き方を見る</a>
+    </div>
+
+    <div class="foot">まだ行けていない保存店から、日替わりでご案内しています。<br>行ってチェックインすると、このお店はリストから外れます。</div>
+  </div>
+
+  <div id="empty" class="hidden">
+    <div class="empty">
+      <div class="em1" id="emptyTitle">保存したお店は、ぜんぶ行けていますね。</div>
+      <div class="em2" id="emptyDesc">気になるロースターを見つけて「行きたい」に保存すると、ここに“次の一歩”が出ます。</div>
+      <button id="emptyBtn" class="btn primary">ロースターを探す</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 設定ここだけ（テスト環境）=====
+  // LIFF_ID：このナッジ画面用に LINE Developers で作成するLIFFアプリID（テストのログインチャネル 2008851980 配下）。
+  const LIFF_ID = "2008851980-XXXXXXXX"; // TODO: 保存ナッジ用LIFF（テスト）
+  // GAS_URL：saved_nudge を含む「誰でもアクセス可（ログイン不要）」のバージョン付きデプロイURL。
+  //          ※@HEAD(テスト/devモード)はログイン必須でLINE内から叩けない＝専用の匿名デプロイを本部の再配備窓口で用意して差し替える。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec"; // TODO: saved_nudge対応の匿名デプロイに差替
+  // 友だち紹介＝既存コードと同じ共有ディープリンクを開く（写真つきカードのLIFF共有・line.me/R/shareでは送れないため）。
+  //   テスト SHARE_LIFF_ID（テストchannel2008851980配下）。?shopId=&source= を付けて開く。
+  const SHARE_LIFF_ID = "2008851980-V8WaCaZw";
+  // FIND_URL：「ほかの保存を見る／ロースターを探す」導線。未設定ならボタン/リンクを隠す。
+  const FIND_URL = ""; // TODO: 保存一覧/検索/リッチメニューのURLがあれば設定
+  // ====================================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let USER_ID = "";
+
+  function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); $("empty").classList.add("hidden"); }
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
+
+  async function api(action, extra){
+    const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
+    const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    return await res.json();
+  }
+
+  function renderTarget(d){
+    const t = d.target;
+    if (!t){
+      $("status").classList.add("hidden");
+      $("empty").classList.remove("hidden");
+      if (FIND_URL){ $("emptyBtn").onclick = ()=>{ location.href = FIND_URL; }; }
+      else { $("emptyBtn").classList.add("hidden"); }
+      return;
+    }
+    if (t.photo){ $("photo").src = t.photo; } else { $("photo").style.display = "none"; }
+    $("pref").textContent = t.pref || "";
+    $("name").textContent = t.name || "お店";
+    $("roaster").textContent = t.roaster || "";
+    if (t.copy){ $("copy").textContent = t.copy; $("copy").classList.remove("hidden"); }
+    if (t.distanceKm != null){ $("dist").textContent = "約 " + t.distanceKm + "km"; $("dist").classList.remove("hidden"); }
+
+    if (t.mapUrl){ $("mapBtn").href = t.mapUrl; } else { $("mapBtn").classList.add("hidden"); }
+
+    // 友だち紹介ボタン＝既存と同じ共有ディープリンク（写真つきカードのLIFF共有）。source=saved_nudgeで紹介元を記録。
+    if (t.shopId){ $("refBtn").onclick = ()=>{ location.href = "https://liff.line.me/" + SHARE_LIFF_ID + "?shopId=" + encodeURIComponent(t.shopId) + "&source=saved_nudge"; }; }
+    else { $("refBtn").classList.add("hidden"); }
+
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function load(){
+    showLoading("あなたにおすすめのお店を探しています…");
+    const d = await api("saved_nudge");
+    if(!d || !d.ok){ showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return; }
+    renderTarget(d);
+  }
+
+  async function main(){
+    showLoading("LINEを起動しています…");
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
+    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+    const profile = await liff.getProfile();
+    USER_ID = profile.userId || "";
+    if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+    await load();
+  }
+
+  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); });
+</script>
+</body>
+</html>
