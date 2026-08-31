@@ -303,7 +303,8 @@
       ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || "") + '&pref=' + encodeURIComponent(st.pref || ""))
       : "";
     const recordHtml =
-      '<a id="recordBtn" class="go" style="display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>今日の一杯を残す</a>' +
+      '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
+      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>記録する</a>' +
       '<div class="fine" style="text-align:center;margin-top:6px">まだ味が残っているうちに。</div>';
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
