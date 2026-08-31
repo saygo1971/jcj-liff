@@ -196,7 +196,7 @@
   function wireSheet(){
     $("btnClose").onclick = closeSheet;
     $("sheetBg").onclick = e=>{ if(e.target===$("sheetBg")) closeSheet(); };
-    $("btnStore").onclick = ()=>{ if(!CUR) return; logClick(CUR.id,"store"); location.href="shop.html?shop="+encodeURIComponent(CUR.id); };
+    $("btnStore").onclick = ()=>{ if(!CUR) return; logClick(CUR.id,"store"); location.href="shop.html?shop="+encodeURIComponent(CUR.id)+"&t="+Date.now(); };
     $("btnMap").onclick   = ()=>{ if(!CUR) return; logClick(CUR.id,"map"); openExt(CUR.mapUrl); };
     $("btnSave").onclick  = ()=>{
       if(!CUR) return;

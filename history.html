@@ -121,7 +121,7 @@
       row.onclick=function(e){
         if(e.target.closest(".addrec")) return; // 記録を追加するは自分のリンクへ
         var id=row.getAttribute("data-shop");
-        if(id) location.href="shop.html?shop="+encodeURIComponent(id);
+        if(id) location.href="shop.html?shop="+encodeURIComponent(id)+"&t="+Date.now();
       };
     });
 
