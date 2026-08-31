@@ -60,10 +60,10 @@
     const type = (getParam("type") || "shop").trim();
     const source = (getParam("source") || "nfc").trim();
 
-    el("hint").textContent = `spot=${spot || "(none)"} / type=${type} / source=${source}`;
+    el("hint").textContent = "";
 
     if (!spot){
-      setStatus("spotがありません。URLに ?spot=xxx&type=shop を付けてください。", false);
+      setStatus("チェックインできませんでした。お店のQRコードからもう一度開いてください。", false);
       return;
     }
 
@@ -71,7 +71,7 @@
 
     // ★ここが最重要：LINE内以外は送らない（userIdが取れないと全部ズレる）
     if (!liff.isInClient()){
-      setStatus("LINE内で開いてください（外部ブラウザではポイント計算できません）。", false);
+      setStatus("LINEアプリの中から開いてください。", false);
       return;
     }
 
@@ -86,7 +86,7 @@
 
     // userIdが取れないなら送らない
     if (!/^U[0-9a-fA-F]{32}$/.test(userId)){
-      setStatus("userIdが取得できません（LIFF設定/権限）。", false);
+      setStatus("うまく読み込めませんでした。お手数ですが、もう一度お試しください。", false);
       return;
     }
 
@@ -100,7 +100,8 @@
     const text = await res.text();
 
     if (!res.ok || !String(text).startsWith("OK")){
-      setStatus("GASエラー: " + text, false);
+      console.log("checkin error:", text);
+      setStatus("チェックインできませんでした。少し時間をおいて、もう一度お試しください。", false);
       return;
     }
 
@@ -110,7 +111,8 @@
   }
 
   main().catch(e=>{
-    setStatus("エラー: " + (e?.message || String(e)), false);
+    console.log(e);
+    setStatus("うまくチェックインできませんでした。お店のQRコードからもう一度お試しください。", false);
   });
 </script>
 </body>

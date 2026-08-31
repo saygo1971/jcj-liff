@@ -67,10 +67,10 @@
   async function main() {
     const shareId = (getParam("shareId") || "").trim();
 
-    el("hint").textContent = `shareId=${shareId || "(none)"}`;
+    el("hint").textContent = "";
 
     if (!shareId) {
-      setStatus("紹介情報が見つかりませんでした。", false);
+      setStatus("リンクの有効期限が切れているかもしれません。お手数ですが、もう一度送ってもらってください。", false);
       return;
     }
 
@@ -121,7 +121,7 @@
     const data = await stateRes.json();
 
     if (data.status === "not_found") {
-      setStatus("紹介情報が見つかりませんでした。", false);
+      setStatus("リンクの有効期限が切れているかもしれません。お手数ですが、もう一度送ってもらってください。", false);
       return;
     }
 

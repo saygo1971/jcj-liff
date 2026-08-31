@@ -141,19 +141,19 @@
         // ② LINEへお礼（ここが欲しいやつ）
         await liff.sendMessages([{ type: "text", text: "JCJパスポート登録ありがとう！" }]);
 
-        setStatus("登録しました！この画面は閉じてOKです。", true);
+        setStatus("登録できました。さっそく最初のお店を探しに行きましょう。", true);
         setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 600);
 
       } catch (e) {
-        setStatus("送信に失敗しました。LIFFの権限（chat_message.write）と、LINE内で開いているかを確認してください。", false);
         console.log(e);
+        setStatus("うまく送れませんでした。LINEアプリの中で、もう一度お試しください。", false);
       } finally {
         elBtn.disabled = false;
       }
     });
   }
 
-  main().catch(e => setStatus("起動エラー：" + (e?.message || String(e)), false));
+  main().catch(e => { console.log(e); setStatus("うまく開けませんでした。もう一度お試しください。", false); });
 </script>
 </body>
 </html>

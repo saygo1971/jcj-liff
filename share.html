@@ -215,26 +215,20 @@
         catch (e) { return "(エラー: " + (e?.message || String(e)) + ")"; }
       };
 
-      const granted = await safe(() => liff.permission.getGrantedAll());
-      const context = await safe(() => liff.getContext());
-      const friendship = await safe(() => liff.getFriendship());
-      const canSend = await safe(() => liff.isApiAvailable("sendMessages"));
-      const canShake = await safe(() => liff.isApiAvailable("shakeSendMessage"));
+      console.log("share unavailable:", {
+        os: await safe(() => liff.getOS()),
+        sdk: await safe(() => liff.getVersion()),
+        lineVer: await safe(() => liff.getLineVersion()),
+        isInClient: await safe(() => liff.isInClient()),
+        isLoggedIn: await safe(() => liff.isLoggedIn()),
+        granted: await safe(() => liff.permission.getGrantedAll()),
+        context: await safe(() => liff.getContext()),
+        friendship: await safe(() => liff.getFriendship()),
+        canSend: await safe(() => liff.isApiAvailable("sendMessages")),
+        canShake: await safe(() => liff.isApiAvailable("shakeSendMessage")),
+      });
 
-      setStatus(
-        "この環境ではLINE共有を利用できません。<br>" +
-        "OS: " + liff.getOS() + "<br>" +
-        "LIFF SDK: " + liff.getVersion() + "<br>" +
-        "LINE ver: " + liff.getLineVersion() + "<br>" +
-        "isInClient: " + liff.isInClient() + "<br>" +
-        "isLoggedIn: " + liff.isLoggedIn() + "<br>" +
-        "付与済み権限: " + granted + "<br>" +
-        "context: " + context + "<br>" +
-        "friendship: " + friendship + "<br>" +
-        "sendMessages利用可: " + canSend + "<br>" +
-        "shakeSendMessage利用可: " + canShake,
-        false
-      );
+      setStatus("この端末では共有できません。LINEアプリを最新にして、もう一度お試しください。", false);
       return;
     }
 
