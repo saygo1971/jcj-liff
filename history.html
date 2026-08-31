@@ -147,6 +147,7 @@
     const profile = await liff.getProfile();
     USER_ID = profile.userId || previewUid;
     if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
+    try{ if(USER_ID) localStorage.setItem("jcj_uid", USER_ID); }catch(e){} // shop.htmlの保存で使う（同一オリジン・URLに載せない）
     load();
   }
   main().catch(err => $("status").textContent = "エラー: "+(err&&err.message||String(err)));
