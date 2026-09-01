@@ -8,76 +8,105 @@
 <meta http-equiv="Expires" content="0" />
 <title>みんなの距離メーター</title>
 <style>
+  /* JCJ カラー仕様（トンマナ）準拠：白基準・数字は本文色・緑は達成のみ */
   :root{
-    --cream:#faf5ee; --paper:#ffffff; --ink:#3a2f25; --sub:#8a7a68;
-    --teal:#1f6b57; --teal-d:#17513f; --brown:#9f866a; --brown-d:#6f5b44;
-    --gold:#c0a768; --bean:#BA7517; --line:#ece3d6; --track:#DCE7D8;
+    --bg:#ffffff;        /* 画面の基本背景（白） */
+    --paper:#F4EADD;     /* ベージュ＝カードの"中のブロック"だけに使う */
+    --ink:#221C1A;       /* 本文・数字 */
+    --ink-sub:#6E655E;   /* 補助テキスト・単位（km/人） */
+    --line:#DDD6CE;      /* 枠線・区切り */
+    --brand-deep:#C04A55;/* 深コーラルピンク＝押す（今回は使用箇所を限定） */
+    --done:#2F7A57;      /* グリーン＝達成・訪問済み（距離メーターの識別色） */
+    --track:#E7EAE5;     /* 進捗バーの下地 */
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--cream);color:var(--ink);
+  body{margin:0;background:var(--bg);color:var(--ink);
     font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
   .wrap{max-width:440px;margin:0 auto;padding:0 16px 18px}
 
-  .status{color:var(--sub);font-size:14px;padding:60px 0;text-align:center}
-  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  .status{color:var(--ink-sub);font-size:14px;padding:60px 0;text-align:center}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--done);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .hidden{display:none}
 
   .head{padding:12px 4px 6px;text-align:center}
-  .head .kicker{font-size:11px;color:var(--brown);letter-spacing:.10em;font-weight:700}
-  .head .h1{font-size:17px;font-weight:800;margin-top:4px;line-height:1.4}
+  .head .kicker{font-size:11px;color:var(--ink-sub);letter-spacing:.10em;font-weight:700}
+  .head .h1{font-size:17px;font-weight:800;margin-top:4px;line-height:1.4;color:var(--ink)}
 
-  /* みんなの距離カード */
-  .meter{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 16px 13px;text-align:center;box-shadow:0 4px 16px rgba(120,95,60,.08);margin-top:8px}
+  /* 軸ラベル（みんなの旅／あなたの旅を分ける小見出し） */
+  .axis{font-size:11.5px;font-weight:800;color:var(--ink-sub);letter-spacing:.04em;margin:14px 2px 6px}
+  .axis:first-child{margin-top:6px}
+
+  /* ── みんなの旅（全体軸）＝白カード ── */
+  .meter{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px 16px 14px;text-align:center;box-shadow:0 4px 16px rgba(80,70,60,.06)}
   .meter .globe{font-size:20px;line-height:1}
-  .meter .big{font-size:33px;font-weight:800;color:var(--teal);line-height:1.05;margin-top:1px;letter-spacing:-.01em}
-  .meter .big .u{font-size:15px;font-weight:800;color:var(--teal);margin-left:3px}
-  .meter .cap{font-size:12px;color:var(--sub);margin-top:3px;font-weight:700}
+  /* 進行中の数字＝本文色（--ink）。達成したときだけ .big.done で緑にする */
+  .meter .big{font-size:33px;font-weight:800;color:var(--ink);line-height:1.05;margin-top:1px;letter-spacing:-.01em;transition:color .3s ease}
+  .meter .big.done{color:var(--done)}
+  .meter .big .u{font-size:15px;font-weight:800;color:var(--ink-sub);margin-left:3px}
+  .meter .cap{font-size:12px;color:var(--ink-sub);margin-top:3px;font-weight:700}
 
   .track{margin-top:11px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
-  .fill{height:10px;background:linear-gradient(90deg,#2c8f74,#1f6b57);border-radius:999px;width:0;transition:width .8s ease}
-  .goal{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--sub);font-weight:700}
-  .remain{margin-top:9px;font-size:13.5px;font-weight:800;color:var(--teal-d)}
+  .fill{height:10px;background:var(--done);border-radius:999px;width:0;transition:width .8s ease}
+  .goal{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--ink-sub);font-weight:700}
+  /* 残り＝進行中は本文色寄り。達成したときだけ .remain.done で緑 */
+  .remain{margin-top:9px;font-size:13.5px;font-weight:800;color:var(--ink)}
+  .remain.done{color:var(--done)}
 
-  /* あなた／仲間 */
-  .row2{display:flex;gap:9px;margin-top:9px}
-  .tile{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
-  .tile .l{font-size:11px;color:var(--sub);font-weight:700}
-  .tile .v{font-size:20px;font-weight:800;color:var(--ink);margin-top:2px}
-  .tile .v .u{font-size:12px;font-weight:800;margin-left:2px}
-  .tile.you .v{color:var(--teal)}
+  /* 仲間の数＝全体軸の一部。カード内のベージュ小ブロックに置く */
+  .members{margin-top:12px;background:var(--paper);border-radius:12px;padding:9px 12px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .members .l{font-size:12px;color:var(--ink-sub);font-weight:700}
+  .members .v{font-size:18px;color:var(--ink);font-weight:800}
+  .members .v .u{font-size:12px;color:var(--ink-sub);font-weight:800;margin-left:2px}
+
+  /* ── あなたの旅（個人軸）＝別カードで軸を分ける ── */
+  .you{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:13px 16px}
+  .you .inner{background:var(--paper);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+  .you .l{font-size:13px;color:var(--ink-sub);font-weight:800}
+  .you .v{font-size:26px;color:var(--ink);font-weight:800;line-height:1}
+  .you .v .u{font-size:13px;color:var(--ink-sub);font-weight:800;margin-left:2px}
+  .you .note{font-size:11px;color:var(--ink-sub);margin-top:8px;line-height:1.5;text-align:center}
+
+  /* 数字が届くまでの「くるくる」（枠は先に見えている・数字が入る場所で回る） */
+  .miniSpin{display:inline-block;width:.8em;height:.8em;border:2px solid var(--line);border-top-color:var(--done);border-radius:50%;vertical-align:-.06em;animation:spin .8s linear infinite}
+  /* メーターのバーも、届くまでは緑の帯が左右に流れる（読み込み中の合図） */
+  .track.loading{position:relative}
+  .track.loading .fill{width:0 !important}
+  .track.loading::after{content:"";position:absolute;top:0;height:100%;width:30%;border-radius:999px;background:var(--done);opacity:.35;animation:track-slide 1.15s ease-in-out infinite}
+  @keyframes track-slide{0%{left:-32%}100%{left:100%}}
 
   /* 憧れ（夢・演出のみ／実物の約束はしない） */
-  .dream{margin-top:9px;background:linear-gradient(135deg,#20304a,#0f1c30);color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
+  .dream{margin-top:14px;background:#14213a;color:#eaf0f7;border-radius:14px;padding:11px 14px;text-align:center}
   .dream .moon{font-size:16px;line-height:1}
   .dream .t{font-size:13.5px;font-weight:800;margin-top:3px;line-height:1.5}
   .dream .s{font-size:11.5px;color:#c7d3e4;margin-top:6px;font-weight:700}
   .moontrack{margin-top:6px;height:7px;background:rgba(255,255,255,.15);border-radius:999px;overflow:hidden}
-  .moonfill{height:7px;background:linear-gradient(90deg,#cdd7ea,#9fb4d6);border-radius:999px;width:0;transition:width .9s ease}
+  .moonfill{height:7px;background:#9fb4d6;border-radius:999px;width:0;transition:width .9s ease}
   .moonremain{font-size:11px;color:#b9c6d8;margin-top:6px;line-height:1.5}
 
   /* 次の一歩 */
-  .next{margin-top:11px}
-  .next .ttl{font-size:12.5px;font-weight:800;color:var(--brown-d);margin:0 2px 7px}
-  .shop{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .shop .photo{position:relative;height:118px;background:linear-gradient(135deg,#b99a6f,#6f5b44)}
+  .next{margin-top:14px}
+  .next .ttl{font-size:12.5px;font-weight:800;color:var(--ink-sub);margin:0 2px 7px}
+  .shop{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .shop .photo{position:relative;height:118px;background:var(--paper)}
   .shop .photo img{width:100%;height:100%;object-fit:cover;display:block}
-  .shop .badge{position:absolute;left:10px;top:10px;background:rgba(31,107,87,.9);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
-  .shop .dist{position:absolute;right:10px;bottom:10px;background:var(--teal);color:#fff;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
+  .shop .badge{position:absolute;left:10px;top:10px;background:rgba(47,122,87,.92);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+  .shop .dist{position:absolute;right:10px;bottom:10px;background:var(--done);color:#fff;font-size:12px;font-weight:800;padding:5px 11px;border-radius:999px}
   .shop .body{padding:10px 14px 12px}
-  .shop .pref{font-size:12px;color:var(--sub);font-weight:700}
-  .shop .name{font-size:18px;font-weight:800;margin-top:2px;line-height:1.3}
-  .shop .roaster{font-size:12px;color:var(--sub);margin-top:2px}
-  .photo .noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:0 16px}
+  .shop .pref{font-size:12px;color:var(--ink-sub);font-weight:700}
+  .shop .name{font-size:18px;font-weight:800;margin-top:2px;line-height:1.3;color:var(--ink)}
+  .shop .roaster{font-size:12px;color:var(--ink-sub);margin-top:2px}
+  .photo .noimg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--ink-sub);text-align:center;padding:0 16px}
   .photo .noimg .ic{font-size:26px}
-  .photo .noimg .nm{font-size:16px;font-weight:800;margin-top:4px;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.28)}
-  .nextEmpty{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;font-size:13px;color:var(--sub);line-height:1.7}
+  .photo .noimg .nm{font-size:16px;font-weight:800;margin-top:4px;line-height:1.3;color:var(--ink)}
+  .nextEmpty{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;font-size:13px;color:var(--ink-sub);line-height:1.7}
 
   .btn{display:block;width:100%;height:48px;line-height:48px;text-align:center;border-radius:12px;border:none;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;margin-top:10px}
-  .btn.primary{background:var(--teal);color:#fff;box-shadow:0 6px 16px rgba(31,107,87,.28)}
-  .btn.ghost{background:transparent;color:var(--teal-d);border:1.5px solid var(--teal);height:44px;line-height:42px;font-size:14px}
+  /* 主ボタン＝押す＝深コーラルピンク（トンマナ：押す=ピンク） */
+  .btn.primary{background:var(--brand-deep);color:#fff;box-shadow:0 6px 16px rgba(192,74,85,.24)}
+  .btn.ghost{background:transparent;color:var(--brand-deep);border:1.5px solid var(--brand-deep);height:44px;line-height:42px;font-size:14px}
 
-  .foot{margin-top:11px;text-align:center;font-size:10.5px;color:#a3937d;line-height:1.6}
+  .foot{margin-top:12px;text-align:center;font-size:10.5px;color:var(--ink-sub);line-height:1.6}
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -95,28 +124,34 @@
       <div class="h1">みんなで旅した距離</div>
     </div>
 
+    <!-- ── みんなの旅（全体軸）── -->
+    <div class="axis">🌏 みんなの旅</div>
     <div class="meter">
       <div class="globe">🌏</div>
-      <div class="big"><span id="totalKm">0</span><span class="u">km</span></div>
+      <div class="big"><span id="totalKm"><i class="miniSpin"></i></span><span class="u">km</span></div>
       <div class="cap">日本中の旅人が足した距離の合計</div>
 
-      <div class="track"><div id="fill" class="fill"></div></div>
+      <div id="track" class="track loading"><div id="fill" class="fill"></div></div>
       <div class="goal">
         <span id="asOf">今日</span>
         <span id="goalLabel">地球一周 40,075km</span>
       </div>
       <div id="remain" class="remain"></div>
+
+      <div class="members">
+        <span class="l">いっしょに旅する仲間</span>
+        <span class="v"><span id="members"><i class="miniSpin"></i></span><span class="u">人</span></span>
+      </div>
     </div>
 
-    <div class="row2">
-      <div class="tile you">
-        <div class="l">あなたが足した</div>
-        <div class="v"><span id="yourKm">0</span><span class="u">km</span></div>
+    <!-- ── あなたの旅（個人軸）＝全体とは別カードで分ける ── -->
+    <div class="axis">🚶 あなたの旅</div>
+    <div class="you">
+      <div class="inner">
+        <span class="l">あなたが足した距離</span>
+        <span class="v"><span id="yourKm"><i class="miniSpin"></i></span><span class="u">km</span></span>
       </div>
-      <div class="tile">
-        <div class="l">いっしょに旅する仲間</div>
-        <div class="v"><span id="members">0</span><span class="u">人</span></div>
-      </div>
+      <div class="note">あなたのチェックインが、みんなの旅を前に進めます。</div>
     </div>
 
     <div class="dream">
@@ -151,27 +186,30 @@
       <button id="findBtn" class="btn ghost hidden">ロースターを探す</button>
     </div>
 
-    <div class="foot">数字は毎朝1回の集計です。あなたのチェックインが、みんなの旅を前に進めます。<br>（スタッフ・テスト用の記録は合計に含めていません）</div>
+    <div class="foot">数字は毎朝1回の集計です。<br>（スタッフ・テスト用の記録は合計に含めていません）</div>
   </div>
 
 </div>
 
 <script>
-  // ===== 設定ここだけ（本番環境）=====  ★リリース番が下記2つを埋める★
-  // LIFF_ID：本番の距離メーター用LIFF（本番ログインチャネル 2010671952 配下）。作成後に差し替え。
-  const LIFF_ID = "2010671952-XXXXXXXX"; // TODO(リリース番): 本番の距離メーターLIFF ID
-  // GAS_URL：本番GAS(@740rorcl)を distance_meter.js 反映版で再配備した後の webhook URL。
-  //          匿名スモークOK＝?action=distance_meter が {"ok":true,...} を返すこと。
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbXXXXXXXX_PROD_REPLACE/exec"; // TODO(リリース番): 本番webhook URL
-  // FIND_URL：「ロースターを探す」導線。本番OA @740rorcl にメッセージを送る＝GAS側 includes で検索起動。
-  const FIND_URL = "https://line.me/R/oaMessage/@740rorcl/?" + encodeURIComponent("ロースターを探す");
+  // ===== 設定ここだけ（本番環境）＝現行ライブ(japancoffeejourney.com/distance/)と完全一致 =====
+  // ★今回の便は「フロント(新デザイン＋周回対応)」のみ。裏側(GAS)は現行のまま＝URLも現行本番を据え置く。
+  // LIFF_ID：本番の距離メーターLIFF（既存。Endpoint=https://japancoffeejourney.com/distance/）。
+  const LIFF_ID = "2010671952-6qnAd2YW"; // 本番 距離メーターLIFF（既存・新規発行不要）
+  // GAS_URL：現行本番の webhook URL（据え置き）。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+  // FIND_URL：現行ライブと同じく空（＝保存が無い人向けの「探す」ボタンは出さない／現状維持）。
+  const FIND_URL = "";
   // ====================================
 
   const $ = id => document.getElementById(id);
   let USER_ID = "";
 
   function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
-  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
+  function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+
+  // ⚡️体感速度：枠（メーター）を先に出す。数字は取得後に流し込む。
+  function revealFrame(){ $("status").classList.add("hidden"); $("main").classList.remove("hidden"); }
 
   async function api(action, extra){
     const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
@@ -188,19 +226,32 @@
     const goal  = Number(d.goalKm)||40075;
     const you   = Number(d.yourKm)||0;
     const pct   = Math.max(0, Math.min(100, goal>0 ? (total/goal*100) : 0));
+    // 周回対応：地球一周(EARTH)を基準に、目標が何周ぶんか(goalLaps)を出す。
+    const EARTH = 40075;                                     // 地球一周(km)
+    const goalLaps = Math.max(1, Math.round(goal / EARTH));  // 目標の周回数(80150→2周)
+    const done       = total >= goal;    // 目標(N周)を達成
+    const lapReached = total >= EARTH;   // 地球一周以上を達成(周回のマイルストーン)
 
+    // 数字が届いた＝各所の「くるくる」を数字に差し替え、バーの読み込み帯を止める
     $("totalKm").textContent = fmt(total);
     $("yourKm").textContent  = fmt(you);
     $("members").textContent = fmt(d.memberCount);
-    $("goalLabel").textContent = "地球一周 " + fmt(goal) + "km";
+    $("goalLabel").textContent = "地球" + (goalLaps > 1 ? goalLaps + "周" : "一周") + " " + fmt(goal) + "km";
+    $("track").classList.remove("loading");
     setTimeout(()=>{ $("fill").style.width = (pct>0?pct:1) + "%"; }, 60);
 
     // 数字の「時点」＝今日の日付（集計日があればそれ、無ければ今日）
     const asOf = d.updatedAt ? new Date(d.updatedAt) : new Date();
     $("asOf").textContent = (asOf.getMonth()+1) + "月" + asOf.getDate() + "日時点";
 
-    if (total >= goal){
-      $("remain").textContent = "🎉 地球一周 達成！";
+    // 数字の色＝目標(N周)達成のときだけグリーン。それ以外は本文色（進行中の数字は緑にしない）
+    $("totalKm").parentElement.classList.toggle("done", done);
+    // 残り文言＝周回対応。緑は「達成」マイルストーン(地球一周以上)のときだけ。
+    $("remain").classList.toggle("done", lapReached);
+    if (done){
+      $("remain").textContent = "🎉 地球" + goalLaps + "周 達成！";
+    } else if (lapReached){
+      $("remain").textContent = "🎉 地球一周 達成！ 地球" + goalLaps + "周まで あと約 " + fmt(goal - total) + "km";
     } else {
       $("remain").textContent = "地球一周まで あと約 " + fmt(goal - total) + "km";
     }
@@ -209,7 +260,6 @@
     const moonPct = Math.max(0, Math.min(100, total/MOON_KM*100));
     setTimeout(()=>{ $("moonfill").style.width = (moonPct>0?moonPct:0.5) + "%"; }, 120);
     $("moonRemain").textContent = "月まで あと約 " + fmt(Math.max(0, MOON_KM - total)) + "km";
-    // ※「あなたが足した◯km」は上のタイルで表示。次の一歩は下のお店カード＋ボタンが担う。
   }
 
   function renderNext(you, nudge){
@@ -238,17 +288,14 @@
   }
 
   async function load(){
-    showLoading("みんなの距離を集計しています…");
     // ⚡️高速化：距離集計と保存店ナッジを"同時に"取りに行く（順番待ちを無くす）。
     const pMeter = api("distance_meter");
     const pNudge = api("saved_nudge").catch(()=>null);   // 失敗しても本体は出す
 
-    // 距離が返った時点で、まず本体(メーター)を表示＝待ち時間を体感で短縮。
+    // 距離が返った時点で、まず数字を流し込む（枠は先に出ている＝体感で速い）。
     const d = await pMeter;
     if(!d || !d.ok){ showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return; }
     renderMeter(d);
-    $("status").classList.add("hidden");
-    $("main").classList.remove("hidden");
 
     // 「次の一歩」の店は、少し遅れて埋める（メーター表示は待たせない）。
     const nudge = await pNudge;
@@ -263,6 +310,8 @@
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+    // ⚡️枠を先に描画してから数字を取りに行く（待ち時間を体感で短縮）。
+    revealFrame();
     await load();
   }
 
