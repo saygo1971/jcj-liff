@@ -18,7 +18,7 @@
   @font-face{font-family:"JCJ-OCRB";src:url("fonts/ocrb.woff2") format("woff2");font-display:swap}
   @font-face{font-family:"JCJ-HWY";src:url("fonts/highwaygothic.woff2") format("woff2");font-display:swap} */
   *{box-sizing:border-box}
-  :root{--kinari:#F4EADD;--green:#2B5D4F;--green2:#2F7A57;--terra:#C04A55;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#F4EADD}
+  :root{--kinari:#F4EADD;--green:#2B5D4F;--green2:#2F7A57;--terra:#C04A55;--pinklt:#EAD0D2;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#F4EADD}
   html,body{margin:0;background:#ECE7DF;color:#221C1A;
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
   .ocrb{font-family:"JCJ-OCRB","OCR B Std","OCR B","OCRB","OCR-B",Consolas,"Courier New",monospace}
@@ -30,10 +30,12 @@
   .wrap{max-width:480px;margin:0 auto;padding:12px 12px 30px}
   .card{background:var(--kinari);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   /* 番号帯（深緑・白文字） */
-  .topline{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--green)}
+  .topline{display:flex;justify-content:space-between;align-items:center;padding:17px 16px;background:var(--green)}
   .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px}
   .resi{font-size:11px;color:rgba(255,255,255,.9)}
-  .world{text-align:center;font-size:9px;letter-spacing:3px;color:var(--sub);padding:8px 0 2px}
+  /* 最下部の帯（薄いピンク・ブランド名） */
+  .footline{background:var(--pinklt);text-align:center;padding:15px 16px;letter-spacing:3px;
+    font-size:11px;font-weight:800;color:var(--green)}
   /* 見る領域 */
   .see{padding:6px 16px 14px}
   .logohd{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 9px}
@@ -87,7 +89,6 @@
       <span class="pno ocrb" id="pno">PASSPORT No. JC-000000</span>
       <span class="resi" id="resi"></span>
     </div>
-    <div class="world">JAPAN COFFEE JOURNEY</div>
 
     <div class="see">
       <!-- ロゴ帳（主役） -->
@@ -98,9 +99,9 @@
 
       <!-- 個人の数字 -->
       <div class="stats">
-        <div class="s"><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
         <div class="s"><b class="hwy" id="yourKm">0</b><span>あなたの距離(km)</span></div>
         <div class="s"><b class="hwy" id="mile">0</b><span>使えるマイル</span></div>
+        <div class="s"><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
       </div>
 
       <!-- みんなの距離＋地球2周目メーター -->
@@ -123,10 +124,12 @@
       <div class="h">— さがす・見る —</div>
       <div class="nav">
         <a class="primary" id="navDiscover"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span class="lb">発見地図<br><small>次の1軒をさがす</small></span></a>
-        <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H18a1 1 0 0 1 1 1v16l-4-2-4 2V4"/><path d="M6.5 3v18"/></svg><span class="lb">旅の記録</span></a>
-        <a class="second" id="navLogo"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg><span class="lb">ロゴ帳</span></a>
+        <a class="second" id="navHistory"><span class="lb">旅の記録</span></a>
+        <a class="second" id="navLogo"><span class="lb">ロゴ帳</span></a>
       </div>
     </div>
+
+    <div class="footline">JAPAN COFFEE JOURNEY</div>
   </div>
 </div>
 
