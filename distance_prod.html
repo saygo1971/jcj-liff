@@ -211,6 +211,16 @@
   // ⚡️体感速度：枠（メーター）を先に出す。数字は取得後に流し込む。
   function revealFrame(){ $("status").classList.add("hidden"); $("main").classList.remove("hidden"); }
 
+  // ⚡️前回この端末で見た数字を覚えておき、次回オープンで“即”表示する（裏で最新に差し替え）。
+  //   ・端末＋ユーザー単位で保存。プライベートモード等で使えなくても本体は普通に動く（try/catch）。
+  const DM_CACHE_KEY = "dm_snap_v1:";
+  function loadCachedMeter(){
+    try{ const raw = localStorage.getItem(DM_CACHE_KEY + USER_ID); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
+  }
+  function saveCachedMeter(d){
+    try{ localStorage.setItem(DM_CACHE_KEY + USER_ID, JSON.stringify({ ok:true, totalKm:d.totalKm, goalKm:d.goalKm, memberCount:d.memberCount, yourKm:d.yourKm, updatedAt:d.updatedAt })); }catch(_){}
+  }
+
   async function api(action, extra){
     const q = new URLSearchParams(Object.assign({ action:action, userId:USER_ID, _:Date.now() }, extra||{}));
     const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
@@ -291,18 +301,27 @@
   }
 
   async function load(){
-    // ⚡️高速化：距離集計と保存店ナッジを"同時に"取りに行く（順番待ちを無くす）。
+    // ⚡️前回この端末で見た数字があれば、まず“即”表示（枠だけでなく数字も先に出す）。
+    const cached = loadCachedMeter();
+    if (cached && cached.ok){ renderMeter(cached); }
+
+    // 距離集計と保存店ナッジを"同時に"取りに行く（順番待ちを無くす）。
     const pMeter = api("distance_meter");
     const pNudge = api("saved_nudge").catch(()=>null);   // 失敗しても本体は出す
 
-    // 距離が返った時点で、まず数字を流し込む（枠は先に出ている＝体感で速い）。
+    // 最新が返ったら数字を差し替え＆この端末に保存（次回オープンの“即表示”用）。
     const d = await pMeter;
-    if(!d || !d.ok){ showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return; }
-    renderMeter(d);
+    if(d && d.ok){
+      renderMeter(d);
+      saveCachedMeter(d);
+    } else if(!cached){
+      // 最新が取れず、前回の控えも無い時だけエラー表示（控えがあればその表示を保つ）。
+      showStatusText("読み込みに失敗しました。時間をおいてお試しください。"); return;
+    }
 
     // 「次の一歩」の店は、少し遅れて埋める（メーター表示は待たせない）。
     const nudge = await pNudge;
-    renderNext(Number(d.yourKm)||0, nudge);
+    renderNext(Number((d && d.yourKm) || (cached && cached.yourKm) || 0), nudge);
   }
 
   async function main(){
