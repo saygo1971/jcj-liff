@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>パスポート</title>
+<!--
+  🪪 JCJパスポート（LIFFページ版）
+  ・本部v36 2026-09-01・オーナー承認：Flexカード→ページ化（フォント要件でFlex不可のため）。
+  ・データは1リクエスト：GAS action=passport（passport_api.js / handlePassport_）。
+  ・速度：前回分を先に出す（localStorage）→裏で最新取得。ロゴ帳・旅の記録と同じ体感に揃える。
+  ・フォント：PASSPORT No.=OCR-B系／数字=Highway Gothic系。端末に無ければ近い書体にフォールバック。
+    本物の書体を全端末で出すには、下の @font-face に配布可能フォント(woff2)を後日同梱する（TODO）。
+  ・★このページ専用の LIFF_ID は新規作成が必要（LINE Developers Console）。未作成の間は ?userId= で表示確認可。
+-->
+<style>
+  /* ▼ 本物の書体を出す場合はここに woff2 を同梱（TODO：配布可能なOCR-B / Highway Gothic系）
+  @font-face{font-family:"JCJ-OCRB";src:url("fonts/ocrb.woff2") format("woff2");font-display:swap}
+  @font-face{font-family:"JCJ-HWY";src:url("fonts/highwaygothic.woff2") format("woff2");font-display:swap} */
+  *{box-sizing:border-box}
+  :root{--kinari:#F4EADD;--green:#2B5D4F;--green2:#2F7A57;--terra:#C04A55;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#F4EADD}
+  html,body{margin:0;background:#ECE7DF;color:#221C1A;
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .ocrb{font-family:"JCJ-OCRB","OCR B Std","OCR B","OCRB","OCR-B",Consolas,"Courier New",monospace}
+  .hwy{font-family:"JCJ-HWY","Highway Gothic","HighwayGothic","Overpass","Interstate","Arial Narrow",Arial,sans-serif}
+  #status{text-align:center;padding:90px 20px;color:var(--sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green2);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .wrap{max-width:480px;margin:0 auto;padding:12px 12px 30px}
+  .card{background:var(--kinari);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  /* 番号帯（深緑・白文字） */
+  .topline{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--green)}
+  .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px}
+  .resi{font-size:11px;color:rgba(255,255,255,.9)}
+  .world{text-align:center;font-size:9px;letter-spacing:3px;color:var(--sub);padding:8px 0 2px}
+  /* 見る領域 */
+  .see{padding:6px 16px 14px}
+  .logohd{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 9px}
+  .logohd .t{font-size:13px;font-weight:800;color:var(--green)}
+  .logohd .c{font-size:15px;font-weight:900;color:var(--green)}
+  .logohd .c small{font-size:12px;color:var(--sub);font-weight:700}
+  .circles{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;cursor:pointer}
+  .cir{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;overflow:hidden}
+  .cir.got{background:#fff;color:var(--green2);border:1px solid var(--green2);padding:4px}
+  .cir.got img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%}
+  .cir.emp{background:var(--empty);border:1.5px dashed #cbbba0}
+  .tapnote{text-align:right;font-size:10px;color:var(--sub);margin-top:7px;cursor:pointer}
+  /* 個人の数字 */
+  .stats{display:flex;gap:8px;margin:13px 0 11px}
+  .stats .s{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center;padding:9px 4px}
+  .stats .s b{display:block;font-size:19px;color:var(--green);font-weight:900}
+  .stats .s span{font-size:10px;color:var(--sub)}
+  /* みんなの距離＋地球2周目 */
+  .alldist{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer}
+  .alldist .top{display:flex;justify-content:space-between;align-items:baseline}
+  .alldist .ttl{font-size:11px;color:var(--sub)}
+  .alldist .go{font-size:11px;color:var(--sub)}
+  .alldist .big{margin:3px 0 9px}
+  .alldist .big b{color:var(--green);font-size:22px;font-weight:900;letter-spacing:.5px}
+  .alldist .big .u{font-size:13px;color:var(--green);font-weight:800}
+  .alldist .big .ppl{font-size:12px;color:var(--sub);margin-left:8px}
+  .earth .lab{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:4px}
+  .earth .lab b{color:var(--green2);font-weight:800}
+  .earth .track{height:9px;border-radius:6px;background:var(--empty);overflow:hidden}
+  .earth .track .fill{height:100%;background:var(--green2);border-radius:6px;transition:width .5s ease}
+  .earth .cap{font-size:9.5px;color:var(--sub);margin-top:5px;text-align:center}
+  .beans{text-align:center;font-size:11px;color:var(--sub);margin:11px 0 0;text-decoration:underline;cursor:pointer}
+  /* 移動領域 */
+  .move{border-top:1px solid var(--line);padding:13px 16px 16px}
+  .move .h{font-size:10px;color:var(--sub);text-align:center;margin-bottom:10px;letter-spacing:1px}
+  .nav{display:flex;gap:9px}
+  .nav a{flex:1;text-decoration:none;text-align:center;border-radius:12px;padding:12px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+  .nav .primary{background:var(--terra);color:#fff}
+  .nav .second{background:#fff;border:1.5px solid var(--green);color:var(--green)}
+  .nav .lb{font-size:12px;font-weight:800;line-height:1.2}
+  .nav .lb small{font-size:9px;font-weight:600;opacity:.9}
+  .nav svg{width:23px;height:23px}
+</style>
+</head>
+<body>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <div class="card">
+    <div class="topline">
+      <span class="pno ocrb" id="pno">PASSPORT No. JC-000000</span>
+      <span class="resi" id="resi"></span>
+    </div>
+    <div class="world">JAPAN COFFEE JOURNEY</div>
+
+    <div class="see">
+      <!-- ロゴ帳（主役） -->
+      <div class="logohd"><span class="t">集めたロースター</span>
+        <span class="c"><b class="hwy" id="logoGot">0</b> <small>/ <span class="hwy" id="logoTotal">0</span></small></span></div>
+      <div class="circles" id="circles"></div>
+      <div class="tapnote" id="logoTap">ロゴ帳をひらく ›</div>
+
+      <!-- 個人の数字 -->
+      <div class="stats">
+        <div class="s"><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
+        <div class="s"><b class="hwy" id="yourKm">0</b><span>あなたの距離(km)</span></div>
+        <div class="s"><b class="hwy" id="mile">0</b><span>使えるマイル</span></div>
+      </div>
+
+      <!-- みんなの距離＋地球2周目メーター -->
+      <div class="alldist" id="distBox">
+        <div class="top"><span class="ttl">みんなで旅した距離</span><span class="go">距離メーター ›</span></div>
+        <div class="big"><b class="hwy" id="totalKm">0</b><span class="u"> km</span><span class="ppl">参加者 <span class="hwy" id="members">0</span>人</span></div>
+        <div class="earth">
+          <div class="lab"><span id="lapLabel">地球<b>1周目</b></span><span>1周 = <span class="hwy" id="goalKm">40,075</span>km</span></div>
+          <div class="track"><div class="fill" id="earthFill" style="width:0%"></div></div>
+          <div class="cap" id="earthCap"></div>
+        </div>
+      </div>
+
+      <!-- 豆割は主役から外す＝小リンク -->
+      <div class="beans" id="beansLink">使えるマイルの使い道（豆割クーポン）›</div>
+    </div>
+
+    <!-- 移動先3つ -->
+    <div class="move">
+      <div class="h">— さがす・見る —</div>
+      <div class="nav">
+        <a class="primary" id="navDiscover"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg><span class="lb">発見地図<br><small>次の1軒をさがす</small></span></a>
+        <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H18a1 1 0 0 1 1 1v16l-4-2-4 2V4"/><path d="M6.5 3v18"/></svg><span class="lb">旅の記録</span></a>
+        <a class="second" id="navLogo"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8"><circle cx="12" cy="9" r="5"/><path d="M8.5 13.5 7 21l5-2.5L17 21l-1.5-7.5"/></svg><span class="lb">ロゴ帳</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const PASSPORT_LIFF_ID = "2008851980-XXXXXXXX"; // ★TODO：このページ専用LIFF IDを新規発行して差し替え（未発行の間は ?userId= で確認）
+  // 遷移先（テスト環境LIFF）
+  const LIFF = {
+    discover: "2008851980-9MKW9F8W",
+    history:  "2008851980-6s0zFwwl",
+    logobook: "2008851980-9f9JHRZM",
+    distance: "2008851980-esv1Ko37",
+    beans:    "2008851980-trJY7IX9"
+  };
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
+
+  // 地球何周目メーター（totalKm / goalKm から算出）
+  function renderEarth(totalKm, goalKm){
+    goalKm = goalKm || 40075;
+    const laps = Math.floor(totalKm / goalKm);          // 完走した周回数
+    const into = totalKm - laps * goalKm;               // 今の周の到達km
+    const lap  = laps + 1;                              // 「今なん周目」
+    const pct  = Math.max(0, Math.min(100, Math.round(into / goalKm * 100)));
+    $("goalKm").textContent = Math.round(goalKm).toLocaleString();
+    $("earthFill").style.width = pct + "%";
+    if (laps >= 1){
+      $("lapLabel").innerHTML = "地球<b>" + lap + "周目</b>へ";
+      $("earthCap").textContent = "地球" + laps + "周を達成、いま" + lap + "周目 " + Math.round(into).toLocaleString() + "km（" + pct + "%）";
+    } else {
+      const remain = Math.max(0, goalKm - totalKm);
+      $("lapLabel").innerHTML = "地球<b>1周目</b>";
+      $("earthCap").textContent = "地球1周まで あと約 " + Math.round(remain).toLocaleString() + "km（" + pct + "%）";
+    }
+  }
+
+  function render(d){
+    $("pno").textContent  = "PASSPORT No. " + (d.no || "JC-000000");
+    $("resi").textContent = d.residence || "";
+    // ロゴ帳の丸（取得ロゴ＋空丸。合計は最低16マスまで空丸で満たす＝並びが崩れない）
+    const got = Number(d.logoGot)||0, total = Number(d.logoTotal)||0;
+    $("logoGot").textContent   = got;
+    $("logoTotal").textContent = total;
+    const logos = Array.isArray(d.logos) ? d.logos : [];
+    const slots = Math.max(16, Math.ceil((logos.length)/8)*8);
+    let html = "";
+    for (let i=0;i<slots;i++){
+      if (i < logos.length){
+        const g = logos[i];
+        html += '<div class="cir got"><img src="'+esc(g.logo)+'" alt="'+esc(g.name)+'" onerror="this.parentNode.textContent=\''+esc((g.name||"?").slice(0,2))+'\'"></div>';
+      } else {
+        html += '<div class="cir emp"></div>';
+      }
+    }
+    $("circles").innerHTML = html;
+    // 個人の数字
+    $("shopCount").textContent = (Number(d.shopCount)||0).toLocaleString();
+    $("yourKm").textContent    = (Number(d.yourKm)||0).toLocaleString();
+    $("mile").textContent      = (Number(d.mile)||0).toLocaleString();
+    // みんなの距離＋地球周回
+    $("totalKm").textContent = (Number(d.totalKm)||0).toLocaleString();
+    $("members").textContent = (Number(d.members)||0).toLocaleString();
+    renderEarth(Number(d.totalKm)||0, Number(d.goalKm)||40075);
+
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  function wireNav(){
+    $("circles").onclick = () => open("logobook");
+    $("logoTap").onclick = () => open("logobook");
+    $("navLogo").onclick = () => open("logobook");
+    $("navHistory").onclick = () => open("history");
+    $("navDiscover").onclick = () => open("discover");
+    $("distBox").onclick = () => open("distance");
+    $("beansLink").onclick = () => open("beans");
+  }
+
+  async function loadData(userId){
+    try{
+      const res = await fetch(GAS_URL + "?action=passport&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
+      const d = await res.json();
+      if (d && d.ok){
+        render(d);
+        try{ localStorage.setItem("jcj_passport_"+userId, JSON.stringify(d)); }catch(e){}
+      } else if ($("main").classList.contains("hidden")) {
+        $("status").textContent = "読み込みに失敗しました。電波の良い場所でお試しください。";
+      }
+    }catch(e){
+      if ($("main").classList.contains("hidden")) $("status").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
+    }
+  }
+
+  function start(userId){
+    if(!userId){ $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
+    try{ localStorage.setItem("jcj_uid", userId); }catch(e){}           // shop.html の保存機能が使う
+    wireNav();
+    // 前回分を先に出す（あれば即表示）→裏で最新取得
+    try{
+      const prev = localStorage.getItem("jcj_passport_"+userId);
+      if (prev){ render(JSON.parse(prev)); }
+    }catch(e){}
+    loadData(userId);
+  }
+
+  async function main(){
+    // ?userId= があればLIFF無しでも確認可（ブラウザ動作確認用）
+    const qUser = new URLSearchParams(location.search).get("userId");
+    if (qUser){ start(qUser.trim()); return; }
+    try{
+      await liff.init({ liffId: PASSPORT_LIFF_ID });
+      if (!liff.isLoggedIn()){ liff.login(); return; }
+      const prof = await liff.getProfile();
+      start(prof.userId);
+    }catch(e){
+      $("status").textContent = "ログインの確認中に問題が起きました。アプリを開き直してください。";
+    }
+  }
+  main();
+</script>
+</body>
+</html>
