@@ -229,8 +229,7 @@
     // 周回対応：地球一周(EARTH)を基準に、目標が何周ぶんか(goalLaps)を出す。
     const EARTH = 40075;                                     // 地球一周(km)
     const goalLaps = Math.max(1, Math.round(goal / EARTH));  // 目標の周回数(80150→2周)
-    const done       = total >= goal;    // 目標(N周)を達成
-    const lapReached = total >= EARTH;   // 地球一周以上を達成(周回のマイルストーン)
+    const lapped = total >= EARTH;   // 地球一周を達成したか（＝祝う色=緑にする境目）
 
     // 数字が届いた＝各所の「くるくる」を数字に差し替え、バーの読み込み帯を止める
     $("totalKm").textContent = fmt(total);
@@ -244,13 +243,17 @@
     const asOf = d.updatedAt ? new Date(d.updatedAt) : new Date();
     $("asOf").textContent = (asOf.getMonth()+1) + "月" + asOf.getDate() + "日時点";
 
-    // 数字の色＝目標(N周)達成のときだけグリーン。それ以外は本文色（進行中の数字は緑にしない）
-    $("totalKm").parentElement.classList.toggle("done", done);
-    // 残り文言＝周回対応。緑は「達成」マイルストーン(地球一周以上)のときだけ。
-    $("remain").classList.toggle("done", lapReached);
-    if (done){
+    // 周回対応：一周でも達成したら祝う色（.done＝緑）を数字と残りに付ける（緑は達成のみ）
+    if (lapped){
+      $("totalKm").parentElement.classList.add("done");
+      $("remain").classList.add("done");
+    } else {
+      $("totalKm").parentElement.classList.remove("done");
+      $("remain").classList.remove("done");
+    }
+    if (total >= goal){
       $("remain").textContent = "🎉 地球" + goalLaps + "周 達成！";
-    } else if (lapReached){
+    } else if (total >= EARTH){
       $("remain").textContent = "🎉 地球一周 達成！ 地球" + goalLaps + "周まで あと約 " + fmt(goal - total) + "km";
     } else {
       $("remain").textContent = "地球一周まで あと約 " + fmt(goal - total) + "km";
