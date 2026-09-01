@@ -108,7 +108,6 @@
 
   .foot{margin-top:12px;text-align:center;font-size:10.5px;color:var(--ink-sub);line-height:1.6}
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -191,6 +190,8 @@
 
 </div>
 
+<!-- LINE SDKは本文の“後”に置く＝画面(枠/くるくる)を先に描いてから読み込む（真っ白を防ぐ） -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   // ===== 設定ここだけ（テスト環境）=====
   // LIFF_ID：この距離メーター用に LINE Developers で作成するLIFFアプリID（テストのログインチャネル 2008851980 配下）。
@@ -215,11 +216,17 @@
   // ⚡️前回この端末で見た数字を覚えておき、次回オープンで“即”表示する（裏で最新に差し替え）。
   //   ・端末＋ユーザー単位で保存。プライベートモード等で使えなくても本体は普通に動く（try/catch）。
   const DM_CACHE_KEY = "dm_snap_v1:";
+  const DM_LAST_KEY  = "dm_snap_v1:last";   // userId非依存の“最終スナップ”＝LINE起動を待たず開いた瞬間に描くため
   function loadCachedMeter(){
     try{ const raw = localStorage.getItem(DM_CACHE_KEY + USER_ID); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
   }
+  function loadLastMeter(){
+    try{ const raw = localStorage.getItem(DM_LAST_KEY); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
+  }
   function saveCachedMeter(d){
-    try{ localStorage.setItem(DM_CACHE_KEY + USER_ID, JSON.stringify({ ok:true, totalKm:d.totalKm, goalKm:d.goalKm, memberCount:d.memberCount, yourKm:d.yourKm, updatedAt:d.updatedAt })); }catch(_){}
+    const snap = JSON.stringify({ ok:true, totalKm:d.totalKm, goalKm:d.goalKm, memberCount:d.memberCount, yourKm:d.yourKm, updatedAt:d.updatedAt });
+    try{ localStorage.setItem(DM_CACHE_KEY + USER_ID, snap); }catch(_){}
+    try{ localStorage.setItem(DM_LAST_KEY, snap); }catch(_){}   // 次回“開いた瞬間”用（誰の端末かに依存しない）
   }
 
   async function api(action, extra){
@@ -325,19 +332,27 @@
     renderNext(Number((d && d.yourKm) || (cached && cached.yourKm) || 0), nudge);
   }
 
+  // ⚡️開いた“瞬間”に枠を描く（LINE起動やGAS応答を待たない＝真っ白を防ぐ）。
+  //   前回この端末で見た“みんなの数字”があれば即描画。個人kmはLINE起動後に正す。
+  function prepaint(){
+    try{
+      revealFrame();
+      const last = loadLastMeter();
+      if (last && last.ok) renderMeter(last);
+    }catch(_){}
+  }
+
   async function main(){
-    showLoading("LINEを起動しています…");
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
     if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
-    // ⚡️枠を先に描画してから数字を取りに行く（待ち時間を体感で短縮）。
-    revealFrame();
-    await load();
+    await load();   // 枠はprepaintで先出し済み＝ここでは数字の取得・差し替えだけ
   }
 
+  prepaint();   // ← まず枠を即描画（真っ白回避）。この後でLINE起動→数字取得。
   main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); });
 </script>
 </body>
