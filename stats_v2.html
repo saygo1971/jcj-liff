@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>お店の送客レポート（Japan Coffee Journey）</title>
+  <style>
+    :root{
+      --cream:#F4EDE1; --cream-2:#EDE3D3; --ink:#2E2A26; --ink-soft:#6B6258;
+      --teal:#32595B; --teal-soft:#4C7A7C; --pink:#C04A55; --pink-soft:#E7C3C7;
+      --green:#5E7B3B; --line:#DACFBD; --card:#FBF7F0; --up:#5E7B3B; --down:#B0603A; --flat:#9A8F80;
+      --pink-bg:#F7E7E9; --teal-bg:#E4EEEC;
+    }
+    @media (prefers-color-scheme: dark){
+      :root:not([data-theme="light"]){
+        --cream:#211E1B; --cream-2:#2A2622; --ink:#F1E9DD; --ink-soft:#B8AC9C;
+        --teal:#7FB3B0; --teal-soft:#9BC7C4; --pink:#E88C93; --pink-soft:#5C3236;
+        --green:#9DBE6E; --line:#3A342E; --card:#2A2622; --up:#9DBE6E; --down:#D9925F; --flat:#8A8073;
+        --pink-bg:#3A2A2C; --teal-bg:#22322F;
+      }
+    }
+    :root[data-theme="dark"]{
+      --cream:#211E1B; --cream-2:#2A2622; --ink:#F1E9DD; --ink-soft:#B8AC9C;
+      --teal:#7FB3B0; --teal-soft:#9BC7C4; --pink:#E88C93; --pink-soft:#5C3236;
+      --green:#9DBE6E; --line:#3A342E; --card:#2A2622; --up:#9DBE6E; --down:#D9925F; --flat:#8A8073;
+      --pink-bg:#3A2A2C; --teal-bg:#22322F;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--cream);color:var(--ink);
+      font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+      line-height:1.7;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:520px;margin:0 auto;padding:22px 16px 60px}
+    .screen{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px;overflow:hidden}
+    .brandrow{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+    .brand{font-size:12px;letter-spacing:.06em;color:var(--teal);font-weight:600}
+    .period{font-size:12px;color:var(--ink-soft)}
+    .shop{font-size:21px;font-weight:700;margin:2px 0 2px;letter-spacing:.01em}
+    .shopsub{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
+    .months{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+    .mchip{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);color:var(--ink-soft);
+      background:none;cursor:pointer;font-family:inherit}
+    .mchip.on{background:var(--pink);color:#fff;border-color:var(--pink)}
+    .mnote{font-size:11px;color:var(--ink-soft);margin:0 0 14px}
+    .typebadge{display:inline-flex;align-items:center;gap:6px;background:var(--pink);color:#fff;
+      font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;margin-bottom:6px}
+    .mlabel{font-size:11.5px;color:var(--ink-soft);margin:12px 0 8px;font-weight:600}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+    .m{background:var(--cream-2);border-radius:12px;padding:11px 12px}
+    .m .lbl{font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:5px;margin-bottom:3px}
+    .m .val{font-size:23px;font-weight:700;line-height:1.2}
+    .chg{display:inline-block;font-size:12px;font-weight:600;margin-left:6px}
+    .chg.up{color:var(--up)} .chg.down{color:var(--down)} .chg.flat{color:var(--flat)}
+    .rec{font-size:10px;font-weight:700;color:var(--pink);border:1px solid var(--pink-soft);
+      border-radius:5px;padding:0 4px;letter-spacing:.02em}
+    .honest{font-size:11.5px;color:var(--ink-soft);background:var(--cream-2);border-radius:10px;
+      padding:9px 11px;margin-top:10px}
+    .cumu{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+    .cumu .h{font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:6px}
+    .cumu .row{display:flex;gap:14px;flex-wrap:wrap}
+    .cumu .row div{font-size:12px;color:var(--ink-soft)}
+    .cumu b{display:block;font-size:16px;color:var(--ink);font-weight:700}
+    .comment{background:var(--teal-bg);border-radius:12px;padding:13px 14px;margin-top:14px}
+    .comment .h{font-size:12px;font-weight:700;color:var(--teal);margin-bottom:5px}
+    .comment p{margin:0;font-size:13.5px;color:var(--ink)}
+    .help{margin-top:22px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+    .help h3{margin:0 0 4px;font-size:15px;color:var(--teal)}
+    .help .sub{font-size:12px;color:var(--ink-soft);margin:0 0 14px}
+    .help dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:baseline}
+    @media(max-width:520px){.help dl{grid-template-columns:1fr;gap:2px 0}.help dd{margin:0 0 10px}}
+    .help dt{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap}
+    .help dt .rec{margin-left:4px}
+    .help dd{margin:0;font-size:13px;color:var(--ink-soft)}
+    .foot{margin-top:18px;font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.7}
+    .status{color:var(--ink-soft);font-size:13px;padding:44px 16px;text-align:center;line-height:1.8}
+    .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--teal);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none}
+    pre{background:var(--cream-2);padding:10px;border-radius:8px;white-space:pre-wrap;font-size:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="status" class="status">
+    <div id="spin" class="spin"></div>
+    <div id="statusText">読み込んでいます…</div>
+  </div>
+
+  <div id="main" class="hidden">
+    <div class="screen">
+      <div class="brandrow"><span class="brand">JAPAN COFFEE JOURNEY 送客レポート</span><span class="period" id="periodTop"></span></div>
+      <div class="shop"><span id="shopName">お店</span> 様</div>
+      <div class="shopsub"><span id="area"></span> ／ 自動で最新に更新されます</div>
+
+      <div class="months" id="months"></div>
+      <div class="mnote" id="monthsNote">過去の月も同じURLに積み上がり、いつでも見返せます。</div>
+
+      <div id="typeWrap"><div class="typebadge" id="typeBadge"></div></div>
+      <div class="mlabel"><span id="monthLabelHead"></span>の数字　<span style="font-weight:400">— 右の矢印は先月比</span></div>
+
+      <div class="grid" id="grid"></div>
+
+      <div class="honest">「表示回数」＝地図や検索で画面に出た回数。</div>
+
+      <div class="cumu">
+        <div class="h">これまでの累計</div>
+        <div class="row">
+          <div>ご来店 累計<b id="cumuVisit">0</b></div>
+          <div>保存 累計<b id="cumuSave">0</b></div>
+          <div>リピーター<b id="cumuRepeat">0</b></div>
+        </div>
+      </div>
+
+      <div id="commentWrap" class="hidden">
+        <div class="comment">
+          <div class="h">◆ 今月のひと言</div>
+          <p id="commentBody"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="help">
+      <h3>この数字の見方</h3>
+      <p class="sub">迷わないよう、各数字の意味をまとめています。</p>
+      <dl>
+        <dt>表示回数</dt><dd>地図や検索で、お店が画面に出た回数。</dd>
+        <dt>行きたい保存</dt><dd>「行ってみたい」と保存された数。</dd>
+        <dt>保存率 <span class="rec">おすすめ</span></dt><dd>保存 ÷ 表示。ただ見られた数でなく「見て“行きたい”と思われた率」＝中身の強さが分かります。</dd>
+        <dt>ご来店</dt><dd>お店でチェックインされた数。</dd>
+        <dt>県外から</dt><dd>県外の方のご来店の数。</dd>
+        <dt>リンクのタップ <span class="rec">おすすめ</span></dt><dd>公式サイト・インスタ・地図を押した数＝関心の深さ。</dd>
+        <dt>先月比（↑↓）</dt><dd>数字の右の矢印。先月からの増減です。</dd>
+      </dl>
+    </div>
+
+    <div class="foot">
+      このページはお店だけの専用リンクです。他の人に教えないでください。<br>
+      <span id="updated"></span>
+    </div>
+  </div>
+
+  <pre id="debug" class="hidden"></pre>
+</div>
+
+<script>
+  // ===== 設定（テスト環境）=====
+  // 成績ページ専用の doGet 窓口（LINE webhookとは別デプロイ）。本番化時は本番の成績専用/execへ差し替え。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxyJsWX23vyYZuyQe0B2Hyx32qrewd3-LGJXXuOFTIgJtCNKyJP7ZHsVCFpXgn9XcKe/exec";
+  // ============================
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const KEY = (params.get("k") || "").trim();
+  const MONTH = (params.get("m") || "").trim();       // 見返す月（YYYYMM）。空なら最新
+  const demoMode = (params.get("demo") || "") === "1";
+  const debugMode = (params.get("debug") || "") === "1";
+
+  function showStatus(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; $("main").classList.add("hidden"); }
+  function showDebug(o){ if(!debugMode) return; $("debug").classList.remove("hidden"); $("debug").textContent = typeof o==="string"?o:JSON.stringify(o,null,2); }
+
+  // 承認モックと同じサンプル（見た目確認用・?demo=1 で表示）
+  const SAMPLE = {
+    ok:true, shopName:"Q.O.L. COFFEE", area:"愛知県・名古屋",
+    type:{ label:"見つけられ上手タイプ" },
+    months:[
+      {ym:"202608", label:"8月"},{ym:"202607", label:"7月"},
+      {ym:"202606", label:"6月"},{ym:"202605", label:"5月"}
+    ],
+    selectedYm:"202608", monthLabel:"8月",
+    metrics:[
+      { key:"hyoji",   label:"表示回数",     rec:false, val:"1,240", chg:"↑12%", chgType:"up" },
+      { key:"save",    label:"行きたい保存", rec:false, val:"38",    chg:"↑5",   chgType:"up" },
+      { key:"saveRate",label:"保存率",       rec:true,  val:"3.1%",  chg:"↑0.3", chgType:"up" },
+      { key:"visit",   label:"ご来店",       rec:false, val:"22",    chg:"↑3",   chgType:"up" },
+      { key:"kengai",  label:"県外から",     rec:false, val:"5",     chg:"→0",   chgType:"flat" },
+      { key:"taps",    label:"リンクのタップ",rec:true, val:"14",    chg:"↑4",   chgType:"up" }
+    ],
+    cumulative:{ visit:"180", save:"261", repeat:"7" },
+    comment:{ body:"8月は「行きたい保存」が38件と、見た方の関心がしっかり残った月でした。会計のときに「JCJでチェックインできます」とひと声そえていただくと、ご来店（22）がさらに積み上がります。" },
+    updatedYmd:"2026-09-01"
+  };
+
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function render(d){
+    $("shopName").textContent = d.shopName || "お店";
+    $("area").textContent = d.area || "";
+    $("periodTop").textContent = d.monthLabel || "";
+    $("monthLabelHead").textContent = d.monthLabel || "今月";
+
+    // 類型バッジ（前向きラベルのみ・無ければ隠す）
+    if (d.type && d.type.label){ $("typeBadge").textContent = "◆ " + d.type.label; $("typeWrap").classList.remove("hidden"); }
+    else { $("typeWrap").classList.add("hidden"); }
+
+    // 月チップ（アーカイブ）。押すと ?m= で同じURLを見返す
+    const months = Array.isArray(d.months) ? d.months : [];
+    const mwrap = $("months");
+    if (months.length <= 1){ mwrap.classList.add("hidden"); $("monthsNote").classList.add("hidden"); }
+    else {
+      mwrap.classList.remove("hidden"); $("monthsNote").classList.remove("hidden");
+      mwrap.innerHTML = months.map(function(m){
+        const on = (m.ym === d.selectedYm) ? " on" : "";
+        return '<button class="mchip'+on+'" data-ym="'+esc(m.ym)+'">'+esc(m.label)+'</button>';
+      }).join("");
+      Array.prototype.forEach.call(mwrap.querySelectorAll(".mchip"), function(btn){
+        btn.addEventListener("click", function(){
+          const ym = btn.getAttribute("data-ym");
+          const q = new URLSearchParams(location.search); q.set("m", ym);
+          location.search = q.toString();
+        });
+      });
+    }
+
+    // 数字グリッド（先月比つき）
+    const metrics = Array.isArray(d.metrics) ? d.metrics : [];
+    $("grid").innerHTML = metrics.map(function(m){
+      const rec = m.rec ? ' <span class="rec">おすすめ</span>' : "";
+      const chgType = (m.chgType==="up"||m.chgType==="down"||m.chgType==="flat") ? m.chgType : "flat";
+      const chg = m.chg ? '<span class="chg '+chgType+'">'+esc(m.chg)+'</span>' : "";
+      return '<div class="m"><div class="lbl">'+esc(m.label)+rec+'</div><div class="val">'+esc(m.val)+chg+'</div></div>';
+    }).join("");
+
+    // 累計
+    const c = d.cumulative || {};
+    $("cumuVisit").textContent  = (c.visit  != null) ? c.visit  : "0";
+    $("cumuSave").textContent   = (c.save   != null) ? c.save   : "0";
+    $("cumuRepeat").textContent = (c.repeat != null) ? c.repeat : "0";
+
+    // 月末のひと言（あるときだけ）
+    if (d.comment && d.comment.body){ $("commentBody").textContent = d.comment.body; $("commentWrap").classList.remove("hidden"); }
+    else { $("commentWrap").classList.add("hidden"); }
+
+    $("updated").textContent = d.updatedYmd ? ("更新：" + d.updatedYmd) : "";
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function load(){
+    if (demoMode || !KEY){ showDebug(SAMPLE); render(SAMPLE); return; }
+    try{
+      const q = new URLSearchParams({ action:"roaster_stats_v2", k:KEY, _:Date.now() });
+      if (MONTH) q.set("m", MONTH);
+      const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+      const d = await res.json();
+      showDebug(d);
+      if(!d.ok){
+        if (d.error === "invalid_key") showStatus("このリンクは無効です。お店専用のリンクをご確認ください。");
+        else if (d.error === "missing_key") showStatus("リンクが正しくありません。お店専用のリンクからお開きください。");
+        else if (d.error === "not_ready") showStatus("成績はただいま準備中です。もうしばらくお待ちください。");
+        else showStatus("読み込みに失敗しました。時間をおいてもう一度お試しください。");
+        return;
+      }
+      render(d);
+    } catch(err){
+      showStatus("通信に失敗しました。電波の良い場所でもう一度お試しください。");
+      showDebug(String(err));
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
