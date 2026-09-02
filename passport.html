@@ -14,9 +14,10 @@
   ・★このページ専用の LIFF_ID は新規作成が必要（LINE Developers Console）。未作成の間は ?userId= で表示確認可。
 -->
 <style>
-  /* ▼ 本物の書体を出す場合はここに woff2 を同梱（TODO：配布可能なOCR-B / Highway Gothic系）
-  @font-face{font-family:"JCJ-OCRB";src:url("fonts/ocrb.woff2") format("woff2");font-display:swap}
-  @font-face{font-family:"JCJ-HWY";src:url("fonts/highwaygothic.woff2") format("woff2");font-display:swap} */
+  /* フォントA同梱（2026-09-01・オーナー確定）：数字(.hwy)= Highway Gothic ≒ Overpass(OFL/可変ウェイト)を同梱。
+     OCR-B(.ocrb 番号)は無料の適切なフォントが無いため等幅フォールバック維持（後日差し替え可）。 */
+  @font-face{font-family:"JCJ-HWY";src:url("fonts/highwaygothic.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+  /* @font-face{font-family:"JCJ-OCRB";src:url("fonts/ocrb.woff2") format("woff2");font-display:swap} */
   *{box-sizing:border-box}
   :root{--kinari:#F4EADD;--green:#2B5D4F;--green2:#2F7A57;--terra:#C04A55;--pinklt:#EAD0D2;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#F4EADD}
   html,body{margin:0;background:#ECE7DF;color:#221C1A;
