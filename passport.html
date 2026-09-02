@@ -211,10 +211,13 @@
     $("beansLink").onclick = () => open("beans");
   }
 
+  let _started = "";   // 既にstart済みの userId（二重fetch・古い応答の取り違え防止）
+
   async function loadData(userId){
     try{
       const res = await fetch(GAS_URL + "?action=passport&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
       const d = await res.json();
+      if (_started && userId !== _started) return;   // 別ユーザーに切替わった後の古い応答は捨てる
       if (d && d.ok){
         render(d);
         try{ localStorage.setItem("jcj_passport_"+userId, JSON.stringify(d)); }catch(e){}
@@ -227,7 +230,9 @@
   }
 
   function start(userId){
-    if(!userId){ $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
+    if(!userId){ if($("main").classList.contains("hidden")) $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
+    if(_started === userId) return;                                    // 同一ユーザーで二重に走らせない
+    _started = userId;
     try{ localStorage.setItem("jcj_uid", userId); }catch(e){}           // shop.html の保存機能が使う
     wireNav();
     // 前回分を先に出す（あれば即表示）→裏で最新取得
@@ -242,13 +247,23 @@
     // ?userId= があればLIFF無しでも確認可（ブラウザ動作確認用）
     const qUser = new URLSearchParams(location.search).get("userId");
     if (qUser){ start(qUser.trim()); return; }
+
+    // ★体感高速化：前回のユーザーIDが端末にあれば、LINEの本人確認を待たずに
+    //   先に前回内容を表示＋最新取得を開始する（2回目以降がほぼ一瞬になる）。
+    let cachedUid = "";
+    try{ cachedUid = localStorage.getItem("jcj_uid") || ""; }catch(e){}
+    if (cachedUid){ start(cachedUid); }
+
+    // 裏でLINEの本人確認。違う人なら正しいIDで開き直す。
     try{
       await liff.init({ liffId: PASSPORT_LIFF_ID });
       if (!liff.isLoggedIn()){ liff.login(); return; }
       const prof = await liff.getProfile();
-      start(prof.userId);
+      if (prof && prof.userId){
+        if (prof.userId !== cachedUid){ _started = ""; start(prof.userId); }  // 別人なら正しいIDで
+      }
     }catch(e){
-      $("status").textContent = "ログインの確認中に問題が起きました。アプリを開き直してください。";
+      if ($("main").classList.contains("hidden")) $("status").textContent = "ログインの確認中に問題が起きました。アプリを開き直してください。";
     }
   }
   main();
