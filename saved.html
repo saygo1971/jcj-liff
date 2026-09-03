@@ -191,11 +191,20 @@
     loadData(userId);
   }
 
+  // 専用LIFFを使うか（本番でIDを入れた時だけtrue）。未発行(=XXXX)の間はパスポート経由の相対遷移で使う。
+  const SAVED_READY = /^\d+-[A-Za-z0-9]+$/.test(SAVED_LIFF_ID) && SAVED_LIFF_ID.indexOf("XXXX") < 0;
+
   async function main(){
     const qUser = new URLSearchParams(location.search).get("userId");
     if(qUser){ start(qUser.trim()); return; }
     let cachedUid=""; try{ cachedUid=localStorage.getItem("jcj_uid")||""; }catch(e){}
     if(cachedUid){ start(cachedUid); }
+    // 専用LIFF未発行＝パスポートの「行きたいリスト」から相対遷移で来る前提。
+    // jcj_uid が無い（直接開かれた）ときは、無言のエラーでなく案内を出す。
+    if(!SAVED_READY){
+      if(!cachedUid){ $("status").textContent = "「行きたいリスト」は、パスポートの中から開いてください。"; }
+      return;
+    }
     try{
       await liff.init({ liffId: SAVED_LIFF_ID });
       if(!liff.isLoggedIn()){ liff.login(); return; }
