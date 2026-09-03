@@ -27,8 +27,16 @@
   .summ .s{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:12px;text-align:center;padding:10px 4px}
   .summ .s b{display:block;font-size:22px;color:var(--ink);font-weight:900}
   .summ .s span{font-size:10.5px;color:var(--ink-sub)}
-  .hrow{display:flex;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
+  .hrow{display:flex;flex-direction:column;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
   .hrow.recorded{border:1.5px solid var(--state-done)}
+  .htop{display:flex;gap:10px}
+  /* B案：記録の下に写真を大きく（投稿っぽい）・タップで拡大 */
+  .hphoto{margin-top:10px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;cursor:zoom-in;background:var(--paper)}
+  /* 写真の拡大（ライトボックス） */
+  .lightbox{position:fixed;inset:0;background:rgba(20,15,10,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .lightbox.show{display:flex}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:10px}
+  .lightbox .lx{position:absolute;top:14px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;border:none;font-size:20px;cursor:pointer}
   .hdate{width:66px;flex:0 0 66px;text-align:center}
   .hdate .d{font-size:11px;color:var(--ink-sub);font-weight:700}
   .hlogo{display:block;width:46px;height:46px;margin:8px auto 0;object-fit:contain}
@@ -67,6 +75,9 @@
   <div class="t">最初の一杯は、どこで飲みますか？</div>
   <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここに旅の記録が並んでいきます。</div>
 </div>
+
+<!-- 写真の拡大（タップで開く／背景か×で閉じる） -->
+<div class="lightbox" id="lightbox"><button class="lx" id="lxClose" aria-label="閉じる">×</button><img id="lxImg" alt=""></div>
 
 <script>
   const LIFF_ID = "2008851980-6s0zFwwl"; // 旅の記録（テスト・2026-08-31発行）
@@ -129,10 +140,17 @@
         tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
       }
       if (r.km!=null) tags += '<span class="tag dist">約'+r.km+'km</span>';
-      return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
+      // B案：記録に写真があれば、下に大きく（タップで拡大＝行タップの店詳細とは別動作）
+      const photoHtml = (dr && dr.photo)
+        ? '<img class="hphoto" src="'+esc(dr.photo)+'" loading="lazy" alt="" onerror="this.style.display=\'none\'">'
+        : '';
+      return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'">'+
+        '<div class="htop"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
         '<div class="hbody"><div class="hname">'+esc(r.shopName||"お店")+'</div>'+
         '<div class="hpl">'+esc(r.pref||"")+'</div>'+
-        '<div class="htags">'+tags+'</div></div></div>';
+        '<div class="htags">'+tags+'</div></div></div>'+
+        photoHtml+
+      '</div>';
     }).join("");
 
     // 行をタップ→お店の詳細（「記録を追加する」ボタンを押した時はそちら優先）
@@ -140,6 +158,8 @@
       row.style.cursor="pointer";
       row.onclick=function(e){
         if(e.target.closest(".addrec")) return; // 記録を追加するは自分のリンクへ
+        const ph = e.target.closest(".hphoto");
+        if(ph){ openLightbox(ph.getAttribute("src")); return; } // 写真タップ＝拡大（店詳細に行かない）
         var id=row.getAttribute("data-shop");
         if(id) location.href="shop.html?shop="+encodeURIComponent(id)+"&t="+Date.now();
       };
@@ -148,6 +168,12 @@
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
   }
+
+  // 写真の拡大（ライトボックス）。背景タップか×で閉じる。
+  function openLightbox(src){ if(!src) return; $("lxImg").src = src; $("lightbox").classList.add("show"); }
+  function closeLightbox(){ $("lightbox").classList.remove("show"); $("lxImg").src=""; }
+  $("lxClose").onclick = closeLightbox;
+  $("lightbox").onclick = function(e){ if(e.target === this) closeLightbox(); };
 
   async function load(){
     // 前回分を先に出す＝体感ゼロ待ち（2回目以降）。無ければスピナーのまま裏で取得。

@@ -201,15 +201,32 @@
   async function submit(){
     $("err").textContent = "";
     const memo = $("memo").value.trim();
-    if (!sel.drink && !sel.country && !sel.process && !memo){
-      $("err").textContent = "飲みものか生産国を1つえらんでください。";
+    // 写真だけの記録も許可（飲みもの等が無くても写真があればOK）
+    if (!sel.drink && !sel.country && !sel.process && !memo && !window._photoData){
+      $("err").textContent = "飲みものか生産国を1つえらぶか、写真を追加してください。";
       return;
     }
     $("submitBtn").disabled = true; $("submitBtn").textContent = "記録中…";
     try {
+      // 写真があれば先にDriveへ保存してURLを得る（大きいのでPOST）。失敗しても記録自体は続ける。
+      let photoUrl = "";
+      if (window._photoData){
+        $("submitBtn").textContent = "写真を保存中…";
+        try{
+          const pr = await fetch(GAS_URL + "?action=drink_photo", {
+            method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+            body: JSON.stringify({ userId: USER_ID, photo: window._photoData })
+          });
+          const pj = await pr.json();
+          if (pj && pj.ok && pj.url) photoUrl = pj.url;
+          else { $("err").textContent = "写真の保存に失敗しました。写真なしで記録します。"; }
+        }catch(e){ $("err").textContent = "写真の保存に失敗しました。写真なしで記録します。"; }
+        $("submitBtn").textContent = "記録中…";
+      }
       const q = new URLSearchParams({
         action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
-        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE, _:Date.now()
+        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE,
+        photoUrl:photoUrl, _:Date.now()
       });
       const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
       const d = await res.json();
