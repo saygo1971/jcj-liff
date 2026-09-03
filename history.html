@@ -203,18 +203,6 @@
       render(d);
       try{ localStorage.setItem("jcj_hist_"+USER_ID, JSON.stringify(d)); }catch(e){}
       $("refresh").classList.add("hidden");
-      // 一時デバッグ：?debug=1 で、サーバーから返った記録の中身を画面下に出す（原因切り分け用）
-      if(params.get("debug")){
-        try{
-          const ds=(d.drinks||[]).slice().sort(function(a,b){return (b.ms||0)-(a.ms||0);});
-          const cs=(d.checkins||[]).length;
-          const lines=ds.slice(0,6).map(function(x){return x.date+" / "+(x.shopName||x.shopId)+" / "+(x.drink||"-")+"/"+(x.country||"-")+" / 写真"+(x.photo?"あり":"なし");});
-          const box=document.createElement("div");
-          box.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:99;background:#221c1a;color:#fff;font-size:12px;line-height:1.6;padding:10px;max-height:48vh;overflow:auto;white-space:pre-wrap;border-top:3px solid #C04A55";
-          box.textContent="【デバッグ】ID末尾="+String(USER_ID).slice(-6)+"\n来店="+cs+" 件 / 記録="+ds.length+" 件\n--- 新しい記録 上位6件 ---\n"+(lines.length?lines.join("\n"):"（記録0件）");
-          document.body.appendChild(box);
-        }catch(dbgE){}
-      }
     }catch(e){ if(!cached) $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; $("refresh").classList.add("hidden"); }
   }
 
