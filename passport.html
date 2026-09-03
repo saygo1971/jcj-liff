@@ -50,6 +50,13 @@
   .cir.got img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%}
   .cir.emp{background:var(--empty);border:1.5px dashed #cbbba0}
   .tapnote{text-align:right;font-size:10px;color:var(--sub);margin-top:7px;cursor:pointer}
+  /* 行きたいリスト入口（保存したお店へ再訪＝送客） */
+  .wish{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:12px 0 0;cursor:pointer}
+  .wish svg{width:22px;height:22px;flex:0 0 auto}
+  .wish .tx{flex:1}
+  .wish .tx b{display:block;font-size:12.5px;color:var(--green);font-weight:800}
+  .wish .tx span{font-size:10px;color:var(--sub)}
+  .wish .arw{color:var(--sub);font-size:14px}
   /* 個人の数字 */
   .stats{display:flex;gap:8px;margin:13px 0 11px}
   .stats .s{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center;padding:9px 4px}
@@ -98,6 +105,13 @@
         <span class="c"><b class="hwy" id="logoGot">0</b> <small>/ <span class="hwy" id="logoTotal">0</span></small></span></div>
       <div class="circles" id="circles"></div>
       <div class="tapnote" id="logoTap">ロゴ帳をひらく ›</div>
+
+      <!-- 行きたいリスト入口（案A：既存の保存カルーセルをトークに出す） -->
+      <div class="wish" id="wishList">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="tx"><b>行きたいリスト</b><span>保存したお店へ、次の一歩を</span></span>
+        <span class="arw">›</span>
+      </div>
 
       <!-- 個人の数字 -->
       <div class="stats">
@@ -150,6 +164,21 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
+
+  // 行きたいリスト（案A）：LINEトーク内で開かれていれば、既存の保存カルーセル(showSavedShops)を
+  // トークに出す（テキスト「行きたいロースターを表示」を送る＝GAS側の既存トリガー）。※要 chat_message.write スコープ。
+  // ブラウザ確認(?userId=)や非トーク時は発見地図へフォールバック。
+  function openWish(){
+    try{
+      if (window.liff && liff.isInClient && liff.isInClient() && liff.sendMessages){
+        liff.sendMessages([{ type:"text", text:"行きたいロースターを表示" }])
+          .then(function(){ try{ liff.closeWindow(); }catch(e){} })
+          .catch(function(){ open("discover"); });   // スコープ未許可等でも導線を切らさない
+        return;
+      }
+    }catch(e){}
+    open("discover");
+  }
 
   // 地球何周目メーター（totalKm / goalKm から算出）
   function renderEarth(totalKm, goalKm){
@@ -205,6 +234,7 @@
   function wireNav(){
     $("circles").onclick = () => open("logobook");
     $("logoTap").onclick = () => open("logobook");
+    $("wishList").onclick = openWish;
     $("navLogo").onclick = () => open("logobook");
     $("navHistory").onclick = () => open("history");
     $("navDiscover").onclick = () => open("discover");
