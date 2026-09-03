@@ -167,19 +167,12 @@
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
 
-  // 行きたいリスト：本番=案B（専用ページ saved.html）へ。saved LIFF 未発行の間（テスト）は
-  // 案A（トークに既存の保存カルーセルを出す・要 chat_message.write）にフォールバック→さらに不可なら発見地図。
+  // 行きたいリスト（案B・専用ページ saved.html）。
+  // 本番＝専用LIFF(LIFF.saved)へ。テスト（saved LIFF未発行）＝同一オリジンへ相対遷移＝
+  // このページが入れた jcj_uid を saved.html が引き継いで表示（入口ID発行なしで実機確認できる）。
   function openWish(){
-    if (SAVED_READY){ open("saved"); return; }   // 案B：専用ページへ
-    try{
-      if (window.liff && liff.isInClient && liff.isInClient() && liff.sendMessages){
-        liff.sendMessages([{ type:"text", text:"行きたいロースターを表示" }])
-          .then(function(){ try{ liff.closeWindow(); }catch(e){} })
-          .catch(function(){ open("discover"); });
-        return;
-      }
-    }catch(e){}
-    open("discover");
+    if (SAVED_READY){ open("saved"); return; }   // 本番：専用LIFFへ
+    location.href = "saved.html";                 // テスト：同一オリジンの行きたいリストへ
   }
 
   // 地球何周目メーター（totalKm / goalKm から算出）
