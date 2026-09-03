@@ -10,9 +10,9 @@
   ・本部v39 起票。骨組みはオーナー確定（6ステップ）。
   ・CSS/レイアウトは mile.html を流用、色はトンマナv1（深緑 #2B5D4F・テラコッタ #C04A55）＝本番5ページと統一。
   ・LIFF SDK 不要（表示だけの静的ページ・パラメータ不要）。
-  ・外部リンクは1つだけ＝マイルの説明ページ。飛び先は本番の絶対URL
-    https://japancoffeejourney.com/mile.html（本番リッチメニューの「マイルについて」と同じ着地先・実物確認済み）。
-    テスト環境から押しても本番のマイルページに着地する＝本番と同じ着地を検証できる。
+  ・外部リンクは「5.マイルを“豆割”に使う」の2本だけ。主役＝豆割ページ（LIFF・環境で値が違う）、副＝マイルの説明。
+    ★本番アップ時は「豆割を見る」のURLを本番値 2010671952-b5dbPe8l へ差し替える（該当箇所のコメント参照）。
+    ★3ボタン化でリッチメニューの「マイル特典」ボタンが消えるため、豆割への導線はこのページが担う。
 -->
 <style>
   /* JCJトンマナv1（2026-08-31 全社トークン）＝本番5ページ（パスポート/旅の記録/ロゴ帳/行きたいリスト/距離）と同一 */
@@ -60,10 +60,13 @@
   .note p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.85}
   .note p + p{margin-top:11px}
 
-  /* リンク（マイルについて） */
-  .link{display:block; text-align:center; text-decoration:none; margin:14px 0 0;
-    border:1.5px solid var(--terra); color:var(--terra); background:#fff;
-    border-radius:11px; padding:13px 14px; font-size:14.5px; font-weight:800}
+  /* 主役の行動ボタン（豆割を見る） */
+  .btn-main{display:block; text-align:center; text-decoration:none; margin:16px 0 0;
+    background:var(--terra); color:#fff; border-radius:11px; padding:14px;
+    font-size:15px; font-weight:800}
+  /* 副＝説明へのリンク（控えめ） */
+  .link-sub{display:block; text-align:center; margin:11px 0 0;
+    font-size:12.5px; color:var(--ink-sub); text-decoration:underline}
 
   .menu-hint{margin:26px 4px 0; font-size:12.5px; color:var(--ink-sub); text-align:center; line-height:1.8}
   .menu-hint b{color:var(--green)}
@@ -113,11 +116,16 @@
       <div class="sec-h"><span class="sec-no">5</span><h2>マイルを“豆割”に使う</h2></div>
       <p class="catch2">貯まったマイルは、豆に変わる。</p>
       <p class="sec-lead">旅で貯まったマイルは「豆割」に交換できます。お店の値引きではなく、旅したあなたへのごほうびです。</p>
-      <!-- ★飛び先＝本番の絶対URL。ここ1行だけ差し替えれば飛び先を変えられる。
-           根拠：本番リッチメニューの「マイルについて」が現に同じURLを直リンク（管理画面@740rorclで実物確認）。
-           本番 guide.html は「直下」に置くため相対 mile.html でも成立するが、置き場所に依存しない絶対URLにする。
-           mile.html は静的な説明ページ＝必須パラメータなし（実コードで確認）。実クリックで着地も確認済み。 -->
-      <a class="link" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話を見る</a>
+      <!-- ★主役＝豆割ページ（この章を読んだ人がいちばんやりたいこと）。
+           ここは環境で値が違う。差し替えはこの1行だけ。
+             テスト（今の値）: https://liff.line.me/2008851980-70LKkgEw   ＝ mame.html（テストGAS 1368行等で実績）
+             本番            : https://liff.line.me/2010671952-b5dbPe8l   ＝ 本番リッチメニュー5番「マイル特典」と同じ飛び先
+           ★テスト値にしている理由：テスト環境のページから本番LIFFを開くと、本番のマイル残高の画面に入ってしまうため。
+           ★mame.html は必須パラメータなし（debug以外を読んでいないことを実コードで確認）。
+           ※liff.line.me はLINEの中でのみ開く。パソコンのブラウザで反応しないのは正常。着地確認は実機で行う。 -->
+      <a class="btn-main" href="https://liff.line.me/2008851980-70LKkgEw">豆割を見る</a>
+      <!-- 副＝マイルの説明。本番の絶対URL（本番リッチメニュー「マイルについて」と同じ着地先・実クリック確認済み）。 -->
+      <a class="link-sub" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話</a>
     </section>
 
     <section>
