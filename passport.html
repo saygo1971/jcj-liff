@@ -171,8 +171,12 @@
   // 本番＝専用LIFF(LIFF.saved)へ。テスト（saved LIFF未発行）＝同一オリジンへ相対遷移＝
   // このページが入れた jcj_uid を saved.html が引き継いで表示（入口ID発行なしで実機確認できる）。
   function openWish(){
-    if (SAVED_READY){ open("saved"); return; }   // 本番：専用LIFFへ
-    location.href = "saved.html";                 // テスト：同一オリジンの行きたいリストへ
+    if (SAVED_READY){ open("saved"); return; }   // 専用LIFF発行時のみ：そのLIFFへ
+    // 相対遷移＝同一オリジンの行きたいリストへ（このページが入れた jcj_uid を saved.html が引き継ぐ）。
+    // ★本番注意（リリース番へ）：passport.html と saved.html を必ず"同じ階層"に置くこと。
+    //   本番はフォルダ運用(例 /passport/)ゆえ /saved/ 等 別フォルダに置くと相対 saved.html が404になる
+    //   （パスポート本番化で shop.html 未同梱404の前例あり）。アップ前に配置と相対パスを実機確認。
+    location.href = "saved.html";
   }
 
   // 地球何周目メーター（totalKm / goalKm から算出）
