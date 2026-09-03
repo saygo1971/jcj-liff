@@ -203,9 +203,10 @@
     if (/^\d+-/.test(HISTORY_LIFF_ID) && HISTORY_LIFF_ID.indexOf("YYYYYYYY")<0){
       $("goHist").href = "https://liff.line.me/" + HISTORY_LIFF_ID;
     } else { $("goHist").classList.add("hidden"); }
-    // 友だちに紹介＝既存シェアLIFFへ。未設定なら紹介ブロックを隠す（導線を壊さない）。
-    if (/^\d+-/.test(SHARE_LIFF_ID)){
-      $("refBtn").href = "https://liff.line.me/" + SHARE_LIFF_ID;
+    // 友だちに紹介＝既存シェアLIFF（送る側 share）へ。★shopId 必須（この店を紹介する）。shop.html と同じ付け方。
+    // SHARE未設定 or 店ID無し（＝どの店の紹介か決まらない）なら紹介ブロックを隠す（導線を壊さない）。
+    if (/^\d+-/.test(SHARE_LIFF_ID) && SHOP_ID){
+      $("refBtn").href = "https://liff.line.me/" + SHARE_LIFF_ID + "?shopId=" + encodeURIComponent(SHOP_ID) + "&source=log_drink";
     } else { $("refWrap").classList.add("hidden"); }
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
