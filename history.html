@@ -33,6 +33,7 @@
   /* B案：記録の下に写真を大きく（投稿っぽい）・タップで拡大 */
   .hphoto{margin-top:10px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;cursor:zoom-in;background:var(--paper)}
   .phbad{max-height:none;min-height:74px;object-fit:unset;cursor:default;display:flex;align-items:center;justify-content:center;color:#b05a52;font-size:12.5px;font-weight:700;border:1px dashed #e0c3bd}
+  .hmemo{margin-top:10px;background:var(--paper);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.65;color:var(--ink);white-space:pre-wrap;word-break:break-word}
   /* 写真の拡大（ライトボックス） */
   .lightbox{position:fixed;inset:0;background:rgba(20,15,10,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .lightbox.show{display:flex}
@@ -145,6 +146,8 @@
       // 表示URLはLINE内ブラウザで映りやすいDriveサムネイル形式へ変換。
       // 読み込めない時は黙って消さず「写真を表示できません」と見せる（保存済みか否かの切り分け用）。
       const rawPhoto = (dr && dr.photo) ? String(dr.photo) : "";
+      // コメント（メモ）は写真の上に出す
+      const memoHtml = (dr && dr.memo) ? '<div class="hmemo">'+esc(dr.memo)+'</div>' : '';
       const photoHtml = rawPhoto
         ? '<img class="hphoto" src="'+esc(toThumbUrl(rawPhoto))+'" loading="lazy" alt="" data-full="'+esc(rawPhoto)+'" '+
           'onerror="this.onerror=null;var b=document.createElement(\'div\');b.className=\'hphoto phbad\';b.textContent=\'写真を表示できません\';this.replaceWith(b);">'
@@ -154,6 +157,7 @@
         '<div class="hbody"><div class="hname">'+esc(r.shopName||"お店")+'</div>'+
         '<div class="hpl">'+esc(r.pref||"")+'</div>'+
         '<div class="htags">'+tags+'</div></div></div>'+
+        memoHtml+
         photoHtml+
       '</div>';
     }).join("");
