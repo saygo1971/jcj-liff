@@ -208,28 +208,28 @@
     }
     $("submitBtn").disabled = true; $("submitBtn").textContent = "記録中…";
     try {
-      // 写真があれば先にDriveへ保存してURLを得る（大きいのでPOST）。失敗しても記録自体は続ける。
-      let photoUrl = "";
+      // 写真つきは「1回のやり取り」でまとめて送る＝写真保存＋記録をサーバー側で続けて処理（往復1回で速い）。
+      // 写真なしは従来どおり軽いGET。
+      let d;
       if (window._photoData){
-        $("submitBtn").textContent = "写真を保存中…";
-        try{
-          const pr = await fetch(GAS_URL + "?action=drink_photo", {
-            method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
-            body: JSON.stringify({ userId: USER_ID, photo: window._photoData })
-          });
-          const pj = await pr.json();
-          if (pj && pj.ok && pj.url) photoUrl = pj.url;
-          else { $("err").textContent = "写真の保存に失敗しました。写真なしで記録します。"; }
-        }catch(e){ $("err").textContent = "写真の保存に失敗しました。写真なしで記録します。"; }
-        $("submitBtn").textContent = "記録中…";
+        $("submitBtn").textContent = "写真つきで記録中…";
+        const res = await fetch(GAS_URL + "?action=drink_log_full", {
+          method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            userId:USER_ID, shopId:SHOP_ID, drink:sel.drink, country:sel.country,
+            process:sel.process, memo:memo, date:REC_DATE, photo:window._photoData
+          })
+        });
+        d = await res.json();
+      } else {
+        const q = new URLSearchParams({
+          action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
+          drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE,
+          photoUrl:"", _:Date.now()
+        });
+        const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+        d = await res.json();
       }
-      const q = new URLSearchParams({
-        action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
-        drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE,
-        photoUrl:photoUrl, _:Date.now()
-      });
-      const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
-      const d = await res.json();
       if (!d || !d.ok){
         $("submitBtn").disabled = false; $("submitBtn").textContent = "今日の一杯を残す";
         $("err").textContent = "記録に失敗しました。もう一度お試しください。";
