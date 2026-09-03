@@ -159,21 +159,23 @@
     history:  "2008851980-6s0zFwwl",
     logobook: "2008851980-9f9JHRZM",
     distance: "2008851980-esv1Ko37",
-    beans:    "2008851980-trJY7IX9"
+    beans:    "2008851980-trJY7IX9",
+    saved:    "2008851980-XXXXXXXX"   // ★行きたいリスト(案B saved.html)専用LIFF＝本番アップ時に発行→差替。未発行中は案A(カルーセル)にフォールバック
   };
+  const SAVED_READY = /^\d+-[A-Za-z0-9]+$/.test(LIFF.saved) && LIFF.saved.indexOf("XXXX") < 0;
   const $ = id => document.getElementById(id);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
 
-  // 行きたいリスト（案A）：LINEトーク内で開かれていれば、既存の保存カルーセル(showSavedShops)を
-  // トークに出す（テキスト「行きたいロースターを表示」を送る＝GAS側の既存トリガー）。※要 chat_message.write スコープ。
-  // ブラウザ確認(?userId=)や非トーク時は発見地図へフォールバック。
+  // 行きたいリスト：本番=案B（専用ページ saved.html）へ。saved LIFF 未発行の間（テスト）は
+  // 案A（トークに既存の保存カルーセルを出す・要 chat_message.write）にフォールバック→さらに不可なら発見地図。
   function openWish(){
+    if (SAVED_READY){ open("saved"); return; }   // 案B：専用ページへ
     try{
       if (window.liff && liff.isInClient && liff.isInClient() && liff.sendMessages){
         liff.sendMessages([{ type:"text", text:"行きたいロースターを表示" }])
           .then(function(){ try{ liff.closeWindow(); }catch(e){} })
-          .catch(function(){ open("discover"); });   // スコープ未許可等でも導線を切らさない
+          .catch(function(){ open("discover"); });
         return;
       }
     }catch(e){}

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>行きたいリスト</title>
+<!--
+  🔖 行きたいリスト（保存したお店）＝案B・LIFFページ
+  ・データ：GAS action=saved_list（saved_api.js / handleSavedList_）。
+  ・速度：前回分を先に出す（localStorage）→裏で最新取得（ロゴ帳・旅の記録と同じ体感）。
+  ・★このページ専用 LIFF_ID は本番アップ時に発行。未発行の間は ?userId= で確認可。
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--green:#2B5D4F;--state-done:#2F7A57;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--empty:#E7DCC7}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--green);color:#fff;padding:13px 16px;font-size:17px;font-weight:800;position:sticky;top:0;z-index:5}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:12px 12px 40px}
+  .lead{font-size:12px;color:var(--ink-sub);margin:2px 4px 12px;line-height:1.7}
+  .card{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:11px;align-items:flex-start}
+  .card .logo{width:46px;height:46px;border-radius:50%;border:1px solid var(--state-done);background:#fff;flex:0 0 auto;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .card .logo img{width:100%;height:100%;object-fit:contain;padding:3px}
+  .card .logo b{font-size:12px;color:var(--state-done);font-weight:900}
+  .card .body{flex:1;min-width:0}
+  .card .nm{font-size:15px;font-weight:800;color:var(--ink);line-height:1.3}
+  .card .pl{font-size:11.5px;color:var(--ink-sub);margin:2px 0 4px}
+  .card .cp{font-size:12px;color:var(--green);line-height:1.5;margin-bottom:9px}
+  .card .btns{display:flex;gap:8px;align-items:center}
+  .card .go{flex:1;text-align:center;background:var(--brand-deep);color:#fff;font-weight:800;font-size:13.5px;
+    border-radius:10px;padding:10px;text-decoration:none;box-shadow:0 3px 8px rgba(192,74,85,.22)}
+  .card .see{flex:0 0 auto;text-align:center;color:var(--green);font-weight:700;font-size:12.5px;text-decoration:underline;padding:10px 4px;cursor:pointer}
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-sub)}
+  .empty .big{font-size:15px;color:var(--ink);font-weight:800;margin-bottom:8px}
+  .empty a{display:inline-block;margin-top:14px;background:var(--brand-deep);color:#fff;font-weight:800;
+    border-radius:11px;padding:12px 22px;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<div class="bar">行きたいリスト</div>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
+<div id="main" class="wrap hidden">
+  <div class="lead">気になって保存したお店。次の一歩は、行き方をひらくところから。</div>
+  <div id="list"></div>
+</div>
+<div id="empty" class="empty hidden">
+  <div class="big">まだ保存したお店がありません</div>
+  <div>発見地図で気になるお店を見つけて、<br>「行きたいに保存」してみましょう。</div>
+  <a id="toDiscover">発見地図をひらく</a>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const SAVED_LIFF_ID = "2008851980-XXXXXXXX"; // ★TODO：本番アップ時に専用LIFF ID発行→差替。未発行中は ?userId= で確認
+  const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let _started = "";
+
+  function cardHtml(s){
+    const initial = esc((s.name||"?").slice(0,2));
+    const logo = s.logo
+      ? '<img src="'+esc(s.logo)+'" alt="" onerror="this.parentNode.innerHTML=\'<b>'+initial+'</b>\'">'
+      : '<b>'+initial+'</b>';
+    const go = s.mapUrl
+      ? '<a class="go" href="'+esc(s.mapUrl)+'" target="_blank" rel="noopener">行き方を見る</a>'
+      : '<a class="go" href="https://liff.line.me/'+DISCOVER_LIFF_ID+'">お店をひらく</a>';
+    return '<div class="card">'+
+      '<div class="logo">'+logo+'</div>'+
+      '<div class="body">'+
+        '<div class="nm">'+esc(s.name)+'</div>'+
+        '<div class="pl">'+esc(s.place||s.pref||"")+'</div>'+
+        (s.copy? '<div class="cp">'+esc(s.copy)+'</div>':'')+
+        '<div class="btns">'+go+'<a class="see" href="shop.html?shop='+encodeURIComponent(s.id)+'">お店を見る</a></div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function render(d){
+    const shops = Array.isArray(d.shops)? d.shops : [];
+    if (!shops.length){
+      $("status").classList.add("hidden"); $("main").classList.add("hidden");
+      $("empty").classList.remove("hidden");
+      return;
+    }
+    $("list").innerHTML = shops.map(cardHtml).join("");
+    $("status").classList.add("hidden"); $("empty").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function loadData(userId){
+    try{
+      const res = await fetch(GAS_URL + "?action=saved_list&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
+      const d = await res.json();
+      if (_started && userId !== _started) return;
+      if (d && d.ok){
+        render(d);
+        try{ localStorage.setItem("jcj_saved_"+userId, JSON.stringify(d)); }catch(e){}
+      } else if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden")){
+        $("status").textContent = "読み込みに失敗しました。電波の良い場所でお試しください。";
+      }
+    }catch(e){
+      if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
+        $("status").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
+    }
+  }
+
+  function start(userId){
+    if(!userId){ $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
+    if(_started === userId) return;
+    _started = userId;
+    try{ localStorage.setItem("jcj_uid", userId); }catch(e){}
+    $("toDiscover").href = "https://liff.line.me/" + DISCOVER_LIFF_ID;
+    try{ const prev = localStorage.getItem("jcj_saved_"+userId); if(prev){ render(JSON.parse(prev)); } }catch(e){}
+    loadData(userId);
+  }
+
+  async function main(){
+    const qUser = new URLSearchParams(location.search).get("userId");
+    if (qUser){ start(qUser.trim()); return; }
+    let cachedUid = ""; try{ cachedUid = localStorage.getItem("jcj_uid")||""; }catch(e){}
+    if (cachedUid){ start(cachedUid); }
+    try{
+      await liff.init({ liffId: SAVED_LIFF_ID });
+      if (!liff.isLoggedIn()){ liff.login(); return; }
+      const prof = await liff.getProfile();
+      if (prof && prof.userId && prof.userId !== cachedUid){ _started=""; start(prof.userId); }
+    }catch(e){
+      if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
+        $("status").textContent = "ログインの確認中に問題が起きました。アプリを開き直してください。";
+    }
+  }
+  main();
+</script>
+</body>
+</html>
