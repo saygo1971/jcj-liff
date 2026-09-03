@@ -10,7 +10,8 @@
   ・本部v39 起票。骨組みはオーナー確定（6ステップ）。
   ・CSS/レイアウトは mile.html を流用、色はトンマナv1（深緑 #2B5D4F・テラコッタ #C04A55）＝本番5ページと統一。
   ・LIFF SDK 不要（表示だけの静的ページ・パラメータ不要）。
-  ・外部リンクは「5.マイルを“豆割”に使う」の2本だけ。主役＝豆割ページ（LIFF・環境で値が違う）、副＝マイルの説明。
+  ・外部リンクは「5.マイルを“豆割”に使う」の2本だけ。主役＝マイルの説明（塗り）、副＝豆割ページ（深緑の枠線・環境で値が違う）。
+    ※オーナー指示2026-09-04で主役と副を入れ替え（マイルの話＝重要なのでボタン／豆割は前面に出さない）。
     ★本番アップ時は「豆割を見る」のURLを本番値 2010671952-b5dbPe8l へ差し替える（該当箇所のコメント参照）。
     ★3ボタン化でリッチメニューの「マイル特典」ボタンが消えるため、豆割への導線はこのページが担う。
 -->
@@ -60,13 +61,14 @@
   .note p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.85}
   .note p + p{margin-top:11px}
 
-  /* 主役の行動ボタン（豆割を見る） */
+  /* 主役＝塗りのテラコッタ。★1画面に1つだけ（log_drink の #done .refBtn と同じ作り） */
   .btn-main{display:block; text-align:center; text-decoration:none; margin:16px 0 0;
-    background:var(--terra); color:#fff; border-radius:11px; padding:14px;
-    font-size:15px; font-weight:800}
-  /* 副＝説明へのリンク（控えめ） */
-  .link-sub{display:block; text-align:center; margin:11px 0 0;
-    font-size:12.5px; color:var(--ink-sub); text-decoration:underline}
+    background:var(--terra); color:#fff; border-radius:12px; padding:14px;
+    font-size:15px; font-weight:800; box-shadow:0 4px 10px rgba(192,74,85,.25)}
+  /* 副＝深緑の枠線ボタン（passport.html の .nav .second と同じ作り・新しい見た目は作らない） */
+  .btn-sub{display:block; text-align:center; text-decoration:none; margin:10px 0 0;
+    background:#fff; color:var(--green); border:1.5px solid var(--green);
+    border-radius:12px; padding:13px; font-size:14.5px; font-weight:800}
 
   .menu-hint{margin:26px 4px 0; font-size:12.5px; color:var(--ink-sub); text-align:center; line-height:1.8}
   .menu-hint b{color:var(--green)}
@@ -116,16 +118,19 @@
       <div class="sec-h"><span class="sec-no">5</span><h2>マイルを“豆割”に使う</h2></div>
       <p class="catch2">貯まったマイルは、豆に変わる。</p>
       <p class="sec-lead">旅で貯まったマイルは「豆割」に交換できます。お店の値引きではなく、旅したあなたへのごほうびです。</p>
-      <!-- ★主役＝豆割ページ（この章を読んだ人がいちばんやりたいこと）。
+      <!-- ★主役＝マイルの説明（オーナー指示 2026-09-04「マイルの詳しい話は、重要だからボタンがいい」）。
+           塗りのテラコッタ＝このページで1つだけ。飛び先は本番の絶対URL
+           （本番リッチメニュー「マイルについて」と同じ着地先・実クリックで着地確認済み）。 -->
+      <a class="btn-main" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話を見る</a>
+
+      <!-- ★副＝豆割ページ（オーナー指示「豆割は前面出さないから、枠のボタンがいいかな」）。深緑の枠線。
            ここは環境で値が違う。差し替えはこの1行だけ。
              テスト（今の値）: https://liff.line.me/2008851980-70LKkgEw   ＝ mame.html（テストGAS 1368行等で実績）
              本番            : https://liff.line.me/2010671952-b5dbPe8l   ＝ 本番リッチメニュー5番「マイル特典」と同じ飛び先
            ★テスト値にしている理由：テスト環境のページから本番LIFFを開くと、本番のマイル残高の画面に入ってしまうため。
            ★mame.html は必須パラメータなし（debug以外を読んでいないことを実コードで確認）。
            ※liff.line.me はLINEの中でのみ開く。パソコンのブラウザで反応しないのは正常。着地確認は実機で行う。 -->
-      <a class="btn-main" href="https://liff.line.me/2008851980-70LKkgEw">豆割を見る</a>
-      <!-- 副＝マイルの説明。本番の絶対URL（本番リッチメニュー「マイルについて」と同じ着地先・実クリック確認済み）。 -->
-      <a class="link-sub" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話</a>
+      <a class="btn-sub" href="https://liff.line.me/2008851980-70LKkgEw">豆割を見る</a>
     </section>
 
     <section>
