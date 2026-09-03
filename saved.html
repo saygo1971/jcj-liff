@@ -30,7 +30,7 @@
   .prefhd b{font-size:13px;font-weight:800}
   .prefhd .cnt{font-size:11px;font-weight:800;color:var(--accent-d);background:#fbeee6;border-radius:999px;padding:2px 9px}
   /* ▼ discover 一覧カードの実装値をそのまま */
-  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;margin-bottom:12px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;margin-bottom:12px;cursor:pointer}
   .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);
     display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;font-weight:800;overflow:hidden}
   .card .pho img{width:100%;height:100%;object-fit:cover}
@@ -48,9 +48,6 @@
   .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
-  /* 行き方を見る＝送客（緑ボタン・カード内に残す） */
-  .goBtn{display:block;margin-top:9px;background:var(--green);color:#fff;text-align:center;font-weight:800;font-size:13px;
-    border-radius:10px;padding:9px;text-decoration:none}
   .empty{text-align:center;padding:60px 20px;color:var(--sub)}
   .empty .big{font-size:15px;color:var(--brown-d);font-weight:800;margin-bottom:8px}
   .empty a{display:inline-block;margin-top:14px;background:var(--accent);color:#fff;font-weight:800;
@@ -116,15 +113,13 @@
     return f?'<div class="facts">'+f+'</div>':'';
   }
   function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
-  function goBtn(s){
-    var url = s.mapUrl ? esc(s.mapUrl) : ("https://liff.line.me/"+DISCOVER_LIFF_ID);
-    var tgt = s.mapUrl ? ' target="_blank" rel="noopener"' : '';
-    return '<a class="goBtn" href="'+url+'"'+tgt+'>行き方を見る</a>';
-  }
+  // カードごとの「行き方を見る」ボタンは廃止（オーナー確定2026-09-03：縦長で写真比率が崩れるため）。
+  // 送客＝カード全体タップ→お店のページ shop.html（そこに行き方＝Googleマップ）で担保＝ロースター一覧と同じ挙動。
+  function openShop(id){ location.href = "shop.html?shop=" + encodeURIComponent(id); }
   function cardHTML(s){
-    return '<div class="card"><div class="pho">'+ph(s)+'</div><div class="in">'+
+    return '<div class="card" onclick="openShop(\''+esc(s.id)+'\')"><div class="pho">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+esc(s.pref)+'</div><div class="nm">'+esc(s.name)+'</div>'+
-      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+goBtn(s)+
+      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+
       '</div></div>';
   }
 
