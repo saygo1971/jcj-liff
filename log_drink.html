@@ -46,6 +46,16 @@
     font-weight:600;text-decoration:none}
   .err{color:var(--state-error);font-size:12.5px;margin-top:10px;text-align:center;min-height:16px}
   .tiny{text-align:center;color:var(--ink-sub);font-size:10.5px;margin-top:16px;line-height:1.7}
+  /* 写真を追加（任意） */
+  .photobox{margin-top:18px}
+  .photobtn{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--brand-deep);color:var(--brand-deep);
+    font-weight:800;font-size:14px;border-radius:11px;padding:11px 18px;cursor:pointer}
+  .photobtn:before{content:"＋";font-size:16px;font-weight:900}
+  .photoprev{position:relative;display:inline-block;margin-top:10px}
+  .photoprev img{max-width:180px;max-height:180px;border-radius:12px;border:1px solid var(--line);display:block}
+  .photox{position:absolute;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;background:#221C1A;color:#fff;
+    border:2px solid #fff;font-size:15px;line-height:1;cursor:pointer}
+  .photonote{font-size:11.5px;color:var(--ink-sub);margin-top:9px;line-height:1.6}
   #done{text-align:center;padding:70px 24px}
   #done .emo{font-size:44px}
   #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:var(--state-done)}
@@ -83,6 +93,16 @@
     <div class="chips" id="processChips"></div>
     <div class="sec">ひとことメモ</div>
     <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
+  </div>
+
+  <!-- 写真を追加（任意）＝③体験。撮る/選ぶ→端末側で縮小→プレビュー。保存先(Drive等)はアカウント確定後に結線。 -->
+  <div class="photobox" id="photoBox">
+    <div class="sec">写真を追加（任意）</div>
+    <input type="file" id="photoInput" accept="image/*" hidden>
+    <button type="button" class="photobtn" id="photoBtn">写真を選ぶ・撮る</button>
+    <div class="photoprev hidden" id="photoPrev"><img id="photoImg" alt=""><button type="button" class="photox" id="photoClear" aria-label="写真を外す">×</button></div>
+    <!-- 撮る直前が一番効くタイミング＝オーナー指定の文言(一字一句)を短く1行。全文は「遊び方・使い方」ページ。 -->
+    <div class="photonote">写真を撮る前に、お店の方にご確認ください。</div>
   </div>
 
   <button class="btn" id="submitBtn">今日の一杯を残す</button>
@@ -147,6 +167,37 @@
 
   function showStatus(msg){ $("status").textContent = msg; $("status").classList.remove("hidden"); }
 
+  // 写真を追加（任意）＝端末側で縮小(長辺1280/JPEG0.8)→プレビュー。縮小後データURLを window._photoData に保持。
+  // ★保存(Drive等への結線)は「保存先アカウント確定＋GAS受け口配備」後に submit で送る。今はUX＋iPhone選択確認まで。
+  window._photoData = "";
+  function setupPhoto(){
+    var inp = $("photoInput"), btn = $("photoBtn");
+    if(!inp || !btn) return;
+    btn.onclick = function(){ inp.click(); };
+    inp.onchange = function(){
+      var f = this.files && this.files[0]; if(!f) return;
+      var img = new Image();
+      img.onload = function(){
+        var MAX = 1280, w = img.width, h = img.height;
+        if (w > h && w > MAX){ h = Math.round(h*MAX/w); w = MAX; }
+        else if (h >= w && h > MAX){ w = Math.round(w*MAX/h); h = MAX; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        window._photoData = c.toDataURL("image/jpeg", 0.8);   // 縮小後(≒150-250KB)
+        $("photoImg").src = window._photoData;
+        $("photoPrev").classList.remove("hidden");
+        btn.textContent = "写真を変える";
+        try{ URL.revokeObjectURL(img.src); }catch(e){}
+      };
+      img.onerror = function(){ $("err").textContent = "この写真は読み込めませんでした。別の写真でお試しください。"; };
+      img.src = URL.createObjectURL(f);
+    };
+    $("photoClear").onclick = function(){
+      window._photoData = ""; inp.value = "";
+      $("photoPrev").classList.add("hidden"); btn.textContent = "写真を選ぶ・撮る";
+    };
+  }
+
   async function submit(){
     $("err").textContent = "";
     const memo = $("memo").value.trim();
@@ -198,6 +249,7 @@
       $("moreChev").textContent = open ? "－ とじる ▴" : "＋ ひらく ▾";
     };
     $("submitBtn").addEventListener("click", submit);
+    setupPhoto();
     $("laterLink").onclick = function(ev){ ev.preventDefault(); closeApp(); };
     // 旅の記録リンク（履歴LIFF未発行なら隠す）
     if (/^\d+-/.test(HISTORY_LIFF_ID) && HISTORY_LIFF_ID.indexOf("YYYYYYYY")<0){
