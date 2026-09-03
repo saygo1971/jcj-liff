@@ -96,23 +96,23 @@
     // 記録も来店も無い時だけ「まだありません」。記録だけでも表示する（案A・2026-09-03）。
     if (!checkins.length && !drinks.length){ $("status").classList.add("hidden"); $("empty").classList.remove("hidden"); return; }
 
-    // 同じ店・同じ日の記録を来店に紐づける（代表1件）。使ったkeyは記録し、独立行で二重表示しない。
-    const byKey = {};
-    drinks.forEach(x => { const k = x.shopId+"|"+x.date; if(!byKey[k]) byKey[k]=x; });
-    const usedKeys = {};
+    // 記録は「一杯ごと」に全部見せる。来店(チェックイン)には、同じ店・同じ日の記録を1件だけ紐づけ、
+    // 残りの記録は独立した行として必ず表示する（同じ店・同じ日に何度記録しても消えない）。
+    const usedDrink = new Set();
     const rows = [];
-    // ① 来店（チェックイン）行＝従来どおり。同じ店・同じ日の記録をくっつける。
+    // ① 来店（チェックイン）行。まだ使っていない同店・同日の記録を1件だけくっつける。
     checkins.forEach(c => {
-      const k = c.shopId+"|"+c.date;
-      const dr = byKey[k] || null;
-      if (dr) usedKeys[k] = true;
+      let dr = null;
+      for (let i=0;i<drinks.length;i++){
+        const x = drinks[i];
+        if (usedDrink.has(x)) continue;
+        if (x.shopId===c.shopId && x.date===c.date){ dr=x; usedDrink.add(x); break; }
+      }
       rows.push({ ms:c.ms, date:c.date, shopId:c.shopId, shopName:c.shopName, pref:c.pref, km:c.km, dr:dr, visit:true });
     });
-    // ② 記録だけの行＝どの来店にも紐づかない記録を独立した行に（重複防止：代表1件のみ）。
+    // ② 来店にくっつかなかった記録は、すべて独立した行に（1杯＝1行・消さない）。
     drinks.forEach(x => {
-      const k = x.shopId+"|"+x.date;
-      if (usedKeys[k]) return;          // 既に来店行で表示済み
-      if (byKey[k] !== x) return;       // 同key複数は代表1件だけ
+      if (usedDrink.has(x)) return;
       rows.push({ ms:x.ms, date:x.date, shopId:x.shopId, shopName:x.shopName, pref:x.pref, km:null, dr:x, visit:false });
     });
     // 日付順（新しい順）に自然に混ぜる
