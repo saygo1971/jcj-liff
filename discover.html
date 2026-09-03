@@ -357,10 +357,10 @@
   }
   // 距離マイルを"旅の勲章"の言葉に（遠いほど誇らしく）。数字＝もらえるマイルであり旅した距離でもある
   function tierLabel(mile){
-    if(mile<=15) return '☕ ご近所の一杯';
-    if(mile<=49) return '🚶 ＋'+mile+'マイルの寄り道';
-    if(mile<=149) return '🧭 ＋'+mile+'マイルの旅';
-    return '⛰ 片道'+mile+'マイルの冒険';
+    if(mile<=15) return 'ご近所の一杯';
+    if(mile<=49) return '＋'+mile+'マイルの寄り道';
+    if(mile<=149) return '＋'+mile+'マイルの旅';
+    return '片道'+mile+'マイルの冒険';
   }
   function mileHTML(s){
     var m=mileInfo(s); if(!m) return '';
@@ -370,7 +370,7 @@
     }
     // 最近行ったばかり（90日以内）＝数字だけだと"バグ?"と考えさせる→理由を一言そえる
     var d=m.nextDate, md=(d.getMonth()+1)+'月'+d.getDate()+'日';
-    return '<div class="milerow2"><span class="milepill rest">☕ ひと休み中</span>'+
+    return '<div class="milerow2"><span class="milepill rest">ひと休み中</span>'+
       '<div class="milewhy">最近行ったばかり。今行くと +10マイル<br>'+md+'から、また +'+m.full+'マイルに戻ります</div></div>';
   }
 
