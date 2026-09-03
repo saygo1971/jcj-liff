@@ -32,6 +32,7 @@
   .htop{display:flex;gap:10px}
   /* B案：記録の下に写真を大きく（投稿っぽい）・タップで拡大 */
   .hphoto{margin-top:10px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;cursor:zoom-in;background:var(--paper)}
+  .phbad{max-height:none;min-height:74px;object-fit:unset;cursor:default;display:flex;align-items:center;justify-content:center;color:#b05a52;font-size:12.5px;font-weight:700;border:1px dashed #e0c3bd}
   /* 写真の拡大（ライトボックス） */
   .lightbox{position:fixed;inset:0;background:rgba(20,15,10,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .lightbox.show{display:flex}
@@ -141,8 +142,12 @@
       }
       if (r.km!=null) tags += '<span class="tag dist">約'+r.km+'km</span>';
       // B案：記録に写真があれば、下に大きく（タップで拡大＝行タップの店詳細とは別動作）
-      const photoHtml = (dr && dr.photo)
-        ? '<img class="hphoto" src="'+esc(dr.photo)+'" loading="lazy" alt="" onerror="this.style.display=\'none\'">'
+      // 表示URLはLINE内ブラウザで映りやすいDriveサムネイル形式へ変換。
+      // 読み込めない時は黙って消さず「写真を表示できません」と見せる（保存済みか否かの切り分け用）。
+      const rawPhoto = (dr && dr.photo) ? String(dr.photo) : "";
+      const photoHtml = rawPhoto
+        ? '<img class="hphoto" src="'+esc(toThumbUrl(rawPhoto))+'" loading="lazy" alt="" data-full="'+esc(rawPhoto)+'" '+
+          'onerror="this.onerror=null;var b=document.createElement(\'div\');b.className=\'hphoto phbad\';b.textContent=\'写真を表示できません\';this.replaceWith(b);">'
         : '';
       return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'">'+
         '<div class="htop"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
@@ -169,6 +174,13 @@
     $("main").classList.remove("hidden");
   }
 
+  // 保存URL(lh3形式など)を、LINE内ブラウザで映りやすいDriveサムネイルURLへ変換
+  function toThumbUrl(u){
+    if(!u) return u;
+    var m = u.match(/lh3\.googleusercontent\.com\/d\/([^=?/]+)/) || u.match(/[?&]id=([^&]+)/) || u.match(/\/d\/([^/?]+)/);
+    if(m && m[1]) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1200";
+    return u; // Driveでない（Xサーバー等）URLはそのまま
+  }
   // 写真の拡大（ライトボックス）。背景タップか×で閉じる。
   function openLightbox(src){ if(!src) return; $("lxImg").src = src; $("lightbox").classList.add("show"); }
   function closeLightbox(){ $("lightbox").classList.remove("show"); $("lxImg").src=""; }
