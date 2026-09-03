@@ -81,15 +81,32 @@
   function render(d){
     const checkins = (d.checkins||[]);
     const drinks = (d.drinks||[]);
-    if (!checkins.length){ $("status").classList.add("hidden"); $("empty").classList.remove("hidden"); return; }
+    // 記録も来店も無い時だけ「まだありません」。記録だけでも表示する（案A・2026-09-03）。
+    if (!checkins.length && !drinks.length){ $("status").classList.add("hidden"); $("empty").classList.remove("hidden"); return; }
 
-    // 同じ店・同じ日の記録を来店に紐づける
+    // 同じ店・同じ日の記録を来店に紐づける（代表1件）。使ったkeyは記録し、独立行で二重表示しない。
     const byKey = {};
     drinks.forEach(x => { const k = x.shopId+"|"+x.date; if(!byKey[k]) byKey[k]=x; });
-    const rows = checkins.map(c => ({ c:c, d:byKey[c.shopId+"|"+c.date]||null }));
-    rows.sort((a,b)=> (b.c.ms||0)-(a.c.ms||0));
+    const usedKeys = {};
+    const rows = [];
+    // ① 来店（チェックイン）行＝従来どおり。同じ店・同じ日の記録をくっつける。
+    checkins.forEach(c => {
+      const k = c.shopId+"|"+c.date;
+      const dr = byKey[k] || null;
+      if (dr) usedKeys[k] = true;
+      rows.push({ ms:c.ms, date:c.date, shopId:c.shopId, shopName:c.shopName, pref:c.pref, km:c.km, dr:dr, visit:true });
+    });
+    // ② 記録だけの行＝どの来店にも紐づかない記録を独立した行に（重複防止：代表1件のみ）。
+    drinks.forEach(x => {
+      const k = x.shopId+"|"+x.date;
+      if (usedKeys[k]) return;          // 既に来店行で表示済み
+      if (byKey[k] !== x) return;       // 同key複数は代表1件だけ
+      rows.push({ ms:x.ms, date:x.date, shopId:x.shopId, shopName:x.shopName, pref:x.pref, km:null, dr:x, visit:false });
+    });
+    // 日付順（新しい順）に自然に混ぜる
+    rows.sort((a,b)=> (b.ms||0)-(a.ms||0));
 
-    // まとめ
+    // まとめ（訪問数・店数・県数＝来店ベース。従来どおり）
     const shops = {}, prefs = {};
     checkins.forEach(c => { if(c.shopId) shops[c.shopId]=1; if(c.pref) prefs[c.pref]=1; });
     $("nVisit").textContent = checkins.length;
@@ -97,11 +114,10 @@
     $("nPref").textContent = Object.keys(prefs).length;
 
     $("list").innerHTML = rows.map(r=>{
-      const c=r.c, dr=r.d;
+      const dr=r.dr;
       const recorded = !!dr;
-      // 日付の下に店のロゴ（無ければ非表示）
-      const logo = c.shopId
-        ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(c.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
+      const logo = r.shopId
+        ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(r.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
         : '';
       let tags="";
       if (dr){
@@ -109,13 +125,13 @@
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
       } else {
         // 記録が無い来店＝「記録を追加する」で今日の一杯へ（その店を引き継ぐ）
-        const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(c.shopId||"")+"&name="+encodeURIComponent(c.shopName||"")+"&date="+encodeURIComponent(c.ms||"");
+        const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(r.shopId||"")+"&name="+encodeURIComponent(r.shopName||"")+"&date="+encodeURIComponent(r.ms||"");
         tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
       }
-      if (c.km!=null) tags += '<span class="tag dist">約'+c.km+'km</span>';
-      return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(c.shopId||"")+'"><div class="hdate"><span class="d">'+esc(c.date)+'</span>'+logo+'</div>'+
-        '<div class="hbody"><div class="hname">'+esc(c.shopName||"お店")+'</div>'+
-        '<div class="hpl">'+esc(c.pref||"")+'</div>'+
+      if (r.km!=null) tags += '<span class="tag dist">約'+r.km+'km</span>';
+      return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
+        '<div class="hbody"><div class="hname">'+esc(r.shopName||"お店")+'</div>'+
+        '<div class="hpl">'+esc(r.pref||"")+'</div>'+
         '<div class="htags">'+tags+'</div></div></div>';
     }).join("");
 
