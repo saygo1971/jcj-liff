@@ -6,41 +6,54 @@
 <title>行きたいリスト</title>
 <!--
   🔖 行きたいリスト（保存したお店）＝案B・LIFFページ
-  ・データ：GAS action=saved_list（saved_api.js / handleSavedList_）。
-  ・速度：前回分を先に出す（localStorage）→裏で最新取得（ロゴ帳・旅の記録と同じ体感）。
+  ・オーナー確定(2026-09-03)：カードは「ロースター一覧(discover.html)」と完全に同じ。距離マイルpillは絵文字なし。
+  ・見た目&マイル計算は discover.html の実装をそのまま流用＝一覧とズレない。
+    データ＝discover_shops(全店の写真/アクセス/座標/豆割)＋user_context(自宅座標)＋saved_list(保存IDの絞り込み)。
+  ・行き方を見る(緑ボタン=送客)を各カードに1つ残す(本部方針)。県グループ見出しは出さない(保存順フラット)。
   ・★このページ専用 LIFF_ID は本番アップ時に発行。未発行の間は ?userId= で確認可。
 -->
 <style>
   *{box-sizing:border-box}
-  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--green:#2B5D4F;--state-done:#2F7A57;
-    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--empty:#E7DCC7}
-  html,body{margin:0;background:var(--bg);color:var(--ink);
+  /* discover.html のロースター一覧カードと同一値 */
+  :root{--paper:#ffffff;--sub:#6E655E;--brown-d:#221C1A;--accent:#C04A55;--accent-d:#993536;--line:#DDD6CE;--green:#2B5D4F}
+  html,body{margin:0;background:#fff;color:var(--brown-d);
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
   .bar{background:var(--green);color:#fff;padding:13px 16px;font-size:17px;font-weight:800;position:sticky;top:0;z-index:5}
-  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  #status{text-align:center;padding:80px 20px;color:var(--sub);font-size:14px}
   .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
   @keyframes sp{to{transform:rotate(360deg)}}
   .hidden{display:none!important}
   .wrap{max-width:520px;margin:0 auto;padding:12px 12px 40px}
-  .lead{font-size:12px;color:var(--ink-sub);margin:2px 4px 12px;line-height:1.7}
-  /* ロースター一覧（発見地図 discover.html）と同じ寸法に合わせる＝左写真132×124・地色ベージュ・余白10/12・角丸14 */
-  .card{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:11px}
+  .lead{font-size:12px;color:var(--sub);margin:2px 4px 12px;line-height:1.7}
+  /* 県グループ見出し（ロースター一覧と同じ「県名＋N店」） */
+  .prefhd{display:flex;align-items:center;gap:8px;margin:4px 2px 8px}
+  .prefhd b{font-size:13px;font-weight:800}
+  .prefhd .cnt{font-size:11px;font-weight:800;color:var(--accent-d);background:#fbeee6;border-radius:999px;padding:2px 9px}
+  /* ▼ discover 一覧カードの実装値をそのまま */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;margin-bottom:12px}
   .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);
-    display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;font-weight:900;overflow:hidden}
+    display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;font-weight:800;overflow:hidden}
   .card .pho img{width:100%;height:100%;object-fit:cover}
-  .card .in{flex:1;min-width:0;padding:10px 12px;display:flex;flex-direction:column}
-  .card .pref{font-size:11px;color:var(--ink-sub);font-weight:700}
-  .card .nm{font-size:15px;font-weight:800;color:var(--ink);line-height:1.3;margin-top:1px}
-  .card .ro{font-size:11.5px;color:var(--ink-sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card .cp{font-size:11.5px;color:var(--green);line-height:1.5;margin:5px 0 8px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .card .btns{display:flex;gap:8px;align-items:center;margin-top:auto}
-  .card .go{flex:1;text-align:center;background:var(--brand-deep);color:#fff;font-weight:800;font-size:13px;
-    border-radius:10px;padding:9px;text-decoration:none;box-shadow:0 3px 8px rgba(192,74,85,.22)}
-  .card .see{flex:0 0 auto;color:var(--green);font-weight:700;font-size:12.5px;text-decoration:underline;padding:9px 4px;cursor:pointer}
-  .empty{text-align:center;padding:60px 20px;color:var(--ink-sub)}
-  .empty .big{font-size:15px;color:var(--ink);font-weight:800;margin-bottom:8px}
-  .empty a{display:inline-block;margin-top:14px;background:var(--brand-deep);color:#fff;font-weight:800;
+  .card .in{padding:10px 12px;flex:1;min-width:0;display:flex;flex-direction:column}
+  .card .pref{font-size:11px;color:var(--sub);font-weight:700}
+  .card .nm{font-size:15px;font-weight:800;line-height:1.3;margin-top:1px}
+  .card .facts{font-size:11px;color:#5c4d3d;margin-top:5px;line-height:1.55}
+  .card .facts div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .milerow{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .milerow2{margin-top:7px}
+  .milepill{font-size:12px;font-weight:800;background:var(--accent);color:#fff;padding:4px 11px;border-radius:999px;white-space:nowrap}
+  .milepill.rest{background:#e1f5ee;color:#085041}
+  .milekm{font-size:10.5px;color:var(--sub);font-weight:700}
+  .milewhy{font-size:11px;color:var(--sub);font-weight:700;margin-top:4px;line-height:1.5}
+  .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
+  .tag.b{background:#fbeee6;color:var(--accent-d)}
+  /* 行き方を見る＝送客（緑ボタン・カード内に残す） */
+  .goBtn{display:block;margin-top:9px;background:var(--green);color:#fff;text-align:center;font-weight:800;font-size:13px;
+    border-radius:10px;padding:9px;text-decoration:none}
+  .empty{text-align:center;padding:60px 20px;color:var(--sub)}
+  .empty .big{font-size:15px;color:var(--brown-d);font-weight:800;margin-bottom:8px}
+  .empty a{display:inline-block;margin-top:14px;background:var(--accent);color:#fff;font-weight:800;
     border-radius:11px;padding:12px 22px;text-decoration:none;font-size:14px}
 </style>
 </head>
@@ -60,84 +73,136 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
-  const SAVED_LIFF_ID = "2008851980-XXXXXXXX"; // ★TODO：本番アップ時に専用LIFF ID発行→差替。未発行中は ?userId= で確認
+  const SAVED_LIFF_ID = "2008851980-XXXXXXXX";  // ★本番アップ時に専用LIFF ID発行→差替（未発行中は ?userId= で確認）
   const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W";
   const $ = id => document.getElementById(id);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  let _started = "";
 
-  function cardHtml(s){
-    const initial = esc((s.name||"?").slice(0,2));
-    // 左写真＝外観(店舗写真 s.photo)。無ければ頭文字を載せたグラデ地（一覧と同じ考え方）。
-    const pho = s.photo
-      ? '<img src="'+esc(s.photo)+'" alt="" onerror="this.parentNode.innerHTML=\''+initial+'\'">'
-      : initial;
-    const go = s.mapUrl
-      ? '<a class="go" href="'+esc(s.mapUrl)+'" target="_blank" rel="noopener">行き方を見る</a>'
-      : '<a class="go" href="https://liff.line.me/'+DISCOVER_LIFF_ID+'">お店をひらく</a>';
-    const ro = s.roaster ? '<div class="ro">'+esc(s.roaster)+'</div>' : '';
-    const cp = s.copy ? '<div class="cp">'+esc(s.copy)+'</div>' : '<div style="flex:1"></div>';
-    return '<div class="card">'+
-      '<div class="pho">'+pho+'</div>'+
-      '<div class="in">'+
-        '<div class="pref">'+esc(s.place||s.pref||"")+'</div>'+
-        '<div class="nm">'+esc(s.name)+'</div>'+ ro + cp +
-        '<div class="btns">'+go+'<a class="see" href="shop.html?shop='+encodeURIComponent(s.id)+'">お店を見る</a></div>'+
-      '</div>'+
-    '</div>';
+  // ===== discover.html のマイル計算をそのまま流用（一覧と完全一致）=====
+  var USER_CTX={home:null,homePrecise:false,visited:{},now:0};
+  var NINETY_DAYS=90*24*60*60*1000;
+  function haversineKm(a1,o1,a2,o2){var R=6371,dA=(a2-a1)*Math.PI/180,dO=(o2-o1)*Math.PI/180,h=Math.sin(dA/2)*Math.sin(dA/2)+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)*Math.sin(dO/2);return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
+  function mileInfo(s){
+    if(!USER_CTX.home||s.lat==null||s.lng==null) return null;
+    var km=Math.floor(haversineKm(USER_CTX.home[0],USER_CTX.home[1],s.lat,s.lng));
+    var last=USER_CTX.visited[s.id];
+    var eligible=(!last)||((USER_CTX.now||Date.now())-last)>=NINETY_DAYS;
+    var full=Math.max(10,km);
+    return {km:km,eligible:eligible,mile:eligible?full:10,full:full,nextDate:eligible?null:new Date(last+NINETY_DAYS)};
+  }
+  function tierLabel(mile){                          // ★絵文字なし（オーナー指示②）
+    if(mile<=15) return 'ご近所の一杯';
+    if(mile<=49) return '＋'+mile+'マイルの寄り道';
+    if(mile<=149) return '＋'+mile+'マイルの旅';
+    return '片道'+mile+'マイルの冒険';
+  }
+  function mileHTML(s){
+    var m=mileInfo(s); if(!m) return '';
+    var approx=USER_CTX.homePrecise?'':'（おおよそ）';
+    if(m.eligible){
+      return '<div class="milerow"><span class="milepill">'+tierLabel(m.mile)+'</span><span class="milekm">行けば貯まる ・ 約'+m.km+'km先'+approx+'</span></div>';
+    }
+    var d=m.nextDate, md=(d.getMonth()+1)+'月'+d.getDate()+'日';
+    return '<div class="milerow2"><span class="milepill rest">ひと休み中</span>'+
+      '<div class="milewhy">最近行ったばかり。今行くと +10マイル<br>'+md+'から、また +'+m.full+'マイルに戻ります</div></div>';
+  }
+  // 写真・定休日・豆割・カード＝discover と同一
+  function ph(s){return s.photo?'<img src="'+esc(s.photo)+'" alt="" onerror="this.style.display=\'none\'">':"☕";}
+  function cd(s){ var v=(s.closed||"").trim(); if(!v)return""; if(v.length>24)return""; if(/[#@]|https?:|一周|km|。/.test(v))return""; return /(曜|休)/.test(v)?v:""; }
+  function factsHTML(s){
+    var f='', c=cd(s);
+    if(s.access) f+='<div>'+esc(s.access)+'</div>';       // アクセス（🚉🚗はデータ側・残す）
+    if(c) f+='<div>🗓 定休日：'+esc(c)+'</div>';
+    return f?'<div class="facts">'+f+'</div>':'';
+  }
+  function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
+  function goBtn(s){
+    var url = s.mapUrl ? esc(s.mapUrl) : ("https://liff.line.me/"+DISCOVER_LIFF_ID);
+    var tgt = s.mapUrl ? ' target="_blank" rel="noopener"' : '';
+    return '<a class="goBtn" href="'+url+'"'+tgt+'>行き方を見る</a>';
+  }
+  function cardHTML(s){
+    return '<div class="card"><div class="pho">'+ph(s)+'</div><div class="in">'+
+      '<div class="pref">'+esc(s.pref)+'</div><div class="nm">'+esc(s.name)+'</div>'+
+      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+goBtn(s)+
+      '</div></div>';
   }
 
-  function render(d){
-    const shops = Array.isArray(d.shops)? d.shops : [];
-    if (!shops.length){
+  let _started = "";
+
+  function render(shops){
+    if(!shops || !shops.length){
       $("status").classList.add("hidden"); $("main").classList.add("hidden");
       $("empty").classList.remove("hidden");
       return;
     }
-    $("list").innerHTML = shops.map(cardHtml).join("");
+    // 県ごとにグループ化＝ロースター一覧と同じ「県名＋N店」見出し（shopsは県順で渡す）
+    var groups=[], gi={};
+    shops.forEach(function(s){
+      var p=s.pref||"";
+      if(gi[p]==null){ gi[p]=groups.length; groups.push({pref:p,items:[]}); }
+      groups[gi[p]].items.push(s);
+    });
+    $("list").innerHTML = groups.map(function(g){
+      return '<div class="prefhd"><b>'+esc(g.pref)+'</b><span class="cnt">'+g.items.length+'店</span></div>'+
+        g.items.map(cardHTML).join("");
+    }).join("");
     $("status").classList.add("hidden"); $("empty").classList.add("hidden");
     $("main").classList.remove("hidden");
   }
 
   async function loadData(userId){
     try{
-      const res = await fetch(GAS_URL + "?action=saved_list&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
-      const d = await res.json();
-      if (_started && userId !== _started) return;
-      if (d && d.ok){
-        render(d);
-        try{ localStorage.setItem("jcj_saved_"+userId, JSON.stringify(d)); }catch(e){}
-      } else if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden")){
-        $("status").textContent = "読み込みに失敗しました。電波の良い場所でお試しください。";
+      // 3つ並行：保存ID(順) / 全店データ(写真・アクセス・座標・豆割) / 自宅座標
+      const [savedRes, shopsRes, ctxRes] = await Promise.all([
+        fetch(GAS_URL+"?action=saved_list&userId="+encodeURIComponent(userId)+"&_="+Date.now()).then(r=>r.json()).catch(()=>null),
+        fetch(GAS_URL+"?action=discover_shops&_="+Date.now()).then(r=>r.json()).catch(()=>null),
+        fetch(GAS_URL+"?action=user_context&userId="+encodeURIComponent(userId)+"&_="+Date.now()).then(r=>r.json()).catch(()=>null)
+      ]);
+      if(_started && userId!==_started) return;
+      if(ctxRes && ctxRes.ok){ USER_CTX={home:ctxRes.home||null,homePrecise:!!ctxRes.homePrecise,visited:ctxRes.visited||{},now:ctxRes.now||Date.now()}; }
+      if(!(savedRes && savedRes.ok) || !(shopsRes && shopsRes.ok)){
+        if($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
+          $("status").textContent = "読み込みに失敗しました。電波の良い場所でお試しください。";
+        return;
       }
+      // 保存IDの集合 → 全店(discover_shops＝県順)を走査して保存済みだけ拾う＝一覧と同じ県順・県グループに揃う
+      const savedSet={}; (savedRes.shops||[]).forEach(function(x){ savedSet[x.id]=true; });
+      const shops=[]; (shopsRes.shops||[]).forEach(function(s){ if(savedSet[s.id]) shops.push(s); });
+      render(shops);
+      try{ localStorage.setItem("jcj_savedfull_"+userId, JSON.stringify({shops:shops,ctx:USER_CTX})); }catch(e){}
     }catch(e){
-      if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
+      if($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
         $("status").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
     }
   }
 
   function start(userId){
-    if(!userId){ $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
-    if(_started === userId) return;
-    _started = userId;
+    if(!userId){ $("status").textContent="ユーザー情報が取得できませんでした。"; return; }
+    if(_started===userId) return;
+    _started=userId;
     try{ localStorage.setItem("jcj_uid", userId); }catch(e){}
-    $("toDiscover").href = "https://liff.line.me/" + DISCOVER_LIFF_ID;
-    try{ const prev = localStorage.getItem("jcj_saved_"+userId); if(prev){ render(JSON.parse(prev)); } }catch(e){}
+    $("toDiscover").href = "https://liff.line.me/"+DISCOVER_LIFF_ID;
+    // 前回分を先に出す（あれば即表示）→裏で最新取得
+    try{
+      const prev = localStorage.getItem("jcj_savedfull_"+userId);
+      if(prev){ const o=JSON.parse(prev); if(o&&o.ctx) USER_CTX=o.ctx; render(o&&o.shops||[]); }
+    }catch(e){}
     loadData(userId);
   }
 
   async function main(){
     const qUser = new URLSearchParams(location.search).get("userId");
-    if (qUser){ start(qUser.trim()); return; }
-    let cachedUid = ""; try{ cachedUid = localStorage.getItem("jcj_uid")||""; }catch(e){}
-    if (cachedUid){ start(cachedUid); }
+    if(qUser){ start(qUser.trim()); return; }
+    let cachedUid=""; try{ cachedUid=localStorage.getItem("jcj_uid")||""; }catch(e){}
+    if(cachedUid){ start(cachedUid); }
     try{
       await liff.init({ liffId: SAVED_LIFF_ID });
-      if (!liff.isLoggedIn()){ liff.login(); return; }
+      if(!liff.isLoggedIn()){ liff.login(); return; }
       const prof = await liff.getProfile();
-      if (prof && prof.userId && prof.userId !== cachedUid){ _started=""; start(prof.userId); }
+      if(prof && prof.userId && prof.userId!==cachedUid){ _started=""; start(prof.userId); }
     }catch(e){
-      if ($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
+      if($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))
         $("status").textContent = "ログインの確認中に問題が起きました。アプリを開き直してください。";
     }
   }
