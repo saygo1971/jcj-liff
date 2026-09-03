@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>遊び方・使い方</title>
+<!--
+  📖 JCJパスポート「遊び方・使い方」（リッチメニュー「使い方」ボタンの飛び先）
+  ・本部v39 起票。骨組みはオーナー確定（6ステップ）。
+  ・CSS/レイアウトは mile.html を流用、色はトンマナv1（深緑 #2B5D4F・テラコッタ #C04A55）＝本番5ページと統一。
+  ・LIFF SDK 不要（表示だけの静的ページ・パラメータ不要）。
+  ・外部リンクは1つだけ＝マイルの説明ページ。飛び先は本番の絶対URL
+    https://japancoffeejourney.com/mile.html（本番リッチメニューの「マイルについて」と同じ着地先・実物確認済み）。
+    テスト環境から押しても本番のマイルページに着地する＝本番と同じ着地を検証できる。
+-->
+<style>
+  /* JCJトンマナv1（2026-08-31 全社トークン）＝本番5ページ（パスポート/旅の記録/ロゴ帳/行きたいリスト/距離）と同一 */
+  :root{
+    --green:#2B5D4F;      /* 深緑＝見出し・番号・帯 */
+    --green2:#2F7A57;     /* 終わったこと */
+    --terra:#C04A55;      /* これから起こす（リンク・ボタン） */
+    --paper:#F4EADD;      /* ベージュ＝中のブロックだけ */
+    --bg:#FFFFFF;
+    --ink:#221C1A;
+    --ink-sub:#6E655E;
+    --line:#DDD6CE;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; background:var(--bg)}
+  body{
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    color:var(--ink); line-height:1.75; font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  /* 帯（旅の記録・ロゴ帳・行きたいリストと同じ作り） */
+  .bar{background:var(--green); color:#fff; padding:13px 16px; font-size:18px; font-weight:800;
+    position:sticky; top:0; z-index:5}
+  .wrap{max-width:480px; margin:0 auto; padding:0 16px 40px}
+
+  /* HERO（導入） */
+  .hero{padding:22px 2px 4px}
+  .hero .catch{font-size:19px; font-weight:800; color:var(--green); margin:0 0 8px; line-height:1.5}
+  .hero .lead{font-size:14px; color:var(--ink-sub); margin:0}
+
+  /* SECTION */
+  section{margin-top:26px; border-top:1px solid var(--line); padding-top:20px}
+  .sec-h{display:flex; align-items:center; gap:9px; margin:0 2px 10px}
+  .sec-no{flex:none; width:24px; height:24px; border-radius:50%; background:var(--green); color:#fff;
+    font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center}
+  .sec-h h2{font-size:17px; margin:0; font-weight:800; color:var(--ink)}
+  .sec-h .new{flex:none; font-size:10.5px; font-weight:800; color:#fff; background:var(--terra);
+    border-radius:6px; padding:2px 7px; letter-spacing:.04em}
+  .catch2{margin:0 2px 6px; font-size:15px; font-weight:800; color:var(--green)}
+  .sec-lead{margin:0 2px; font-size:14px; color:var(--ink)}
+  .where{margin:10px 2px 0; font-size:12.5px; color:var(--ink-sub)}
+  .where b{color:var(--green); font-weight:800}
+
+  /* 注意書き（3.一杯を記録する の中） */
+  .note{background:var(--paper); border-radius:12px; padding:13px 14px; margin:14px 0 0}
+  .note p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.85}
+  .note p + p{margin-top:11px}
+
+  /* リンク（マイルについて） */
+  .link{display:block; text-align:center; text-decoration:none; margin:14px 0 0;
+    border:1.5px solid var(--terra); color:var(--terra); background:#fff;
+    border-radius:11px; padding:13px 14px; font-size:14.5px; font-weight:800}
+
+  .menu-hint{margin:26px 4px 0; font-size:12.5px; color:var(--ink-sub); text-align:center; line-height:1.8}
+  .menu-hint b{color:var(--green)}
+  .foot{margin-top:24px; text-align:center; font-size:11px; letter-spacing:.16em; color:var(--ink-sub)}
+</style>
+</head>
+<body>
+  <div class="bar">遊び方・使い方</div>
+
+  <div class="wrap">
+
+    <div class="hero">
+      <p class="catch">次に会いに行く理由を、集める。</p>
+      <p class="lead">JCJパスポートは、全国のロースターを“旅”するLINEアプリ。スタンプを埋める場所ではなく、次に会いに行く理由が増えていく場所です。</p>
+    </div>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">1</span><h2>お店を探す</h2></div>
+      <p class="catch2">まずは、行ってみたい一軒を見つける。</p>
+      <p class="sec-lead">地図を開くと、全国のロースターが並びます。気になったお店は保存しておけば、いつでも見返せます。</p>
+      <p class="where">画面下のメニュー <b>ロースターを探す</b> から。</p>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">2</span><h2>お店に行って、チェックイン</h2></div>
+      <p class="catch2">着いたら、QRをひとつ読み込む。</p>
+      <p class="sec-lead">お店にあるJCJカードのQRコード（イベントでは会場のQRコード）を読み込むだけ。その一軒が、あなたのパスポートに旅の記録として残ります。歩いた道のりぶんのマイルも一緒に。</p>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">3</span><h2>一杯を記録する</h2><span class="new">新機能</span></div>
+      <p class="catch2">その一杯を、忘れないうちに。</p>
+      <p class="sec-lead">写真を1枚、豆の生産国、ひとことメモ。チェックインのあと、そのまま残せます。あとから「旅の記録」を開けば、あの日の一杯に会いにいけます。</p>
+      <div class="note">
+        <p>記録した内容と写真は、後日お店のページに掲載される場合があります。<br>他のお客さまやスタッフの方が写らないようご配慮ください。</p>
+        <p>写真を撮る前に、お店の方にご確認ください。</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">4</span><h2>友だちを誘う</h2></div>
+      <p class="catch2">一人より、二人の旅。</p>
+      <p class="sec-lead">紹介リンクを送って友だちが登録すると、お互いにマイルが入ります。</p>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">5</span><h2>マイルを“豆割”に使う</h2></div>
+      <p class="catch2">貯まったマイルは、豆に変わる。</p>
+      <p class="sec-lead">旅で貯まったマイルは「豆割」に交換できます。お店の値引きではなく、旅したあなたへのごほうびです。</p>
+      <!-- ★飛び先＝本番の絶対URL。ここ1行だけ差し替えれば飛び先を変えられる。
+           根拠：本番リッチメニューの「マイルについて」が現に同じURLを直リンク（管理画面@740rorclで実物確認）。
+           本番 guide.html は「直下」に置くため相対 mile.html でも成立するが、置き場所に依存しない絶対URLにする。
+           mile.html は静的な説明ページ＝必須パラメータなし（実コードで確認）。実クリックで着地も確認済み。 -->
+      <a class="link" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話を見る</a>
+    </section>
+
+    <section>
+      <div class="sec-h"><span class="sec-no">6</span><h2>パスポートで振り返る</h2></div>
+      <p class="catch2">あなたの旅は、1冊になる。</p>
+      <p class="sec-lead">あなたのパスポート番号、歩いた道のり、集まったロゴ、記録した一杯。パスポートを開けば、全部そこにあります。</p>
+      <p class="where">画面下のメニュー <b>パスポート</b> から。</p>
+    </section>
+
+    <p class="menu-hint"><b>パスポート</b>・<b>ロースターを探す</b>は、<br>画面下のメニューからいつでも開けます。</p>
+    <p class="foot">JAPAN COFFEE JOURNEY</p>
+  </div>
+
+</body>
+</html>
