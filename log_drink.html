@@ -50,8 +50,14 @@
   #done .emo{font-size:44px}
   #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:var(--state-done)}
   #done .msg{font-size:13.5px;color:var(--ink-sub);line-height:1.8}
-  #done .goHist{display:inline-block;margin-top:22px;background:var(--brand-deep);color:#fff;
-    text-decoration:none;font-weight:800;border-radius:12px;padding:12px 22px;font-size:14px}
+  /* 旅の記録を見る＝副（緑枠）。紹介を主役(テラコッタ)にするためトンマナ上こちらは枠線に。 */
+  #done .goHist{display:inline-block;margin-top:20px;background:#fff;color:var(--state-done);border:1.5px solid var(--state-done);
+    text-decoration:none;font-weight:800;border-radius:12px;padding:11px 22px;font-size:14px}
+  /* 友だちに紹介する＝主役（テラコッタ・1画面1つ） */
+  #done .refWrap{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line,#DDD6CE)}
+  #done .refBtn{display:inline-block;background:var(--brand-deep);color:#fff;text-decoration:none;font-weight:800;
+    border-radius:12px;padding:13px 26px;font-size:15px;box-shadow:0 4px 10px rgba(192,74,85,.25)}
+  #done .refTiny{font-size:11px;color:var(--ink-sub,#6E655E);margin-top:9px}
 </style>
 </head>
 <body>
@@ -90,6 +96,11 @@
   <div class="t" id="doneT">記録しました</div>
   <div class="msg">この一杯が、あなたの旅の記録になりました。<br>次のお店でも、ぜひ残してください。</div>
   <a class="goHist" id="goHist" href="#">旅の記録を見る</a>
+  <!-- ③ 友だちに紹介（記録できた瞬間に・明確な文言／メリット一言） -->
+  <div class="refWrap" id="refWrap">
+    <a class="refBtn" id="refBtn" href="#">友だちに紹介する</a>
+    <div class="refTiny">友だちが登録すると、あなたにもマイルがたまります</div>
+  </div>
 </div>
 
 <script>
@@ -100,6 +111,8 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   // 旅の記録（訪問履歴）ページのLIFF（発行後に差し替え）。未設定なら「旅の記録を見る」は非表示。
   const HISTORY_LIFF_ID = "2008851980-6s0zFwwl";
+  // 友だちに紹介（シェア）LIFF＝既存の紹介シェア（テスト）。本番化時に本番SHARE_LIFF_IDへ差替。
+  const SHARE_LIFF_ID = "2008851980-V8WaCaZw";
   // ============================
 
   const $ = id => document.getElementById(id);
@@ -190,6 +203,10 @@
     if (/^\d+-/.test(HISTORY_LIFF_ID) && HISTORY_LIFF_ID.indexOf("YYYYYYYY")<0){
       $("goHist").href = "https://liff.line.me/" + HISTORY_LIFF_ID;
     } else { $("goHist").classList.add("hidden"); }
+    // 友だちに紹介＝既存シェアLIFFへ。未設定なら紹介ブロックを隠す（導線を壊さない）。
+    if (/^\d+-/.test(SHARE_LIFF_ID)){
+      $("refBtn").href = "https://liff.line.me/" + SHARE_LIFF_ID;
+    } else { $("refWrap").classList.add("hidden"); }
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
   }
