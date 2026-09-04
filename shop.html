@@ -70,23 +70,105 @@
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const SHOP_ID = String(new URLSearchParams(location.search).get("shop")||"").trim();
 
-  function render(s){
-    // 写真スワイプ（外観→店内→お店の人。あるものだけ）
+  // 店内写真の最大枚数（interior.jpg / interior2.jpg / interior3.jpg）。写真を置いた店だけ増える。
+  const SW_INTERIOR_MAX = 3;
+  let SW_TOKEN = 0;
+
+  // ドットを今の枚数で作り直す（1枚だけならドットは出さない）
+  function swDots(){
+    const track=$("swipe"), dots=$("dots"), n=track.children.length;
+    dots.innerHTML = n>1 ? [...track.children].map((_,i)=>'<i class="'+(i===0?"on":"")+'"></i>').join("") : "";
+    swSyncDots();
+  }
+  // 今どの写真を見ているかにドットを合わせる
+  function swSyncDots(){
+    const track=$("swipe"), dots=$("dots"), n=dots.children.length;
+    if(!n) return;
+    let i = Math.round(track.scrollLeft / (track.clientWidth||1));
+    if(i<0) i=0; if(i>n-1) i=n-1;
+    [...dots.children].forEach((d,j)=>d.classList.toggle("on",j===i));
+  }
+  // 読み込めなかった写真は、そのページごと消す（＝空白のページも余分なドットも出さない）
+  function swFail(el){
+    const track=$("swipe");
+    if(el && el.parentNode===track) track.removeChild(el);
+    swDots();
+  }
+  function swBindOne(el){
+    const im=el.querySelector("img"); if(!im) return;
+    im.onerror=()=>swFail(el);
+  }
+  // 待たせていた2枚目以降を実際に読み込む
+  function swLoadRest(){
+    $("swipe").querySelectorAll("img[data-src]").forEach(im=>{
+      const u=im.getAttribute("data-src"); im.removeAttribute("data-src"); im.src=u;
+    });
+  }
+  // ※文章（AC列 店内紹介）は1店に1つ＝2枚目以降には付けない（本部_v39 2026-09-04 決定「文章は1枚目だけ」）。
+  // 将来2・3枚目にも文章を出したくなったら、AC列の中を「｜」で区切って振り分ける手が使える（列追加もGAS変更も不要）。今は実装しない。
+  // 店内の2枚目・3枚目（interior2.jpg / interior3.jpg）を探して、あった分だけ店内の後ろに足す。
+  // 無い店では404が返るだけでページを作らない＝空白のページも余分なドットも出ない。
+  function swExtras(s,tok){
+    const base = String(s.interiorPhoto||"");
+    if(!/interior\.jpg(\?|$)/i.test(base)) return;
+    const urls=[]; for(let n=2;n<=SW_INTERIOR_MAX;n++) urls.push(base.replace(/interior\.jpg/i,"interior"+n+".jpg"));
+    const got=[]; let left=urls.length;
+    urls.forEach((u,i)=>{
+      const probe=new Image();
+      probe.onload =()=>{ got[i]=u; settle(); };
+      probe.onerror=()=>settle();   // 無ければ何もしない
+      probe.src=u;
+    });
+    function settle(){
+      if(--left>0) return;
+      if(SW_TOKEN!==tok) return;    // 別の店に切り替わっていたら捨てる
+      const track=$("swipe");
+      let prev=null;
+      [...track.children].forEach(el=>{ if(el.dataset.k==="int") prev=el; });
+      if(!prev) return;   // 店内のページが無い（写真が読めず消えた）なら足さない
+      let added=0;
+      urls.forEach((_,j)=>{
+        if(!got[j]) return;
+        const d=document.createElement("div"); d.className="slide"; d.dataset.k="int";
+        d.innerHTML='<img class="ph" alt="" decoding="async" src="'+esc(got[j])+'">';
+        track.insertBefore(d,prev.nextSibling);
+        swBindOne(d); prev=d; added++;
+      });
+      if(added) swDots();
+    }
+  }
+  // 写真スワイプ（外観→店内(最大3枚)→お店の人。あるものだけ）
+  // 1枚目だけ即読み、2枚目以降は「1枚目が出たら／指が触れたら」読み込む＝開いた瞬間を軽くする
+  function buildSwipe(s){
+    const track=$("swipe"), dots=$("dots");
     const slides = [
-      {u:s.photo,         t:s.exteriorText, label:"外観"},
-      {u:s.interiorPhoto, t:s.interiorText, label:"店内"},
-      {u:s.roasterPhoto,  t:s.roasterVoice, label:"お店の人"}
+      {k:"ext", u:s.photo,         t:s.exteriorText, label:"外観"},
+      {k:"int", u:s.interiorPhoto, t:s.interiorText, label:"店内"},
+      {k:"ro",  u:s.roasterPhoto,  t:s.roasterVoice, label:"お店の人"}
     ].filter(x=>x.u);
-    $("swipe").innerHTML = slides.map(x =>
-      '<div class="slide"><img class="ph" src="'+esc(x.u)+'" onerror="this.parentNode.style.display=\'none\'">'+
+    if(!slides.length){ track.innerHTML=""; dots.innerHTML=""; return; }
+    const tok = ++SW_TOKEN;
+    track.innerHTML = slides.map((x,i) =>
+      '<div class="slide" data-k="'+x.k+'"><img class="ph" alt="" decoding="async" '+(i===0?('src="'+esc(x.u)+'" fetchpriority="high"'):('data-src="'+esc(x.u)+'"'))+'>'+
       (x.t ? '<div class="cap"><b>'+x.label+'</b>'+esc(x.t)+'</div>' : '')+'</div>'
     ).join("");
-    $("dots").innerHTML = slides.length>1 ? slides.map((_,i)=>'<i class="'+(i===0?"on":"")+'"></i>').join("") : "";
-    // スワイプでドット更新
-    $("swipe").onscroll = function(){
-      const i = Math.round($("swipe").scrollLeft / $("swipe").clientWidth);
-      [...$("dots").children].forEach((d,j)=>d.classList.toggle("on",j===i));
-    };
+    [...track.children].forEach(swBindOne);
+    swDots();
+    track.scrollLeft=0;
+
+    let started=false;
+    const go=()=>{ if(started||SW_TOKEN!==tok) return; started=true; swLoadRest(); swExtras(s,tok); };
+    track.onscroll=()=>{ go(); swSyncDots(); };
+    track.ontouchstart=go;
+    track.onmousedown=go;
+    const first=track.querySelector("img");
+    if(first && !first.complete){ first.addEventListener("load",go); first.addEventListener("error",go); }
+    else { setTimeout(go,0); }
+    setTimeout(go,2500);   // 保険（写真が返ってこない回線でも必ず動く）
+  }
+
+  function render(s){
+    buildSwipe(s);
 
     $("copy").textContent = s.copy || "";
     $("copy").style.display = s.copy ? "" : "none";

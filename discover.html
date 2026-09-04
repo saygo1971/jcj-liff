@@ -135,6 +135,7 @@
   .sd .sw .pic.noimg{height:205px}
   .sd .sw .lb{position:absolute;left:11px;top:11px;background:rgba(28,21,15,.68);color:#fff8ee;font-size:12px;font-weight:800;padding:4px 12px;border-radius:999px;z-index:2}
   .sd .sw .arrowR{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--brown-d);font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:2;transition:opacity .2s;pointer-events:none}
+  .sd .sw .sl:last-child .arrowR{display:none}
   .sd .sw .cap{padding:9px 14px 2px}
   .sd .sw .ct{font-size:13.5px;font-weight:800}
   .sd .sw .cx{font-size:12.5px;color:#5c4d3d;line-height:1.66;margin-top:3px}
@@ -383,42 +384,120 @@
   function esc(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   // 外観写真URL(.../exterior.jpg)から店内/お店の人の規則URLを作る（T/U列が空でもフォールバック）
   function derivePhoto(base,kind){ if(!base) return ""; return /exterior\.jpg(\?|$)/i.test(base) ? base.replace(/exterior\.jpg/i,kind+".jpg") : ""; }
+  // 店内写真の最大枚数（interior.jpg / interior2.jpg / interior3.jpg）。写真を置いた店だけ増える。
+  var SW_INTERIOR_MAX=3;
+  // 店を切り替えたとき、前の店の「後から読む」処理を捨てるための札
+  var SW_TOKEN=0;
 
-  // 店カードの「お店を知る」スワイプを組み立てる（外観→店内→お店の人。写真＋その文章・ドット表示）
+  // ドットを今の枚数で作り直す（1枚だけならドットは出さない）
+  function swDots(track,dots){
+    var n=track.children.length;
+    dots.innerHTML = n>1 ? Array.prototype.map.call(track.children,function(_,i){return '<i class="'+(i===0?"on":"")+'"></i>';}).join("") : "";
+    swSyncDots(track,dots);
+  }
+  // 今どの写真を見ているかにドットを合わせる
+  function swSyncDots(track,dots){
+    var n=dots.children.length; if(!n) return;
+    var w=track.clientWidth||1, idx=Math.round(track.scrollLeft/w);
+    if(idx<0)idx=0; if(idx>n-1)idx=n-1;
+    for(var k=0;k<n;k++){ dots.children[k].classList.toggle("on",k===idx); }
+  }
+  // 写真1枚ぶんのHTML。1枚目だけ即読み、2枚目以降は data-src で待たせる＝開いた瞬間の通信を1枚ぶんに抑える
+  function swSlideHTML(sl,eager){
+    var inner="";
+    if(sl.head) inner+='<div class="ct">'+esc(sl.head)+'</div>';
+    if(sl.text) inner+='<div class="cx">'+esc(sl.text)+'</div>';
+    var cap = inner ? ('<div class="cap">'+inner+'</div>') : '';
+    var src = eager ? ' src="'+esc(sl.url)+'" fetchpriority="high"' : ' data-src="'+esc(sl.url)+'"';
+    return '<div class="sl" data-k="'+sl.k+'">'
+         +   '<div class="pic"><img alt="" decoding="async"'+src+'><span class="lb">'+esc(sl.label)+'</span><span class="arrowR">›</span></div>'
+         +   cap
+         + '</div>';
+  }
+  // 読み込めなかった写真は、そのページごと消す（＝空白のページも余分なドットも出さない）
+  function swFail(track,dots,box,el){
+    if(el && el.parentNode===track) track.removeChild(el);
+    if(!track.children.length){ box.style.display="none"; dots.innerHTML=""; return; }
+    swDots(track,dots);
+  }
+  // 1枚に「読めなかったら消す」を付ける
+  function swBindOne(track,dots,box,el){
+    var im=el.querySelector("img"); if(!im) return;
+    im.onerror=function(){ swFail(track,dots,box,el); };
+  }
+  // 待たせていた2枚目以降を実際に読み込む
+  function swLoadRest(track){
+    var ims=track.querySelectorAll("img[data-src]");
+    for(var i=0;i<ims.length;i++){ var u=ims[i].getAttribute("data-src"); ims[i].removeAttribute("data-src"); ims[i].src=u; }
+  }
+  // ※文章（AC列 店内紹介）は1店に1つ＝2枚目以降には付けない（本部_v39 2026-09-04 決定「文章は1枚目だけ」）。
+  // 将来2・3枚目にも文章を出したくなったら、AC列の中を「｜」で区切って振り分ける手が使える（列追加もGAS変更も不要）。今は実装しない。
+  // 店内の2枚目・3枚目（interior2.jpg / interior3.jpg）を探して、あった分だけ店内の後ろに足す。
+  // 無い店では404が返るだけでページを作らない＝空白のページも余分なドットも出ない。
+  function swExtras(track,dots,box,s,tok){
+    var base=s.interiorPhoto||derivePhoto(s.photo,"interior");
+    if(!base || !/interior\.jpg(\?|$)/i.test(base)) return;
+    var urls=[]; for(var n=2;n<=SW_INTERIOR_MAX;n++){ urls.push(base.replace(/interior\.jpg/i,"interior"+n+".jpg")); }
+    var got=[], left=urls.length;
+    urls.forEach(function(u,i){
+      var probe=new Image();
+      probe.onload =function(){ got[i]=u; settle(); };
+      probe.onerror=function(){ settle(); };   // 無ければ何もしない
+      probe.src=u;
+    });
+    function settle(){
+      if(--left>0) return;
+      if(SW_TOKEN!==tok) return;               // 別の店に切り替わっていたら捨てる
+      var prev=null, kids=track.children;
+      for(var i=0;i<kids.length;i++){ if(kids[i].getAttribute("data-k")==="int") prev=kids[i]; }
+      if(!prev) return;   // 店内のページが無い（写真が読めず消えた）なら足さない
+      var added=0;
+      for(var j=0;j<urls.length;j++){
+        if(!got[j]) continue;
+        var d=document.createElement("div"); d.className="sl"; d.setAttribute("data-k","int");
+        d.innerHTML='<div class="pic"><img src="'+esc(got[j])+'" alt="" decoding="async"><span class="lb">店内</span><span class="arrowR">›</span></div>';
+        track.insertBefore(d,prev.nextSibling);
+        swBindOne(track,dots,box,d);
+        prev=d; added++;
+      }
+      if(added) swDots(track,dots);
+    }
+  }
+
+  // 店カードの「お店を知る」スワイプを組み立てる（外観→店内(最大3枚)→お店の人。写真＋その文章・ドット表示）
   function buildSwipe(s){
     var track=$("sdTrack"), dots=$("sdDots"), box=$("sdSwipe");
+    // 外観/店内は「写真＋説明文」だけ（見出しはカード上部と重複）。お店の人だけロースター名を見出しに出す。
     var slides=[
-      {url:s.photo,                                          label:"外観",     head:"",          text:s.exteriorText},
-      {url:s.interiorPhoto||derivePhoto(s.photo,"interior"), label:"店内",     head:"",          text:s.interiorText},
-      {url:s.roasterPhoto ||derivePhoto(s.photo,"roaster"),  label:"お店の人", head:s.roaster||"", text:s.roasterVoice}
-    ].filter(function(x){return x.url;});   // 写真URLが空の枚はスキップ（前アプリの .filter(url) と同じ）
+      {k:"ext", url:s.photo,                                          label:"外観",     head:"",          text:s.exteriorText},
+      {k:"int", url:s.interiorPhoto||derivePhoto(s.photo,"interior"), label:"店内",     head:"",          text:s.interiorText},
+      {k:"ro",  url:s.roasterPhoto ||derivePhoto(s.photo,"roaster"),  label:"お店の人", head:s.roaster||"", text:s.roasterVoice}
+    ].filter(function(x){return x.url;});   // 写真URLが空の枚はスキップ
 
     if(!slides.length){ box.style.display="none"; track.innerHTML=""; dots.innerHTML=""; return; }
 
-    var last=slides.length-1;
-    track.innerHTML=slides.map(function(sl,idx){
-      // 外観/店内は「写真＋説明文」だけ（見出しはカード上部と重複）。お店の人だけロースター名を見出しに出す。
-      var inner="";
-      if(sl.head) inner+='<div class="ct">'+esc(sl.head)+'</div>';
-      if(sl.text) inner+='<div class="cx">'+esc(sl.text)+'</div>';
-      var cap = inner ? ('<div class="cap">'+inner+'</div>') : '';
-      var arrow = idx<last ? '<span class="arrowR">›</span>' : '';
-      return '<div class="sl">'
-           +   '<div class="pic"><img src="'+esc(sl.url)+'" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'noimg\')"><span class="lb">'+esc(sl.label)+'</span>'+arrow+'</div>'
-           +   cap
-           + '</div>';
-    }).join("");
-    dots.innerHTML=slides.map(function(_,idx){return '<i class="'+(idx===0?"on":"")+'"></i>';}).join("");
+    var tok = ++SW_TOKEN;
+    track.innerHTML=slides.map(function(sl,idx){ return swSlideHTML(sl, idx===0); }).join("");
+    for(var i=0;i<track.children.length;i++){ swBindOne(track,dots,box,track.children[i]); }
+    swDots(track,dots);
     box.style.display="";
     track.scrollLeft=0;
 
-    // スクロール位置からドット（今どの写真か）を更新
-    track.onscroll=function(){
-      var w=track.clientWidth||1, idx=Math.round(track.scrollLeft/w);
-      if(idx<0)idx=0; if(idx>last)idx=last;
-      var ds=dots.children;
-      for(var k=0;k<ds.length;k++){ ds[k].classList.toggle("on",k===idx); }
-    };
+    // 2枚目以降は「1枚目が出たら」または「指が触れたら」読み込む＝開いた瞬間を軽くする
+    var started=false;
+    function go(){
+      if(started || SW_TOKEN!==tok) return;
+      started=true;
+      swLoadRest(track);
+      swExtras(track,dots,box,s,tok);
+    }
+    track.onscroll=function(){ go(); swSyncDots(track,dots); };
+    track.ontouchstart=go;
+    track.onmousedown=go;
+    var first=track.querySelector("img");
+    if(first && !first.complete){ first.addEventListener("load",go); first.addEventListener("error",go); }
+    else { setTimeout(go,0); }
+    setTimeout(go,2500);   // 保険（写真が返ってこない回線でも必ず動く）
   }
 
   // 外部リンククリックを記録（旧UIと同じ outbound_click_log／type=google_map等・source=discover_map）。
