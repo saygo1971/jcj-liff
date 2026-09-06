@@ -221,19 +221,17 @@
     const canEx = Math.floor(y / couponMile) >= 1;
     const disc = Number(r.beansDiscountYen) || 0;
     const discTxt = disc > 0 ? '（¥' + disc + '割引）' : '';
-    const pct = Math.max(0, Math.min(100, Math.round(prog / couponMile * 100)));
     const exUrl = String((r && r.beansExchangeUrl) || '');
-    const bar = '<div class="btrack"><div class="bfill" style="width:' + pct + '%"></div></div>';
-    let bottom;
-    if (canEx) {
-      // 交換できる：文字自体をタップで交換ページへ（ボタンは増やさない）。呼称は「マイル特典」（"豆"はユーザー向けに出さない）。
-      const ready = '<div class="bready">豆割が1枚もらえます ›</div>' +
-        '<div class="bnext">あと ' + remain + ' マイルで、次の豆割</div>';
-      bottom = exUrl ? '<a href="' + esc(exUrl) + '" style="text-decoration:none;display:block">' + ready + '</a>' : ready;
-    } else {
-      bottom = '<div class="bnote">あと <b>' + remain + '</b> マイルで 豆割' + discTxt + '</div>';
-    }
-    return '<div class="bsec">' + bar + bottom + '</div>';
+    // 帯グラフはやめ、既存の小さい文字リンク（.link）1行に下げる（本部_v40＋オーナー確定 2026-09-06）。
+    //   ・主役は「この一杯を残す」。豆割は目立たせない
+    //   ・ただし「あと◯マイル」の数字は必ず残す（進み具合が分かる情報は捨てない）
+    //   ・必ず押せるようにする（リッチメニューが3ボタンになり豆割の入り口が減っているため、ここで入り口を潰さない）
+    const label = canEx
+      ? '豆割が1枚もらえます（あと ' + remain + ' マイルで次の1枚）'
+      : 'あと ' + remain + ' マイルで 豆割' + discTxt;
+    return exUrl
+      ? '<a class="link" href="' + esc(exUrl) + '" id="beansLink">' + label + ' ›</a>'
+      : '<div class="link" style="text-decoration:none">' + label + '</div>';
   }
 
   // ② 完了 →（対応店＆残あり）チケット案内
@@ -308,7 +306,7 @@
     const recordHtml =
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
-      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>記録する</a>';
+      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を残す</a>';
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
@@ -318,8 +316,6 @@
       areaHtml +
       beansProgHtml +
       ticketHtml +
-      '<a class="link" href="#" id="about">試飲チケットについて</a>' +
-      '<div id="aboutInfo" class="fine hidden" style="text-align:left;margin-top:8px;line-height:1.8">試飲チケットは、対応しているロースターで試飲1回に1枚ずつ使えます。買い足しやマイルとの交換は、メニューからどうぞ。</div>' +
       refHtml;
 
     // 地域コンプリート進捗＋正しいロゴ（area_progressが logo=R列 と exterior を同梱）。未デプロイ・非対象時は静かに据え置き。
@@ -353,6 +349,14 @@
       if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
     };
 
+    // 豆割リンク：LINE内はアプリ内ウィンドウで開く（記録ボタン・紹介ボタンと同じ作法）。
+    const bl = document.getElementById("beansLink");
+    if (bl) bl.onclick = function(ev){
+      const url = bl.getAttribute("href");
+      if (!url) { ev.preventDefault(); return; }
+      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+    };
+
     // 紹介ボタン：紹介ランディングLIFFを開く（LINE内はアプリ内ウィンドウ）。
     const rb = document.getElementById("refBtn");
     if (rb) rb.onclick = function(){
@@ -363,7 +367,6 @@
     };
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
-    $("about").onclick = (ev)=>{ ev.preventDefault(); $("aboutInfo").classList.toggle("hidden"); };
   }
 
   function wireTicket(bal){
