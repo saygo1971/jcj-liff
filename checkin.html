@@ -105,8 +105,8 @@
   const SHARE_URL = "https://liff.line.me/2008851980-V8WaCaZw";
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
-  // 記録（今日の一杯）への遷移用LIFF。※オーナーが新規LIFF発行後にIDを入れる（それまで枠だけ・遷移は無効）。
-  const LOG_DRINK_LIFF_ID = ""; // 例 "2008851980-xxxx"（エンドポイント= .../log_drink.html）
+  // 記録（今日の一杯）への遷移用LIFF。空のあいだは枠だけ（遷移なし）。2026-09-06 テストIDを設定＝遷移が有効になった。
+  const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0"; // 今日の一杯（テスト・エンドポイント= .../log_drink.html）。★テスト環境の値。本番IDは置かない（記録ページは書き込み画面のため）
   // 店ロゴ画像＝自社サーバー shop/<店ID>/logo.png（2026-08-31 移設完了）。店IDで導出。
   //   フォールバック順＝①logo.png → ②外観写真exterior.jpg → ③頭文字モノグラム。ロゴ無し店(404)は②③へ。
   // ============================
@@ -299,8 +299,11 @@
         '<div class="cimeta"><div class="cishop">' + esc(r.shopName) + '</div>' + cimile + '</div>' +
       '</div>';
     // 主＝記録（今日の一杯）。LIFF未発行のあいだは遷移なし（枠のみ）。
+    // 渡すのは shop（店ID）と name（店名）の2つだけ。本番「旅の記録」ページの記録リンクと同じ形。
+    //   pref＝記録ページ側で受け取るだけで一度も使っていない（実コードで確認）ため渡さない。
+    //   date＝「過去の来店にあとから足す」時だけの値。今回は“飲んだ直後”なので渡さない。
     const recUrl = LOG_DRINK_LIFF_ID
-      ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || "") + '&pref=' + encodeURIComponent(st.pref || ""))
+      ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || ""))
       : "";
     const recordHtml =
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
@@ -341,6 +344,14 @@
     // 完了カード画像が無い店は、緑帯にフォールバック（画面が崩れない保険）。
     const dc = document.getElementById("donecard");
     if (dc) dc.onerror = function(){ dc.outerHTML = '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>'; };
+
+    // 記録ボタン：今日の一杯（記録ページ）を開く（LINE内はアプリ内ウィンドウ＝下の紹介ボタンと同じ作法）。
+    const rec = document.getElementById("recordBtn");
+    if (rec) rec.onclick = function(ev){
+      const url = rec.getAttribute("href");
+      if (!url) { ev.preventDefault(); return; }
+      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+    };
 
     // 紹介ボタン：紹介ランディングLIFFを開く（LINE内はアプリ内ウィンドウ）。
     const rb = document.getElementById("refBtn");
