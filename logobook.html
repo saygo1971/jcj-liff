@@ -27,6 +27,11 @@
   .book-top .big .sub{font-size:17px;color:var(--ink-sub)}
   .book-top .lab{font-size:11px;color:var(--ink-sub);margin-top:3px}
   .hint{text-align:center;font-size:10.5px;color:var(--ink-sub);margin:8px 0 2px}
+  /* ロースター紹介の入口 */
+  .jointo{margin:18px 0 4px;background:var(--bg);border:1.5px dashed var(--brand-deep);border-radius:14px;padding:16px 14px;text-align:center}
+  .ji-h{font-size:14.5px;font-weight:900;color:var(--ink);line-height:1.5}
+  .ji-s{font-size:12px;color:var(--ink-sub);margin:7px 2px 13px;line-height:1.65}
+  .ji-b{display:inline-block;background:var(--brand-deep);color:#fff;font-weight:800;font-size:14px;border-radius:11px;padding:11px 28px;text-decoration:none;cursor:pointer}
   .area{margin-top:18px}
   .area-h{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--ink);margin:0 2px 10px;border-bottom:1px solid var(--line);padding-bottom:5px}
   .area-h .mine{font-size:9.5px;background:var(--brand-deep);color:#fff;border-radius:8px;padding:2px 7px;margin-left:6px;font-weight:700;vertical-align:1px}
@@ -78,6 +83,12 @@
   </div>
   <div class="hint" id="hint">丸をタップすると、お店を知る画面が開きます</div>
   <div id="areas"></div>
+  <!-- ロースター紹介の入口（ロゴ帳の最後）＝推薦フォーム(テスト)へ -->
+  <div class="jointo" id="jointo">
+    <div class="ji-h">まだこの帳面にいない、あのお店。</div>
+    <div class="ji-s">あなたの好きなお店を教えてください。<br>一店ずつ、ご案内をお送りさせていただきます。</div>
+    <a class="ji-b" id="recBtn">お店を教える</a>
+  </div>
 </div>
 
 <div class="sheet-bg" id="sheetBg">
@@ -98,9 +109,12 @@
   const LIFF_ID = "2008851980-9f9JHRZM"; // ロゴ帳（テスト・2026-08-31発行）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W"; // 発見地図（お店を見る＝店詳細カードへ・写真/IG/web/マップ入り）
+  const REC_LIFF_ID = "2008851980-Xk7hOmMv"; // 推薦フォーム（テスト）※本番反映時はリリース番が本番の推薦LIFFへ差替（本番IDは引き継ぎメモ参照）
   const AREA_ORDER = ["北海道・東北","関東","甲信越","東海","近畿","中国・四国","九州・沖縄"];
 
   const $ = id => document.getElementById(id);
+  // 紹介の入口＝推薦フォーム(テスト)へ。src=logobook で発生元を記録。
+  $("recBtn").href = "https://liff.line.me/" + REC_LIFF_ID + "?src=logobook";
   const params = new URLSearchParams(location.search);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   let USER_ID = "";

@@ -34,6 +34,11 @@
   .hphoto{margin-top:10px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;cursor:zoom-in;background:var(--paper)}
   .phbad{max-height:none;min-height:74px;object-fit:unset;cursor:default;display:flex;align-items:center;justify-content:center;color:#b05a52;font-size:12.5px;font-weight:700;border:1px dashed #e0c3bd}
   .hmemo{margin-top:10px;background:var(--paper);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.65;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  /* ロースター紹介の入口 */
+  .jointo{margin:16px 0 4px;background:var(--bg);border:1.5px dashed var(--brand-deep);border-radius:14px;padding:16px 14px;text-align:center}
+  .ji-h{font-size:14.5px;font-weight:900;color:var(--ink);line-height:1.5}
+  .ji-s{font-size:12px;color:var(--ink-sub);margin:7px 2px 13px;line-height:1.65}
+  .ji-b{display:inline-block;background:var(--brand-deep);color:#fff;font-weight:800;font-size:14px;border-radius:11px;padding:11px 28px;text-decoration:none;cursor:pointer}
   /* 写真の拡大（ライトボックス） */
   .lightbox{position:fixed;inset:0;background:rgba(20,15,10,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .lightbox.show{display:flex}
@@ -70,6 +75,12 @@
     <div class="s"><b id="nPref">0</b><span>行った県</span></div>
   </div>
   <div id="list"></div>
+  <!-- ロースター紹介の入口（旅の記録の最後）＝推薦フォーム(テスト)へ -->
+  <div class="jointo" id="jointo">
+    <div class="ji-h">あなたの旅に、足したいお店。</div>
+    <div class="ji-s">思い出のあのお店を教えてください。<br>一店ずつ、ご案内をお送りさせていただきます。</div>
+    <a class="ji-b" id="recBtn">お店を教える</a>
+  </div>
 </div>
 
 <div id="empty" class="wrap hidden">
@@ -84,9 +95,12 @@
 <script>
   const LIFF_ID = "2008851980-6s0zFwwl"; // 旅の記録（テスト・2026-08-31発行）
   const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0"; // 今日の一杯（記録を追加する遷移先）
+  const REC_LIFF_ID = "2008851980-Xk7hOmMv"; // 推薦フォーム（テスト）※本番反映時はリリース番が本番の推薦LIFFへ差替（本番IDは引き継ぎメモ参照）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
   const $ = id => document.getElementById(id);
+  // 紹介の入口＝推薦フォーム(テスト)へ。src=history で発生元を記録。
+  $("recBtn").href = "https://liff.line.me/" + REC_LIFF_ID + "?src=history";
   const params = new URLSearchParams(location.search);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   let USER_ID = "";
