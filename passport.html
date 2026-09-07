@@ -78,7 +78,8 @@
   .earth .cap{font-size:9.5px;color:var(--sub);margin-top:5px;text-align:center}
   .beans{text-align:center;font-size:11px;color:var(--sub);margin:11px 0 0;text-decoration:underline;cursor:pointer}
   /* お知らせの入口（パスポート内に残る） */
-  .npentry{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid var(--terra);border-radius:12px;padding:12px 15px;margin:12px 0 0;font-size:14px;font-weight:800;color:var(--terra);text-decoration:none;cursor:pointer}
+  #noticeEntry{padding:0 16px 16px}   /* 横は.moveと同じ16pxで揃える／下は緑帯(footline)とのすき間 */
+  .npentry{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1.5px solid var(--terra);border-radius:12px;padding:12px 15px;margin:0;font-size:14px;font-weight:800;color:var(--terra);text-decoration:none;cursor:pointer}
   .npentry .chev{color:var(--terra)}
   /* お知らせポップアップ（開いた時に1回・またあとで大ボタンで閉じる） */
   .npdim{position:fixed;inset:0;background:rgba(34,28,26,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
@@ -260,18 +261,22 @@
   function noticeSeen_(){ try{ return JSON.parse(localStorage.getItem("jcj_notice_seen")||"{}"); }catch(e){ return {}; } }
   function markNoticeSeen_(id){ try{ var s=noticeSeen_(); s[id]=1; localStorage.setItem("jcj_notice_seen", JSON.stringify(s)); }catch(e){} }
   function noticeUrl_(n){ return (n && /^\d+-/.test(n.liff)) ? ("https://liff.line.me/"+n.liff) : ""; }
-  function handleNotice(n){
+  // 入口だけを出す/消す（★キャッシュ描画からも呼ぶ＝2回目以降は開いた瞬間から入口が出ている＝あとから生えない）
+  function renderNoticeEntry(n){
     const box = $("noticeEntry");
-    if(!n || !n.id){ if(box){ box.classList.add("hidden"); box.innerHTML=""; } return; }
+    if(!box) return;
+    if(!n || !n.id){ box.classList.add("hidden"); box.innerHTML=""; return; }
     const url = noticeUrl_(n);
-    // 入口はパスポート内に残す（ポップアップを閉じても・onの間だけ表示）
-    if(box){
-      box.innerHTML = '<a class="npentry"'+(url?' href="'+url+'"':'')+'>'+esc(n.btn||"見てみる")+'<span class="chev">›</span></a>';
-      box.classList.remove("hidden");
-    }
-    // 未読なら開いた瞬間にポップアップ（同じ番号は二度出さない）
-    if(noticeSeen_()[n.id]) return;
-    showNoticePopup(n, url);
+    box.innerHTML = '<a class="npentry"'+(url?' href="'+url+'"':'')+'>'+esc(n.btn||"見てみる")+'<span class="chev">›</span></a>';
+    box.classList.remove("hidden");
+  }
+  // 最新応答用：入口を確定（最新が「なし」なら入口も消す）＋未読ならポップアップ。
+  //   ★ポップアップの表示可否は"最新の応答"で確定＝notice_onをFALSEにしたら、古いキャッシュがあっても出ない。
+  function handleNotice(n){
+    renderNoticeEntry(n);
+    if(!n || !n.id) return;
+    if(noticeSeen_()[n.id]) return;       // 同じ番号は二度出さない
+    showNoticePopup(n, noticeUrl_(n));
   }
   function showNoticePopup(n, url){
     if($("noticePop")) return;
@@ -321,7 +326,7 @@
     // 前回分を先に出す（あれば即表示）→裏で最新取得
     try{
       const prev = localStorage.getItem("jcj_passport_"+userId);
-      if (prev){ render(JSON.parse(prev)); }
+      if (prev){ const pd = JSON.parse(prev); render(pd); renderNoticeEntry(pd.notice); }  // 入口はキャッシュから即出す（ポップアップは最新応答で判定）
     }catch(e){}
     loadData(userId);
   }
