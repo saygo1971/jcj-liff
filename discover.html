@@ -89,6 +89,17 @@
   .ji-h{font-size:13.5px;font-weight:900;color:var(--ink);line-height:1.5}
   .ji-s{font-size:11.5px;color:var(--sub);margin:6px 2px 12px;line-height:1.6}
   .ji-b{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;border-radius:11px;padding:10px 26px;text-decoration:none;cursor:pointer}
+  /* 地図で選んだ県/エリアのお店を、地図の下に並べる（案1） */
+  .picks{padding:2px 14px 16px}
+  .pick-hdr{display:flex;align-items:center;justify-content:space-between;margin:8px 2px 8px}
+  .pick-hdr b{font-size:14px;color:var(--ink)}
+  .pick-hdr .pick-cnt{font-size:12px;color:var(--sub)}
+  .pickrow{display:flex;align-items:center;justify-content:space-between;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer}
+  .pickrow .pk-nm{font-size:13.5px;font-weight:800;color:var(--ink)}
+  .pickrow .pk-sub{font-size:11px;color:var(--sub)}
+  .pickrow .pk-cv{color:var(--accent);font-weight:800}
+  .pick-empty{font-size:12px;color:var(--sub);margin:0 2px 10px;line-height:1.6}
+  .pick-rec{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:800;font-size:13.5px;border-radius:11px;padding:11px;text-decoration:none}
   .prefhdr{font-size:11.5px;font-weight:800;color:var(--brown-d);padding:6px 2px 0;display:flex;align-items:center;gap:6px}
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
@@ -269,6 +280,8 @@
         <div class="top"><span>全国点灯マップ</span><span><b id="gPref">0</b> / 47 県</span></div>
         <div class="bar"><i id="gBar"></i></div>
       </div>
+      <!-- 地図で選んだ県/エリアのお店を、地図の下に並べる（案1・お店のボタン） -->
+      <div id="picks" class="picks hidden"></div>
     </div>
 
     <div class="list" id="listView"></div>
@@ -576,26 +589,44 @@
   function regionOK(s){return curArea==="全国"||s.area===curArea;}
   function shopOK(s){return regionOK(s)&&(!curBeans||s.beans===1);}
 
+  function shopBtnHTML(s){
+    return '<div class="pickrow" onclick="openSheet('+s.idx+')"><div><div class="pk-nm">'+s.name+'</div><div class="pk-sub">'+s.pref+'</div></div><span class="pk-cv">›</span></div>';
+  }
+  function hidePicks(){ var b=$("picks"); if(b){ b.classList.add("hidden"); b.innerHTML=""; } }
+  // 地図で選んだ県/エリアのお店を、地図の下に並べる（案1）。お店を押すと詳細。お店がまだ無い県は推薦導線を残す。
+  function showPicks(shops, header, emptyCode){
+    var b=$("picks"); if(!b) return;
+    if(!shops.length && emptyCode){
+      b.innerHTML='<div class="pick-hdr"><b>'+FN(emptyCode)+'（お店がまだない県）</b></div>'+
+        '<div class="pick-empty">まだお店がありません。あなたの推薦で最初の1軒を灯せます。</div>'+
+        '<a class="pick-rec" href="https://liff.line.me/'+REC_LIFF_ID+'?src=blank_pref&pref='+encodeURIComponent(FN(emptyCode))+'">この県を推薦する</a>';
+    } else {
+      b.innerHTML='<div class="pick-hdr"><b>'+header+'</b><span class="pick-cnt">'+shops.length+'店</span></div>'+
+        shops.map(shopBtnHTML).join("");
+    }
+    b.classList.remove("hidden");
+  }
   function onPin(i){
     var s=SHOPS[i];
     logAction("pin_tap",{shopId:s.id});
-    photoInto($("coPhoto"),s.photo);
-    $("coName").textContent=s.name;$("coMeta").textContent=s.pref;
-    $("coGo").textContent="見る";$("coGo").onclick=function(){openSheet(i);};
-    $("callout").classList.add("show");
-    pinEls.forEach(function(c){c.classList.toggle("big",+c.dataset.i===i);});
+    if(s.code) onPref(s.code);   // ★ピン＝その店の県を選んだ扱い（地図でお店詳細は開かない・一覧から行く）
   }
   function onPref(code){
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
-    prefEls[code].classList.add("sel");
+    if(prefEls[code]) prefEls[code].classList.add("sel");
+    $("callout").classList.remove("show");   // ふきだしは使わない＝地図の下に一覧を出す
     var arr=(byCode[code]||[]).filter(shopOK);
-    $("coPhoto").style.display="none";
-    if(arr.length){$("coName").textContent=FN(code);$("coMeta").textContent=arr.length+"店 ／ 例："+arr[0].name;$("coGo").textContent="一覧で見る";$("coGo").onclick=function(){setView("list");};}
-    else{$("coName").textContent=FN(code)+"（お店がまだない県）";$("coMeta").textContent="まだお店がありません。あなたの推薦で最初の1軒を灯せます";$("coGo").textContent="この県を推薦する";$("coGo").onclick=function(){ location.href="https://liff.line.me/"+REC_LIFF_ID+"?src=blank_pref&pref="+encodeURIComponent(FN(code)); };}
-    $("callout").classList.add("show");
+    showPicks(arr, FN(code)+"のお店", arr.length?0:code);
   }
 
-  window.setArea=function(el){curArea=el.dataset.area;[].forEach.call(el.parentNode.querySelectorAll(".chip"),function(c){c.classList.remove("on");});el.classList.add("on");refresh();};
+  window.setArea=function(el){
+    curArea=el.dataset.area;
+    [].forEach.call(el.parentNode.querySelectorAll(".chip"),function(c){c.classList.remove("on");});
+    el.classList.add("on");refresh();
+    // ★エリアを押したら、そのエリアのお店を地図の下に並べる（全国に戻したら閉じる）
+    [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
+    if(curArea==="全国"){ hidePicks(); } else { showPicks(SHOPS.filter(shopOK), curArea+"のお店", 0); }
+  };
   window.setTag=function(el){curBeans=!curBeans;el.classList.toggle("on",curBeans);refresh();};
   window.setView=function(v){
     $("segMap").classList.toggle("on",v==="map");$("segList").classList.toggle("on",v==="list");
