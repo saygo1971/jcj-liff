@@ -592,9 +592,6 @@
   function regionOK(s){return curArea==="全国"||s.area===curArea;}
   function shopOK(s){return regionOK(s)&&(!curBeans||s.beans===1);}
 
-  function shopBtnHTML(s){
-    return '<div class="pickrow" onclick="openSheet('+s.idx+')"><div><div class="pk-nm">'+s.name+'</div><div class="pk-sub">'+s.pref+'</div></div><span class="pk-cv">›</span></div>';
-  }
   function hidePicks(){ var b=$("picks"); if(b){ b.classList.add("hidden"); b.innerHTML=""; } }
   // 地図で選んだ県/エリアのお店を、地図の下に並べる（案1）。お店を押すと詳細。お店がまだ無い県は推薦導線を残す。
   function showPicks(shops, header, emptyCode){
@@ -604,13 +601,14 @@
         '<div class="pick-empty">まだお店がありません。あなたの推薦で最初の1軒を灯せます。</div>'+
         '<a class="pick-rec" href="https://liff.line.me/'+REC_LIFF_ID+'?src=blank_pref&pref='+encodeURIComponent(FN(emptyCode))+'">この県を推薦する</a>';
     } else {
+      // 一覧タブと同じ写真つきカード(cardHTML)を使う＝情報量を揃える（新しい見た目を発明しない）
       b.innerHTML='<div class="pick-hdr"><b>'+header+'</b><span class="pick-cnt">'+shops.length+'店</span></div>'+
-        shops.map(shopBtnHTML).join("");
+        shops.map(cardHTML).join("");
     }
     b.classList.remove("hidden");
   }
   // ── 地図の拡大（エリア単位）──viewBoxをそのエリアの県の外接範囲へ差し替え。線の太さはCSSで一定、ピンrはviewBox幅に比例させ見た目を一定に。
-  var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, zoomedArea=null;
+  var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, ORIG_VB_H=984, zoomedArea=null;
   function applyPinScale(vbW){ var r=7*(vbW/ORIG_VB_W); pinEls.forEach(function(c){c.setAttribute("r",r);}); }
   function showBack(on){ var b=$("zoomBack"); if(b) b.classList.toggle("hidden",!on); }
   function zoomToArea(area){
@@ -621,9 +619,13 @@
         minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.width);maxY=Math.max(maxY,b.y+b.height); } }catch(e){}
     });
     if(!found) return;
-    var pad=Math.max(maxX-minX,maxY-minY)*0.12, w=(maxX-minX)+pad*2, h=(maxY-minY)+pad*2;
-    svg.setAttribute("viewBox",(minX-pad)+" "+(minY-pad)+" "+w+" "+h);
-    zoomedArea=area; applyPinScale(w); showBack(true);
+    var bw=maxX-minX, bh=maxY-minY, cx=minX+bw/2, cy=minY+bh/2;
+    var pad=Math.max(bw,bh)*0.12; bw+=pad*2; bh+=pad*2;
+    // ★viewBoxを枠(地図)の縦横比に合わせて、足りない方向へ広げる＝SVGの高さ(枠)が伸び縮みしない・端末差が出ない
+    var AR=ORIG_VB_W/ORIG_VB_H;
+    if(bw/bh < AR){ bw=bh*AR; } else { bh=bw/AR; }
+    svg.setAttribute("viewBox",(cx-bw/2)+" "+(cy-bh/2)+" "+bw+" "+bh);
+    zoomedArea=area; applyPinScale(bw); showBack(true);
   }
   window.zoomOut=function(){
     svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
