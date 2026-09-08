@@ -93,6 +93,7 @@
   .ji-b{display:inline-block;background:var(--accent);color:#fff;font-weight:800;font-size:14px;border-radius:11px;padding:10px 26px;text-decoration:none;cursor:pointer}
   /* 地図で選んだ県/エリアのお店を、地図の下に並べる（案1） */
   .picks{padding:2px 14px 16px}
+  .picks .card{margin-bottom:10px}   /* ロースター一覧タブと同じ間隔(gap:10px)に揃える */
   .pick-hdr{display:flex;align-items:center;justify-content:space-between;margin:8px 2px 8px}
   .pick-hdr b{font-size:14px;color:var(--ink)}
   .pick-hdr .pick-cnt{font-size:12px;color:var(--sub)}
@@ -611,21 +612,36 @@
   var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, ORIG_VB_H=984, zoomedArea=null;
   function applyPinScale(vbW){ var r=7*(vbW/ORIG_VB_W); pinEls.forEach(function(c){c.setAttribute("r",r);}); }
   function showBack(on){ var b=$("zoomBack"); if(b) b.classList.toggle("hidden",!on); }
-  function zoomToArea(area){
-    var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,found=false;
+  // 県の代表点(パスの点群の中央値)と頑健半径(中央からの距離の70%点)＝離島の点に引っ張られにくい。
+  function _pmed(a){ if(!a.length)return 0; a=a.slice().sort(function(p,q){return p-q;}); var k=a.length>>1; return a.length%2?a[k]:(a[k-1]+a[k])/2; }
+  function _pts(g){ var d=g.getAttribute("d")||"", ns=d.match(/-?\d+\.?\d*/g)||[], P=[]; for(var i=0;i+1<ns.length;i+=2)P.push([+ns[i],+ns[i+1]]); return P; }
+  function _rep(P){ return [_pmed(P.map(function(p){return p[0];})),_pmed(P.map(function(p){return p[1];}))]; }
+  function _rad(P,c){ var ds=P.map(function(p){return Math.hypot(p[0]-c[0],p[1]-c[1]);}).sort(function(a,b){return a-b;}); return ds[Math.min(ds.length-1,Math.floor(ds.length*0.70))]||15; }
+  // エリアの拡大枠：各県の代表点±半径のunion。ただし「遠い＆そのエリアで最大でない県(＝離島:沖縄等)」は入れない＝本土が枠いっぱいに出る。全エリアで実座標検証済み。
+  function areaViewBox(area){
+    var R={},RD={},codes=[];
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){
-      if(CODE2AREA[+g.getAttribute("data-code")]!==area) return;
-      try{ var b=g.getBBox(); if(b.width||b.height){ found=true;
-        minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.width);maxY=Math.max(maxY,b.y+b.height); } }catch(e){}
+      var code=+g.getAttribute("data-code"); if(CODE2AREA[code]!==area) return;
+      var P=_pts(g); if(P.length<3) return; var c=_rep(P); R[code]=c; RD[code]=_rad(P,c); codes.push(code);
     });
-    if(!found) return;
-    var bw=maxX-minX, bh=maxY-minY, cx=minX+bw/2, cy=minY+bh/2;
-    var pad=Math.max(bw,bh)*0.12; bw+=pad*2; bh+=pad*2;
-    // ★viewBoxを枠(地図)の縦横比に合わせて、足りない方向へ広げる＝SVGの高さ(枠)が伸び縮みしない・端末差が出ない
-    var AR=ORIG_VB_W/ORIG_VB_H;
-    if(bw/bh < AR){ bw=bh*AR; } else { bh=bw/AR; }
-    svg.setAttribute("viewBox",(cx-bw/2)+" "+(cy-bh/2)+" "+bw+" "+bh);
-    zoomedArea=area; applyPinScale(bw); showBack(true);
+    if(!codes.length) return null;
+    var big=codes[0]; codes.forEach(function(c){ if(RD[c]>RD[big]) big=c; });   // 自エリア最大の県(北海道等)は保護
+    var mcx=_pmed(codes.map(function(c){return R[c][0];})), mcy=_pmed(codes.map(function(c){return R[c][1];}));
+    var medR=_pmed(codes.map(function(c){return RD[c];}));
+    var madd=_pmed(codes.map(function(c){return Math.hypot(R[c][0]-mcx,R[c][1]-mcy);}))||medR;
+    var thr=madd*2.2+medR;
+    var keep=codes.filter(function(c){ return Math.hypot(R[c][0]-mcx,R[c][1]-mcy)<=thr || c===big; });
+    if(keep.length<2) keep=codes;
+    var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    keep.forEach(function(c){ x0=Math.min(x0,R[c][0]-RD[c]); y0=Math.min(y0,R[c][1]-RD[c]); x1=Math.max(x1,R[c][0]+RD[c]); y1=Math.max(y1,R[c][1]+RD[c]); });
+    var bw=x1-x0,bh=y1-y0,cx=(x0+x1)/2,cy=(y0+y1)/2,AR=ORIG_VB_W/ORIG_VB_H;
+    if(bw/bh<AR){bw=bh*AR;}else{bh=bw/AR;}   // 地図枠の縦横比に合わせる＝枠は伸び縮みしない
+    return [cx-bw/2,cy-bh/2,bw,bh];
+  }
+  function zoomToArea(area){
+    var vb=areaViewBox(area); if(!vb) return;
+    svg.setAttribute("viewBox",vb[0]+" "+vb[1]+" "+vb[2]+" "+vb[3]);
+    zoomedArea=area; applyPinScale(vb[2]); showBack(true);
   }
   window.zoomOut=function(){
     svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
