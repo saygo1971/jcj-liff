@@ -615,25 +615,43 @@
   // 県の代表点(パスの点群の中央値)と頑健半径(中央からの距離の70%点)＝離島の点に引っ張られにくい。
   function _pmed(a){ if(!a.length)return 0; a=a.slice().sort(function(p,q){return p-q;}); var k=a.length>>1; return a.length%2?a[k]:(a[k-1]+a[k])/2; }
   function _pts(g){ var d=g.getAttribute("d")||"", ns=d.match(/-?\d+\.?\d*/g)||[], P=[]; for(var i=0;i+1<ns.length;i+=2)P.push([+ns[i],+ns[i+1]]); return P; }
-  function _rep(P){ return [_pmed(P.map(function(p){return p[0];})),_pmed(P.map(function(p){return p[1];}))]; }
-  function _rad(P,c){ var ds=P.map(function(p){return Math.hypot(p[0]-c[0],p[1]-c[1]);}).sort(function(a,b){return a-b;}); return ds[Math.min(ds.length-1,Math.floor(ds.length*0.70))]||15; }
-  // エリアの拡大枠：各県の代表点±半径のunion。ただし「遠い＆そのエリアで最大でない県(＝離島:沖縄等)」は入れない＝本土が枠いっぱいに出る。全エリアで実座標検証済み。
+  // 県の中の"本土(最大のかたまり)"のbbox＝点をグリッドに入れ最大連結成分を取る。奄美/伊豆/小笠原など"離れた小さなかたまり"は落ちる（北海道は1つの大きなかたまりなので落ちない）。
+  function _mainbox(P){
+    var cell=18, cells={}, k;
+    for(var i=0;i<P.length;i++){ k=Math.floor(P[i][0]/cell)+","+Math.floor(P[i][1]/cell); (cells[k]=cells[k]||[]).push(P[i]); }
+    var seen={}, best=[];
+    Object.keys(cells).forEach(function(k0){
+      if(seen[k0]) return; var stack=[k0], comp=[];
+      while(stack.length){
+        var cur=stack.pop(); if(seen[cur]) continue; seen[cur]=1;
+        var pp=cells[cur]; for(var j=0;j<pp.length;j++) comp.push(pp[j]);
+        var xy=cur.split(","), gx=+xy[0], gy=+xy[1];
+        for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++){ var nb=(gx+dx)+","+(gy+dy); if(cells[nb]&&!seen[nb]) stack.push(nb); }
+      }
+      if(comp.length>best.length) best=comp;
+    });
+    if(!best.length) best=P;
+    var xs=best.map(function(p){return p[0];}), ys=best.map(function(p){return p[1];});
+    return [Math.min.apply(null,xs),Math.min.apply(null,ys),Math.max.apply(null,xs),Math.max.apply(null,ys)];
+  }
+  // エリアの拡大枠：各県の"本土bbox"のunion。ただし本土の中心がエリアの中心から大きく離れた県(＝沖縄など丸ごと遠い離島県)は入れない＝本土が枠いっぱいに。全8エリアで実座標＋面積割合検証済み。
   function areaViewBox(area){
-    var R={},RD={},codes=[];
+    var MB={},codes=[];
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){
       var code=+g.getAttribute("data-code"); if(CODE2AREA[code]!==area) return;
-      var P=_pts(g); if(P.length<3) return; var c=_rep(P); R[code]=c; RD[code]=_rad(P,c); codes.push(code);
+      var P=_pts(g); if(P.length<3) return; MB[code]=_mainbox(P); codes.push(code);
     });
     if(!codes.length) return null;
-    var big=codes[0]; codes.forEach(function(c){ if(RD[c]>RD[big]) big=c; });   // 自エリア最大の県(北海道等)は保護
-    var mcx=_pmed(codes.map(function(c){return R[c][0];})), mcy=_pmed(codes.map(function(c){return R[c][1];}));
-    var medR=_pmed(codes.map(function(c){return RD[c];}));
-    var madd=_pmed(codes.map(function(c){return Math.hypot(R[c][0]-mcx,R[c][1]-mcy);}))||medR;
-    var thr=madd*2.2+medR;
-    var keep=codes.filter(function(c){ return Math.hypot(R[c][0]-mcx,R[c][1]-mcy)<=thr || c===big; });
+    var cen={}; codes.forEach(function(c){ cen[c]=[(MB[c][0]+MB[c][2])/2,(MB[c][1]+MB[c][3])/2]; });
+    var mcx=_pmed(codes.map(function(c){return cen[c][0];})), mcy=_pmed(codes.map(function(c){return cen[c][1];}));
+    var madd=_pmed(codes.map(function(c){return Math.hypot(cen[c][0]-mcx,cen[c][1]-mcy);}))||30;
+    var diag=_pmed(codes.map(function(c){return Math.hypot(MB[c][2]-MB[c][0],MB[c][3]-MB[c][1]);}));
+    var thr=madd*2.5+diag;   // エリアが広い(北海道東北)ほどmaddが大きく北海道は残る／エリアが密(九州)だと沖縄は落ちる
+    var keep=codes.filter(function(c){ return Math.hypot(cen[c][0]-mcx,cen[c][1]-mcy)<=thr; });
     if(keep.length<2) keep=codes;
     var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-    keep.forEach(function(c){ x0=Math.min(x0,R[c][0]-RD[c]); y0=Math.min(y0,R[c][1]-RD[c]); x1=Math.max(x1,R[c][0]+RD[c]); y1=Math.max(y1,R[c][1]+RD[c]); });
+    keep.forEach(function(c){ x0=Math.min(x0,MB[c][0]); y0=Math.min(y0,MB[c][1]); x1=Math.max(x1,MB[c][2]); y1=Math.max(y1,MB[c][3]); });
+    var padx=(x1-x0)*0.06, pady=(y1-y0)*0.06; x0-=padx;x1+=padx;y0-=pady;y1+=pady;
     var bw=x1-x0,bh=y1-y0,cx=(x0+x1)/2,cy=(y0+y1)/2,AR=ORIG_VB_W/ORIG_VB_H;
     if(bw/bh<AR){bw=bh*AR;}else{bh=bw/AR;}   // 地図枠の縦横比に合わせる＝枠は伸び縮みしない
     return [cx-bw/2,cy-bh/2,bw,bh];
