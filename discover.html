@@ -63,6 +63,8 @@
   .prefecture.sel{fill:var(--sel)}
   .prefecture.dim{opacity:.42}
   .prefecture.lit{fill:var(--lit) !important;transition:fill .7s ease}
+  .prefecture,.pin{vector-effect:non-scaling-stroke}   /* 拡大しても線の太さは一定 */
+  .zoomback{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);cursor:pointer;padding:5px 2px 8px}
   .inset-box{fill:none;stroke:#b7a488;stroke-width:1.6;stroke-dasharray:5 4}
   .inset-label{fill:#6f5b44;font-size:30px;font-weight:700;font-family:"Noto Sans JP",system-ui,sans-serif}
   .pin{fill:var(--pin);stroke:#fff;stroke-width:2px;cursor:pointer;transition:.15s}
@@ -216,6 +218,7 @@
     <div class="mapwrap" id="mapView">
       <div class="mapcard">
         <div class="legend"><span><i style="background:var(--land-has)"></i>店あり</span><span><i style="background:var(--land)"></i>お店がまだない</span><span><i style="background:var(--pin);border-radius:50%"></i>ロースター</span></div>
+        <div id="zoomBack" class="zoomback hidden" onclick="zoomOut()">‹ 全国にもどる</div>
 <svg class="jp-map" viewBox="0 0 1000 984" xmlns="http://www.w3.org/2000/svg">
 <g id="prefs">
 <path class="prefecture" data-code="26" d="M489.1 523.4L487.3 523.5L485.7 524.6L484.3 524.7L483.8 523.9L483.8 523L481.2 520.7L482 519L481.8 517L482.4 517L482.5 517.6L484.7 517.4L486 516.6L486.1 516.1L486.9 515.2L488.5 515.4L489 514.7L490.1 514.4L491 513.6L491.2 512.8L492.8 512.4L493.4 511.8L493.7 512.2L495.5 511.4L496.3 511.5L497.1 510.7L498.1 511.8L498.4 511.7L498.6 512.5L499.3 512.6L499.3 513.2L499.8 513.5L499.8 514.6L500.7 515.1L500.4 515.9L500.5 516.8L499.9 516.7L500.1 516.2L499.9 516.1L499 516.5L498.4 517.4L498 519L495.8 521.6L495.6 522.2L495.8 523.3L496.4 523.1L496.3 522.2L497.1 521.8L497.3 520.8L497.9 520.9L498.5 520.1L498.5 520.7L498.1 520.8L498.3 521.6L499.3 522.1L498.4 522.6L498 522.1L497.7 522.9L498 523.4L499 523.5L499.9 524.5L500.8 524.7L501.4 524L501.7 524.4L501.7 525.7L500.9 527.5L501.1 527.9L502.4 526.6L502.4 526.2L502.1 526.4L502.5 526L502.4 525.6L503 526L503.8 525.8L503.9 526.1L503.5 526.5L504.6 526.4L504.7 525.3L504.3 524.9L504.5 524.5L503.9 525.2L502.3 525.1L502.5 524.2L502.1 524.1L501.9 523.5L502.2 522.6L502.5 523.1L503.8 522.1L504.4 522.3L505.2 521.6L505.8 521.8L506.1 520.6L507.4 519.9L507.4 520.5L506.9 520.5L506.8 521.2L506.9 521.8L507.5 521.6L507.5 522.1L508.4 522.3L507.3 522.8L506.8 524.1L507.9 525.1L507.9 525.9L507.2 527L508.9 528.6L508.8 529.2L510.1 529.5L510.2 531.6L515.1 532.3L517.6 533.5L518.4 532.9L520.5 532.9L520.3 533.5L522.3 535L523.2 537.1L524.4 536.4L523.4 538.9L523.5 539.7L523.1 540L523.8 542.6L524.3 543.2L523.4 546.8L523.4 548.4L522.5 549.1L523 550.4L523.3 550.4L523.4 550.9L522.8 550.9L523.4 551.4L523 552L524 552L524.2 553.1L525.3 554.3L524.9 556.2L524.6 556.6L524.7 557.2L526.1 558.3L527.9 557.1L528.2 559.3L528.8 559.2L529.2 560L530.7 559.8L530.7 560.5L531.7 561L530.9 562L531.9 563.1L531.7 564.3L532.9 565.2L532.3 565.4L531.7 566.9L530.7 566.4L529.9 566.5L529.4 565.1L528.7 565.1L528.6 564.8L528 565.3L527.3 565.1L527.3 564.2L526.1 565.6L525.8 566.8L525.2 566.5L524 566.9L521.6 566L520 565.8L520 565.4L519 564.4L518.8 563.2L519.5 561.8L518 559.6L517.4 559.5L516.5 556.8L515.4 556.3L515.5 555.6L514.6 554.9L513.3 555.3L514.1 553.8L513.9 553L512.1 553L512.4 553.8L511.7 554L511.4 554.8L511.5 555L511.7 554.6L511.7 555L512.4 554.8L512.5 555.5L512.1 555.9L510.8 556L509.6 554.5L508.6 554.6L508.2 554.2L508.4 553.8L508.2 553.5L508.6 553.2L508.3 552.5L508.7 552.2L508.5 551.9L506.3 551.1L505.7 551.4L505.1 551L503.9 551L503.8 549.6L503.4 548.7L504.7 547.5L504.8 546.8L504.2 546.4L504.2 544.8L502.3 544.4L502.1 543.7L499.6 543.9L499.5 543.6L500 543.2L500 542.6L499.3 542.2L497.5 542.2L497.2 542.9L496.4 543.1L495.5 542.5L495.5 541.6L496.1 541.4L496 540.9L494.2 539.7L494.6 538.9L494.3 537.9L492.2 537.6L490.4 539.1L489.9 537.7L489.1 537.9L487.9 537.4L487.9 536.7L487.5 536.3L484.3 535.2L484 532.4L484.3 531.7L484.2 530.9L484.7 530.2L485.1 529.9L485.7 530.1L487 530.9L487.1 531.3L488.3 530.9L488.8 530.1L489.6 530.2L489.6 527.9L489 526.6L489.3 525.7L488.9 525.5L489.4 524.9Z"><title>京都府</title></path>
@@ -606,26 +609,57 @@
     }
     b.classList.remove("hidden");
   }
+  // ── 地図の拡大（エリア単位）──viewBoxをそのエリアの県の外接範囲へ差し替え。線の太さはCSSで一定、ピンrはviewBox幅に比例させ見た目を一定に。
+  var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, zoomedArea=null;
+  function applyPinScale(vbW){ var r=7*(vbW/ORIG_VB_W); pinEls.forEach(function(c){c.setAttribute("r",r);}); }
+  function showBack(on){ var b=$("zoomBack"); if(b) b.classList.toggle("hidden",!on); }
+  function zoomToArea(area){
+    var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9,found=false;
+    [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){
+      if(CODE2AREA[+g.getAttribute("data-code")]!==area) return;
+      try{ var b=g.getBBox(); if(b.width||b.height){ found=true;
+        minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.width);maxY=Math.max(maxY,b.y+b.height); } }catch(e){}
+    });
+    if(!found) return;
+    var pad=Math.max(maxX-minX,maxY-minY)*0.12, w=(maxX-minX)+pad*2, h=(maxY-minY)+pad*2;
+    svg.setAttribute("viewBox",(minX-pad)+" "+(minY-pad)+" "+w+" "+h);
+    zoomedArea=area; applyPinScale(w); showBack(true);
+  }
+  window.zoomOut=function(){
+    svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
+    [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
+  };
+  function showAreaPicks(area){
+    var arr=SHOPS.filter(function(s){return s.area===area&&(!curBeans||s.beans===1);});
+    showPicks(arr, area+"のお店", 0);
+  }
   function onPin(i){
     var s=SHOPS[i];
     logAction("pin_tap",{shopId:s.id});
     if(s.code) onPref(s.code);   // ★ピン＝その店の県を選んだ扱い（地図でお店詳細は開かない・一覧から行く）
   }
   function onPref(code){
+    $("callout").classList.remove("show");   // ふきだしは使わない
+    var area=CODE2AREA[code];
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
-    if(prefEls[code]) prefEls[code].classList.add("sel");
-    $("callout").classList.remove("show");   // ふきだしは使わない＝地図の下に一覧を出す
-    var arr=(byCode[code]||[]).filter(shopOK);
-    showPicks(arr, FN(code)+"のお店", arr.length?0:code);
+    if(zoomedArea!==area){
+      // まだそのエリアに拡大していない → エリアに拡大＋そのエリアのお店（地図のエリア/エリア名/ピンどれでも同じ）
+      if(area){ zoomToArea(area); showAreaPicks(area); }
+    } else {
+      // 既にそのエリアに拡大中 → 中の県で絞り込み（拡大はそのまま）
+      if(prefEls[code]) prefEls[code].classList.add("sel");
+      var arr=(byCode[code]||[]).filter(shopOK);
+      showPicks(arr, FN(code)+"のお店", arr.length?0:code);
+    }
   }
 
   window.setArea=function(el){
     curArea=el.dataset.area;
     [].forEach.call(el.parentNode.querySelectorAll(".chip"),function(c){c.classList.remove("on");});
     el.classList.add("on");refresh();
-    // ★エリアを押したら、そのエリアのお店を地図の下に並べる（全国に戻したら閉じる）
+    // ★エリア名チップ＝そのエリアに拡大＋そのエリアのお店（「全国」チップで全国に戻る）
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
-    if(curArea==="全国"){ hidePicks(); } else { showPicks(SHOPS.filter(shopOK), curArea+"のお店", 0); }
+    if(curArea==="全国"){ zoomOut(); } else { zoomToArea(curArea); showAreaPicks(curArea); }
   };
   window.setTag=function(el){curBeans=!curBeans;el.classList.toggle("on",curBeans);refresh();};
   window.setView=function(v){
