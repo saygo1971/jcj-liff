@@ -701,7 +701,17 @@
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
     if(zoomedArea!==area){
       // まだそのエリアに拡大していない → エリアに拡大＋そのエリアのお店（地図のエリア/エリア名/ピンどれでも同じ）
-      if(area){ zoomToArea(area); showAreaPicks(area); }
+      if(area){
+        zoomToArea(area);
+        if(code===47){
+          // ★沖縄は全国マップで独立した別枠＝タップしたら「沖縄のお店」を直接出す（九州全体ではなく沖縄だけ）
+          if(prefEls[code]) prefEls[code].classList.add("sel");
+          var oa=(byCode[code]||[]).filter(shopOK);
+          showPicks(oa, FN(code)+"のお店", oa.length?0:code);
+        } else {
+          showAreaPicks(area);
+        }
+      }
     } else {
       // 既にそのエリアに拡大中 → 中の県で絞り込み（拡大はそのまま）
       if(prefEls[code]) prefEls[code].classList.add("sel");
