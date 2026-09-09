@@ -60,6 +60,9 @@
   /* 個人の数字 */
   .stats{display:flex;gap:8px;margin:13px 0 11px}
   .stats .s{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center;padding:9px 4px}
+  .stats .s.tap{position:relative;cursor:pointer;transition:background .12s,border-color .12s;-webkit-tap-highlight-color:transparent}
+  .stats .s.tap .go{position:absolute;top:4px;right:6px;font-size:12px;line-height:1;color:var(--terra);font-weight:700}
+  .stats .s.tap:active{background:var(--kinari);border-color:var(--green)}
   .stats .s b{display:block;font-size:19px;color:var(--green);font-weight:900}
   .stats .s span{font-size:10px;color:var(--sub)}
   /* みんなの距離＋地球2周目 */
@@ -128,9 +131,9 @@
 
       <!-- 個人の数字 -->
       <div class="stats">
-        <div class="s"><b class="hwy" id="yourKm">0</b><span>あなたの距離(km)</span></div>
-        <div class="s"><b class="hwy" id="mile">0</b><span>使えるマイル</span></div>
-        <div class="s"><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
+        <div class="s tap" id="statKm"><span class="go">›</span><b class="hwy" id="yourKm">0</b><span>あなたの距離(km)</span></div>
+        <div class="s tap" id="statMile"><span class="go">›</span><b class="hwy" id="mile">0</b><span>使えるマイル</span></div>
+        <div class="s tap" id="statShop"><span class="go">›</span><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
       </div>
 
       <!-- みんなの距離＋地球2周目メーター -->
@@ -255,6 +258,9 @@
     $("navDiscover").onclick = () => open("discover");
     $("distBox").onclick = () => open("distance");
     $("beansLink").onclick = () => open("beans");
+    $("statKm").onclick    = () => open("distance");   // あなたの距離 → 旅メーター
+    $("statMile").onclick  = () => open("beans");       // 使えるマイル → マイルの使い道(豆割)
+    $("statShop").onclick   = () => open("logobook");    // 訪れた店 → ロゴ帳
   }
 
   // ── お知らせ（アプリを開いた時のポップアップ・CONFIG駆動・「お知らせ1本につき1回」）──
