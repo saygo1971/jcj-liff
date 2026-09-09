@@ -230,6 +230,8 @@
     USER_ID = profile.userId || previewUid;
     if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
     try{ if(USER_ID) localStorage.setItem("jcj_uid", USER_ID); }catch(e){} // shop.htmlの保存で使う（同一オリジン・URLに載せない）
+    // 📈 旅の記録を開いた記録（投げっぱなし＝返事を待たない・失敗しても表示は普通に出す／本物のLINEユーザーのみ）
+    try{ if(/^U[0-9a-f]{32}$/i.test(USER_ID)) fetch(GAS_URL+"?action=page_view&page=history&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
     load();
   }
   main().catch(err => $("status").textContent = "エラー: "+(err&&err.message||String(err)));
