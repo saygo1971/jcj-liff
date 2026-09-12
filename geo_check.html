@@ -69,20 +69,32 @@
   <div class="det" id="det" hidden></div>
 
   <div class="lbl">③ 測った記録（この表をスクリーンショットで送ってください）</div>
-  <table id="tbl"><thead><tr><th>場所</th><th>設定</th><th>誤差</th><th>秒</th><th>結果</th></tr></thead>
-  <tbody id="tb"><tr><td colspan="5" style="color:#6B6B6B">まだ測っていません</td></tr></tbody></table>
+  <table id="tbl"><thead><tr><th>場所</th><th>設定</th><th>誤差</th><th>秒</th><th>前回から</th><th>結果</th></tr></thead>
+  <tbody id="tb"><tr><td colspan="6" style="color:#6B6B6B">まだ測っていません</td></tr></tbody></table>
 
   <div class="sub">
     ※「誤差」は、スマホが自分で申告してくる「このくらいズレているかも」という数字です。<br>
     ※ 小さいほど正確。<b>30m以下ならとても良い／100mを超えると、お店にいるかの判定には使えません。</b><br>
-    ※ 場所ごとに、②の2つの設定を両方おためしください（合計8回）。
+    ※ 場所ごとに、②の2つの設定を両方おためしください。<br>
+    <br>
+    <b style="color:#2A2A2A">★「前回から」の列について（いちばん大事な確認）</b><br>
+    前に測った場所から、<b>スマホが何m動いたと思っているか</b>です。<br>
+    <b style="color:#B71C1C">実際に歩いたのに「前回から 0m」と出たら、それは古い位置を使い回しています。</b><br>
+    ＝「いまのアプリと同じ」設定を選んで、<b>歩いた直後（1分以内）に測る</b>と確かめられます。
   </div>
 </div>
 
 <script>
 (function(){
   var $=function(i){return document.getElementById(i);};
-  var W="店内", M="new", rows=[], busy=false;
+  var W="店内", M="new", rows=[], busy=false, prev=null;
+
+  function metersBetween(a,b){
+    var R=6371000, t1=a[0]*Math.PI/180, t2=b[0]*Math.PI/180;
+    var dt=(b[0]-a[0])*Math.PI/180, dl=(b[1]-a[1])*Math.PI/180;
+    var h=Math.sin(dt/2)*Math.sin(dt/2)+Math.cos(t1)*Math.cos(t2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
 
   function pick(boxId, attr, set){
     $(boxId).addEventListener("click", function(e){
@@ -121,10 +133,11 @@
          + '<br><span>かかった時間</span> '+sec+' 秒'
          + '<br><span>詳しい中身</span> '+extra;
   }
-  function addRow(place, mode, accTxt, sec, res){
-    rows.push([place,mode,accTxt,sec,res]);
+  function addRow(place, mode, accTxt, sec, moved, res){
+    rows.push([place,mode,accTxt,sec,moved,res]);
     $("tb").innerHTML = rows.map(function(r){
-      return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td><b>"+r[2]+"</b></td><td>"+r[3]+"</td><td>"+r[4]+"</td></tr>";
+      var mv = r[4]==="0m" ? '<span style="color:#B71C1C;font-weight:800">0m</span>' : r[4];
+      return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td><b>"+r[2]+"</b></td><td>"+r[3]+"</td><td>"+mv+"</td><td>"+r[5]+"</td></tr>";
     }).join("");
   }
 
@@ -135,19 +148,23 @@
     var modeTxt = (M==="new"?"取り直す":"いまと同じ");
     if(!navigator.geolocation){
       var s0=((Date.now()-t0)/1000).toFixed(1);
-      show(false,0,CODE[0],s0); addRow(W,modeTxt,"—",s0,"✕ 機能なし");
+      show(false,0,CODE[0],s0); addRow(W,modeTxt,"—",s0,"—","✕ 機能なし");
       busy=false; b.disabled=false; b.textContent="測る"; return;
     }
     navigator.geolocation.getCurrentPosition(function(p){
       var sec=((Date.now()-t0)/1000).toFixed(1), a=p.coords.accuracy||0;
-      show(true, a, "緯度 "+p.coords.latitude.toFixed(6)+" ／ 経度 "+p.coords.longitude.toFixed(6), sec);
-      addRow(W, modeTxt, Math.round(a)+"m", sec, a<=30?"◎ 良い":(a<=100?"△ ぎりぎり":"✕ 粗い"));
+      var here=[p.coords.latitude, p.coords.longitude];
+      var moved = prev ? (Math.round(metersBetween(prev, here))+"m") : "—";
+      prev = here;
+      show(true, a, "緯度 "+here[0].toFixed(6)+" ／ 経度 "+here[1].toFixed(6)
+                   + (moved==="—" ? "" : " ／ 前回から "+moved), sec);
+      addRow(W, modeTxt, Math.round(a)+"m", sec, moved, a<=30?"◎ 良い":(a<=100?"△ ぎりぎり":"✕ 粗い"));
       busy=false; b.disabled=false; b.textContent="測る";
     }, function(err){
       var sec=((Date.now()-t0)/1000).toFixed(1);
       var name=CODE[err&&err.code]||"不明";
       show(false,0,name+"（code="+(err&&err.code)+"）",sec);
-      addRow(W, modeTxt, "—", sec, "✕ "+name);
+      addRow(W, modeTxt, "—", sec, "—", "✕ "+name);
       busy=false; b.disabled=false; b.textContent="測る";
     }, opts());
   });
