@@ -1,7 +1,7 @@
-<!-- JCJ 位置のたしかめ（測定専用・2026-09-12）
+<!-- JCJ 位置のたしかめ（測定専用・2026-09-12 v3）
      ★このページは、どこにも通信しません。チェックインもしません。マイルも動きません。
      ★GAS・スプレッドシート・LINEのユーザー情報とは一切つながっていません。
-     目的＝「お店の中で、使える精度の位置が取れるか」を測るだけ。 -->
+     目的＝①店内でどれだけ正確に位置が取れるか ②古い位置の使い回しが起きるか、を測る。 -->
 <!doctype html><html lang="ja"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>JCJ 位置のたしかめ</title>
@@ -24,6 +24,10 @@
   .go{display:block;width:100%;margin:18px 0 6px;padding:17px;border:0;border-radius:12px;
       background:var(--brand-deep);color:#fff;font-weight:800;font-size:16.5px}
   .go:disabled{opacity:.55}
+  .cd{margin:12px 0 0;padding:13px 14px;border-radius:12px;font-size:13.5px;line-height:1.65;font-weight:800}
+  .cd.live{background:#FFF6E5;border:1.5px solid #E8B44A;color:#8A5A00}
+  .cd.dead{background:#F1ECE6;border:1px solid var(--line);color:var(--sub);font-weight:400}
+  .cd .big{font-size:26px;display:block;margin-top:4px}
   .acc{margin:18px 0 6px;text-align:center}
   .acc .n{font-size:52px;font-weight:800;line-height:1.1}
   .acc .u{font-size:15px;font-weight:800;margin-left:2px}
@@ -31,8 +35,8 @@
   .det{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
        font-size:12.5px;line-height:1.9;margin-top:12px}
   .det span{color:var(--sub)}
-  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px;background:#fff}
-  th,td{border:1px solid var(--line);padding:7px 6px;text-align:center}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:11.5px;background:#fff;table-layout:fixed}
+  th,td{border:1px solid var(--line);padding:6px 3px;text-align:center;word-break:break-all}
   th{background:#F1ECE6;font-weight:800}
   .sub{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.8}
 </style></head><body>
@@ -43,7 +47,7 @@
   <div class="note">
     <b>このページは、どこにも通信しません。</b><br>
     チェックインは記録されません。マイルも動きません。スプレッドシートにも何も書きません。<br>
-    <b>いまいる場所が、どれくらいの正確さで分かるか</b>を見るだけのページです。
+    <b>いまいる場所が、どれくらい正確に分かるか</b>を見るだけのページです。
   </div>
 
   <div class="lbl">① いまどこにいますか？（あとで見分けるための札）</div>
@@ -54,13 +58,15 @@
     <div class="chip" data-w="200m先">200mくらい先</div>
   </div>
 
-  <div class="lbl">② 測り方（2つとも試してください）</div>
+  <div class="lbl">② 測り方</div>
   <div class="chips" id="mode">
     <div class="chip on" data-m="new">いま取り直す（新しい設定）</div>
-    <div class="chip" data-m="old">いまのアプリと同じ設定</div>
+    <div class="chip" data-m="old">いまのアプリと同じ</div>
   </div>
 
   <button class="go" id="go">測る</button>
+
+  <div class="cd dead" id="cd" hidden></div>
 
   <div class="acc" id="acc" hidden>
     <div class="n" id="accN">—</div>
@@ -69,32 +75,32 @@
   <div class="det" id="det" hidden></div>
 
   <div class="lbl">③ 測った記録（この表をスクリーンショットで送ってください）</div>
-  <table id="tbl"><thead><tr><th>場所</th><th>設定</th><th>誤差</th><th>秒</th><th>前回から</th><th>結果</th></tr></thead>
+  <table><thead><tr>
+    <th style="width:17%">場所</th><th style="width:19%">設定</th><th style="width:13%">誤差</th>
+    <th style="width:16%">前回から</th><th style="width:13%">経過</th><th style="width:22%">結果</th>
+  </tr></thead>
   <tbody id="tb"><tr><td colspan="6" style="color:#6B6B6B">まだ測っていません</td></tr></tbody></table>
 
   <div class="sub">
-    ※「誤差」は、スマホが自分で申告してくる「このくらいズレているかも」という数字です。<br>
-    ※ 小さいほど正確。<b>30m以下ならとても良い／100mを超えると、お店にいるかの判定には使えません。</b><br>
-    ※ 場所ごとに、②の2つの設定を両方おためしください。<br>
+    ※「誤差」＝スマホが自分で申告する「このくらいズレているかも」の数字。小さいほど正確。<br>
+    <b style="color:var(--ink)">30m以下＝とても良い／100m超＝お店にいるかの判定には使えません。</b><br>
     <br>
-    <b style="color:#2A2A2A">★「前回から」の列について（いちばん大事な確認）</b><br>
-    前に測った場所から、<b>スマホが何m動いたと思っているか</b>です。<br>
-    <b style="color:#B71C1C">実際に歩いたのに「前回から 0m」と出たら、それは古い位置を使い回しています。</b><br>
-    ＝「いまのアプリと同じ」設定を選んで、<b>歩いた直後（1分以内）に測る</b>と確かめられます。
+    <b style="color:var(--ink)">★「前回から」と「経過」について（いちばん大事）</b><br>
+    測ったあと<b>黄色い枠が出ている間（60秒）</b>に、<b>歩いてから</b>もう一度測ってください。<br>
+    <br>
+    このページは<b>あなたが歩いたかどうかを知りません</b>。だから結果は「見えたこと」だけを書きます。<br>
+    ・<b style="color:var(--warn)">⚠️ 同じ位置のまま</b> … <b style="color:var(--ng)">歩いたのにこれが出たら＝古い位置の使い回し</b>。<br>
+    　（その場を動かずに2回測ったときも、同じ表示が出ます。これは正常です）<br>
+    ・<b style="color:var(--ok)">✅ 位置が動いた</b> … ちゃんと測り直しています。<br>
+    ・<b>⚪️ 60秒超（対象外）</b> … 黄色い枠が消えてから測った＝この確認はできません。
   </div>
 </div>
 
 <script>
 (function(){
   var $=function(i){return document.getElementById(i);};
-  var W="店内", M="new", rows=[], busy=false, prev=null;
-
-  function metersBetween(a,b){
-    var R=6371000, t1=a[0]*Math.PI/180, t2=b[0]*Math.PI/180;
-    var dt=(b[0]-a[0])*Math.PI/180, dl=(b[1]-a[1])*Math.PI/180;
-    var h=Math.sin(dt/2)*Math.sin(dt/2)+Math.cos(t1)*Math.cos(t2)*Math.sin(dl/2)*Math.sin(dl/2);
-    return 2*R*Math.asin(Math.sqrt(h));
-  }
+  var W="店内", M="new", rows=[], busy=false, prev=null, prevT=0, timer=null;
+  var REUSE_WINDOW=60;
 
   function pick(boxId, attr, set){
     $(boxId).addEventListener("click", function(e){
@@ -106,14 +112,55 @@
   pick("where","data-w",function(v){W=v;});
   pick("mode","data-m",function(v){M=v;});
 
-  // new＝その場で取り直す・高精度（GPS入口の必須条件）／old＝いまのアプリと同じ（1分前の位置でも可・低精度）
   function opts(){
     return M==="new" ? { enableHighAccuracy:true,  timeout:15000, maximumAge:0     }
                      : { enableHighAccuracy:false, timeout:15000, maximumAge:60000 };
   }
   var CODE={0:"位置の機能が使えません",1:"許可されませんでした",2:"取得できませんでした",3:"時間切れ"};
 
-  function show(ok, acc, extra, sec){
+  function metersBetween(a,b){
+    var R=6371000, t1=a[0]*Math.PI/180, t2=b[0]*Math.PI/180;
+    var dt=(b[0]-a[0])*Math.PI/180, dl=(b[1]-a[1])*Math.PI/180;
+    var h=Math.sin(dt/2)*Math.sin(dt/2)+Math.cos(t1)*Math.cos(t2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.sqrt(h));
+  }
+
+  function startCountdown(){
+    if(timer) clearInterval(timer);
+    $("cd").hidden=false;
+    function tick(){
+      var left = REUSE_WINDOW - Math.floor((Date.now()-prevT)/1000);
+      if(left>0){
+        $("cd").className="cd live";
+        $("cd").innerHTML='いま歩き出して、この枠が消える前にもう一度［測る］を押してください。'
+                        + '<span class="big">残り '+left+' 秒</span>';
+      } else {
+        $("cd").className="cd dead";
+        $("cd").innerHTML='60秒が過ぎました。いまから測っても「使い回し」の確認はできません。'
+                        + '<br>確認したいときは、もう一度［測る］を押してからやり直してください。';
+        clearInterval(timer); timer=null;
+      }
+    }
+    tick(); timer=setInterval(tick,1000);
+  }
+
+  function judge(moved, elapsed, first){
+    if(first) return "1回目";
+    if(elapsed > REUSE_WINDOW) return "⚪️ 60秒超（対象外）";
+    if(moved < 15) return "⚠️ 同じ位置のまま";
+    return "✅ 位置が動いた";
+  }
+
+  function addRow(r){
+    rows.push(r);
+    $("tb").innerHTML = rows.map(function(x){
+      var mv = (x[3]==="0m"||x[3]==="—") ? x[3] : x[3];
+      if(x[5].indexOf("⚠️")===0) mv='<span style="color:#B26A00;font-weight:800">'+x[3]+'</span>';
+      return "<tr><td>"+x[0]+"</td><td>"+x[1]+"</td><td><b>"+x[2]+"</b></td><td>"+mv+"</td><td>"+x[4]+"</td><td>"+x[5]+"</td></tr>";
+    }).join("");
+  }
+
+  function show(ok, acc, extra){
     $("acc").hidden=false; $("det").hidden=false;
     if(ok){
       var col = acc<=30 ? "var(--ok)" : (acc<=100 ? "var(--warn)" : "var(--ng)");
@@ -126,46 +173,41 @@
       $("accN").textContent="✕"; $("accN").style.color="var(--ng)";
       $("accC").style.color="var(--ng)"; $("accC").textContent = extra;
     }
-    $("det").innerHTML = extra2(ok, extra, sec);
-  }
-  function extra2(ok, extra, sec){
-    return '<span>場所</span> '+W+' ／ <span>設定</span> '+(M==="new"?"取り直す・高精度":"いまのアプリと同じ")
-         + '<br><span>かかった時間</span> '+sec+' 秒'
-         + '<br><span>詳しい中身</span> '+extra;
-  }
-  function addRow(place, mode, accTxt, sec, moved, res){
-    rows.push([place,mode,accTxt,sec,moved,res]);
-    $("tb").innerHTML = rows.map(function(r){
-      var mv = r[4]==="0m" ? '<span style="color:#B71C1C;font-weight:800">0m</span>' : r[4];
-      return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td><b>"+r[2]+"</b></td><td>"+r[3]+"</td><td>"+mv+"</td><td>"+r[5]+"</td></tr>";
-    }).join("");
+    $("det").innerHTML = extra;
   }
 
   $("go").addEventListener("click", function(){
     if(busy) return; busy=true;
     var b=$("go"); b.disabled=true; b.textContent="測っています…";
-    var t0=Date.now();
-    var modeTxt = (M==="new"?"取り直す":"いまと同じ");
+    var t0=Date.now(), modeTxt=(M==="new"?"取り直す":"いまと同じ");
+    var first=(prev===null);
+    var elapsed = first ? 0 : Math.round((t0-prevT)/1000);
+    var elapsedTxt = first ? "—" : (elapsed+"秒");
+
+    function done(){ busy=false; b.disabled=false; b.textContent="測る"; }
+
     if(!navigator.geolocation){
-      var s0=((Date.now()-t0)/1000).toFixed(1);
-      show(false,0,CODE[0],s0); addRow(W,modeTxt,"—",s0,"—","✕ 機能なし");
-      busy=false; b.disabled=false; b.textContent="測る"; return;
+      show(false,0,CODE[0]);
+      addRow([W,modeTxt,"—","—",elapsedTxt,"✕ 機能なし"]); done(); return;
     }
     navigator.geolocation.getCurrentPosition(function(p){
       var sec=((Date.now()-t0)/1000).toFixed(1), a=p.coords.accuracy||0;
       var here=[p.coords.latitude, p.coords.longitude];
-      var moved = prev ? (Math.round(metersBetween(prev, here))+"m") : "—";
-      prev = here;
-      show(true, a, "緯度 "+here[0].toFixed(6)+" ／ 経度 "+here[1].toFixed(6)
-                   + (moved==="—" ? "" : " ／ 前回から "+moved), sec);
-      addRow(W, modeTxt, Math.round(a)+"m", sec, moved, a<=30?"◎ 良い":(a<=100?"△ ぎりぎり":"✕ 粗い"));
-      busy=false; b.disabled=false; b.textContent="測る";
+      var movedM = first ? null : metersBetween(prev, here);
+      var movedTxt = first ? "—" : (Math.round(movedM)+"m");
+      var res = judge(first?0:movedM, elapsed, first);
+      show(true, a,
+        '<span>場所</span> '+W+' ／ <span>設定</span> '+(M==="new"?"取り直す・高精度":"いまのアプリと同じ")
+        +'<br><span>緯度</span> '+here[0].toFixed(6)+' ／ <span>経度</span> '+here[1].toFixed(6)
+        +'<br><span>取得にかかった時間</span> '+sec+' 秒'
+        +(first?"":'<br><span>前回から</span> '+movedTxt+'（'+elapsed+'秒後）'));
+      addRow([W,modeTxt,Math.round(a)+"m",movedTxt,elapsedTxt,
+              first ? (a<=30?"◎ 良い":(a<=100?"△ ぎりぎり":"✕ 粗い")) : res]);
+      prev=here; prevT=Date.now(); startCountdown(); done();
     }, function(err){
-      var sec=((Date.now()-t0)/1000).toFixed(1);
       var name=CODE[err&&err.code]||"不明";
-      show(false,0,name+"（code="+(err&&err.code)+"）",sec);
-      addRow(W, modeTxt, "—", sec, "—", "✕ "+name);
-      busy=false; b.disabled=false; b.textContent="測る";
+      show(false,0,name+"（code="+(err&&err.code)+"）");
+      addRow([W,modeTxt,"—","—",elapsedTxt,"✕ "+name]); done();
     }, opts());
   });
 })();
