@@ -1,0 +1,156 @@
+<!-- JCJ 位置のたしかめ（測定専用・2026-09-12）
+     ★このページは、どこにも通信しません。チェックインもしません。マイルも動きません。
+     ★GAS・スプレッドシート・LINEのユーザー情報とは一切つながっていません。
+     目的＝「お店の中で、使える精度の位置が取れるか」を測るだけ。 -->
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JCJ 位置のたしかめ</title>
+<style>
+  :root{ --brand-deep:#1F3A2E; --bg:#F8F4F0; --ink:#2A2A2A; --sub:#6B6B6B;
+         --ok:#1F7A4D; --warn:#B26A00; --ng:#B71C1C; --line:#E2DAD2; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;}
+  .bar{background:var(--brand-deep);color:#fff;padding:13px 16px;font-weight:800;font-size:15px}
+  .wrap{padding:16px;max-width:520px;margin:0 auto}
+  .note{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+        font-size:12.5px;line-height:1.75;color:var(--sub);margin-bottom:14px}
+  .note b{color:var(--ink)}
+  .lbl{font-size:13px;font-weight:800;margin:16px 0 8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{flex:1 1 calc(50% - 4px);padding:11px 8px;border:1.5px solid var(--brand-deep);border-radius:10px;
+        background:#fff;color:var(--brand-deep);font-weight:800;font-size:13.5px;text-align:center}
+  .chip.on{background:var(--brand-deep);color:#fff}
+  .go{display:block;width:100%;margin:18px 0 6px;padding:17px;border:0;border-radius:12px;
+      background:var(--brand-deep);color:#fff;font-weight:800;font-size:16.5px}
+  .go:disabled{opacity:.55}
+  .acc{margin:18px 0 6px;text-align:center}
+  .acc .n{font-size:52px;font-weight:800;line-height:1.1}
+  .acc .u{font-size:15px;font-weight:800;margin-left:2px}
+  .acc .c{font-size:13px;font-weight:800;margin-top:6px}
+  .det{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+       font-size:12.5px;line-height:1.9;margin-top:12px}
+  .det span{color:var(--sub)}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px;background:#fff}
+  th,td{border:1px solid var(--line);padding:7px 6px;text-align:center}
+  th{background:#F1ECE6;font-weight:800}
+  .sub{font-size:12px;color:var(--sub);margin-top:14px;line-height:1.8}
+</style></head><body>
+
+<div class="bar">JCJ 位置のたしかめ（測定用）</div>
+<div class="wrap">
+
+  <div class="note">
+    <b>このページは、どこにも通信しません。</b><br>
+    チェックインは記録されません。マイルも動きません。スプレッドシートにも何も書きません。<br>
+    <b>いまいる場所が、どれくらいの正確さで分かるか</b>を見るだけのページです。
+  </div>
+
+  <div class="lbl">① いまどこにいますか？（あとで見分けるための札）</div>
+  <div class="chips" id="where">
+    <div class="chip on" data-w="店内">お店の中</div>
+    <div class="chip" data-w="店の前">お店の前（外）</div>
+    <div class="chip" data-w="50m先">50mくらい先</div>
+    <div class="chip" data-w="200m先">200mくらい先</div>
+  </div>
+
+  <div class="lbl">② 測り方（2つとも試してください）</div>
+  <div class="chips" id="mode">
+    <div class="chip on" data-m="new">いま取り直す（新しい設定）</div>
+    <div class="chip" data-m="old">いまのアプリと同じ設定</div>
+  </div>
+
+  <button class="go" id="go">測る</button>
+
+  <div class="acc" id="acc" hidden>
+    <div class="n" id="accN">—</div>
+    <div class="c" id="accC"></div>
+  </div>
+  <div class="det" id="det" hidden></div>
+
+  <div class="lbl">③ 測った記録（この表をスクリーンショットで送ってください）</div>
+  <table id="tbl"><thead><tr><th>場所</th><th>設定</th><th>誤差</th><th>秒</th><th>結果</th></tr></thead>
+  <tbody id="tb"><tr><td colspan="5" style="color:#6B6B6B">まだ測っていません</td></tr></tbody></table>
+
+  <div class="sub">
+    ※「誤差」は、スマホが自分で申告してくる「このくらいズレているかも」という数字です。<br>
+    ※ 小さいほど正確。<b>30m以下ならとても良い／100mを超えると、お店にいるかの判定には使えません。</b><br>
+    ※ 場所ごとに、②の2つの設定を両方おためしください（合計8回）。
+  </div>
+</div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i);};
+  var W="店内", M="new", rows=[], busy=false;
+
+  function pick(boxId, attr, set){
+    $(boxId).addEventListener("click", function(e){
+      var c=e.target.closest(".chip"); if(!c) return;
+      [].forEach.call($(boxId).querySelectorAll(".chip"), function(x){ x.classList.remove("on"); });
+      c.classList.add("on"); set(c.getAttribute(attr));
+    });
+  }
+  pick("where","data-w",function(v){W=v;});
+  pick("mode","data-m",function(v){M=v;});
+
+  // new＝その場で取り直す・高精度（GPS入口の必須条件）／old＝いまのアプリと同じ（1分前の位置でも可・低精度）
+  function opts(){
+    return M==="new" ? { enableHighAccuracy:true,  timeout:15000, maximumAge:0     }
+                     : { enableHighAccuracy:false, timeout:15000, maximumAge:60000 };
+  }
+  var CODE={0:"位置の機能が使えません",1:"許可されませんでした",2:"取得できませんでした",3:"時間切れ"};
+
+  function show(ok, acc, extra, sec){
+    $("acc").hidden=false; $("det").hidden=false;
+    if(ok){
+      var col = acc<=30 ? "var(--ok)" : (acc<=100 ? "var(--warn)" : "var(--ng)");
+      var msg = acc<=30 ? "とても良い（判定に使えます）"
+              : (acc<=100 ? "ぎりぎり（お店の判定には厳しい）" : "使えません（お店にいるか判定できない）");
+      $("accN").innerHTML = Math.round(acc) + '<span class="u">m</span>';
+      $("accN").style.color = col; $("accC").style.color = col;
+      $("accC").textContent = "誤差 " + Math.round(acc) + "m ／ " + msg;
+    } else {
+      $("accN").textContent="✕"; $("accN").style.color="var(--ng)";
+      $("accC").style.color="var(--ng)"; $("accC").textContent = extra;
+    }
+    $("det").innerHTML = extra2(ok, extra, sec);
+  }
+  function extra2(ok, extra, sec){
+    return '<span>場所</span> '+W+' ／ <span>設定</span> '+(M==="new"?"取り直す・高精度":"いまのアプリと同じ")
+         + '<br><span>かかった時間</span> '+sec+' 秒'
+         + '<br><span>詳しい中身</span> '+extra;
+  }
+  function addRow(place, mode, accTxt, sec, res){
+    rows.push([place,mode,accTxt,sec,res]);
+    $("tb").innerHTML = rows.map(function(r){
+      return "<tr><td>"+r[0]+"</td><td>"+r[1]+"</td><td><b>"+r[2]+"</b></td><td>"+r[3]+"</td><td>"+r[4]+"</td></tr>";
+    }).join("");
+  }
+
+  $("go").addEventListener("click", function(){
+    if(busy) return; busy=true;
+    var b=$("go"); b.disabled=true; b.textContent="測っています…";
+    var t0=Date.now();
+    var modeTxt = (M==="new"?"取り直す":"いまと同じ");
+    if(!navigator.geolocation){
+      var s0=((Date.now()-t0)/1000).toFixed(1);
+      show(false,0,CODE[0],s0); addRow(W,modeTxt,"—",s0,"✕ 機能なし");
+      busy=false; b.disabled=false; b.textContent="測る"; return;
+    }
+    navigator.geolocation.getCurrentPosition(function(p){
+      var sec=((Date.now()-t0)/1000).toFixed(1), a=p.coords.accuracy||0;
+      show(true, a, "緯度 "+p.coords.latitude.toFixed(6)+" ／ 経度 "+p.coords.longitude.toFixed(6), sec);
+      addRow(W, modeTxt, Math.round(a)+"m", sec, a<=30?"◎ 良い":(a<=100?"△ ぎりぎり":"✕ 粗い"));
+      busy=false; b.disabled=false; b.textContent="測る";
+    }, function(err){
+      var sec=((Date.now()-t0)/1000).toFixed(1);
+      var name=CODE[err&&err.code]||"不明";
+      show(false,0,name+"（code="+(err&&err.code)+"）",sec);
+      addRow(W, modeTxt, "—", sec, "✕ "+name);
+      busy=false; b.disabled=false; b.textContent="測る";
+    }, opts());
+  });
+})();
+</script>
+</body></html>
