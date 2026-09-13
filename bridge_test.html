@@ -1,0 +1,23 @@
+<!-- 🔬 橋渡しテスト（2026-09-13・使い捨て）
+     目的＝「LINEの中で開いたページから、メッセージの送信画面へ飛ばせるか」を1回だけ確かめる。
+     ★宛先はテスト用アカウント @957zdear。★本番(@740rorcl)には一切飛ばしません。
+     ★このページ自体はどこにも通信しません。記録も残しません。
+     ★確認が終わったら削除します（役目は1回きり）。 -->
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>橋渡しテスト</title>
+<style>
+ body{margin:0;background:#F8F4F0;color:#2A2A2A;font-family:-apple-system,"Hiragino Sans",sans-serif;
+      display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px}
+ .n{font-size:15px;line-height:2}
+ .s{font-size:12px;color:#6B6B6B;margin-top:14px;line-height:1.9}
+</style></head><body>
+<div><div class="n">送信画面をひらいています…</div>
+<div class="s">開かないときは、この画面のまま<br>本部にお知らせください（それも結果です）</div></div>
+<script>
+  // ★これが本命＝LINEの中から、メッセージの送信画面へ飛ばせるか
+  var TXT = "COFFEE ROASTERY 101 に来ました";
+  var URL = "https://line.me/R/oaMessage/@957zdear/?" + encodeURIComponent(TXT);
+  setTimeout(function(){ location.href = URL; }, 600);
+</script>
+</body></html>
