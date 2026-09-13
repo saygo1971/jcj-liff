@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!-- REL board test v1 (2026-09-13) | 掲示板 | action=board_list | GAS=AKfycbx4…MQByV | 設計=docs/2026-09-13_掲示板_設計案.md -->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>掲示板</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  /* JCJ 新トンマナ8色（2026-08-31・全社トークン） */
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;--deep-green:#2B5D4F;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--deep-green);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;position:sticky;top:0;z-index:5}
+  .wrap{max-width:480px;margin:0 auto;padding:14px 14px 44px}
+  .hidden{display:none!important}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--brand-deep);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .lead{font-size:13px;color:var(--ink-sub);line-height:1.7;margin:2px 2px 16px}
+  /* 貼り紙カード */
+  .card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px 14px 15px;margin-bottom:14px;
+    box-shadow:0 2px 8px rgba(34,28,26,.05)}
+  .card.pin{border-color:var(--brand-deep);border-width:1.5px;background:var(--paper)}
+  .chead{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;gap:8px}
+  .chip{font-size:10.5px;font-weight:800;color:#fff;border-radius:8px;padding:3px 9px;letter-spacing:.3px;flex:none}
+  .chip.jcj{background:var(--deep-green)}
+  .chip.shop{background:var(--brand-deep)}
+  .cdate{font-size:11px;color:var(--ink-sub);font-weight:600;flex:none}
+  .new{font-size:9.5px;font-weight:800;color:#fff;background:var(--brand-base);border-radius:7px;padding:2px 7px;margin-left:6px;letter-spacing:.5px}
+  .ctitle{font-size:16.5px;font-weight:900;line-height:1.5;margin:0 0 10px;color:var(--ink)}
+  .cimg{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:var(--paper);margin:0 0 11px}
+  .cbody{font-size:13.5px;line-height:1.85;color:var(--ink);white-space:pre-wrap;margin:0;word-break:break-word}
+  .sign{display:flex;align-items:center;gap:9px;margin:13px 0 0;padding-top:11px;border-top:1px solid var(--line)}
+  .sign .lg{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--paper);border:1px solid var(--line);flex:none}
+  .sign .nm{font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.35;display:block}
+  .sign .pl{font-size:10.5px;color:var(--ink-sub);margin-top:1px;display:block}
+  .btn{display:block;width:100%;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:14.5px;
+    border:0;border-radius:12px;padding:12px;margin-top:13px;text-decoration:none;cursor:pointer;
+    box-shadow:0 4px 10px rgba(192,74,85,.22)}
+  .btn:active{transform:translateY(1px)}
+  /* 終わった話＝白黒（★灰色の膜は重ねない。重ねると押せなくなる） */
+  .card.over{filter:grayscale(1);opacity:.82}
+  .over-tag{font-size:11px;font-weight:700;color:var(--ink-sub);background:var(--paper);border-radius:8px;padding:3px 9px}
+  .divider{display:flex;align-items:center;gap:10px;margin:22px 2px 14px;color:var(--ink-sub);font-size:11.5px;font-weight:700}
+  .divider:before,.divider:after{content:"";flex:1;height:1px;background:var(--line)}
+  .foot{text-align:center;font-size:11.5px;color:var(--ink-sub);margin:22px 0 0}
+  /* 0枚のとき */
+  .empty{text-align:center;padding:56px 18px 30px}
+  .empty .eh{font-size:15px;font-weight:800;margin-bottom:8px}
+  .empty .es{font-size:12.5px;color:var(--ink-sub);line-height:1.8;margin-bottom:18px}
+  .empty .eb{display:inline-block;background:var(--brand-deep);color:#fff;font-weight:800;font-size:14px;border-radius:11px;padding:11px 26px;text-decoration:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="bar">掲示板</div>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
+<div id="main" class="wrap hidden"></div>
+
+<script>
+  const LIFF_ID = "2008851980-XXXXXXXX";       // ★掲示板（テスト）＝オーナーのLIFF発行後に差し替え。未発行でも ?userId= で確認できる
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W"; // 0枚のときの「お店を探す」＝発見地図（テスト）
+  const SEEN_KEY = "jcj_board_seen";            // 端末の中だけ。最後に開いた日（サーバーには一切送らない）
+
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  let USER_ID = "";
+
+  // 「9月13日」。年が今年と違うときだけ「2025年9月13日」
+  function dateLabel(ymd){
+    const m = String(ymd||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(!m) return "";
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    const thisYear = new Date().getFullYear();
+    return (y===thisYear ? "" : y+"年") + mo + "月" + d + "日";
+  }
+  function openExt(url){
+    if(!url) return;
+    try{ if(liff&&liff.isInClient&&liff.isInClient()){ liff.openWindow({url:url,external:true}); return; } }catch(e){}
+    window.open(url,"_blank");
+  }
+  // 記録（投げっぱなし。返事は使わない＝表示を止めない）
+  function logView(page, detail){
+    try{ fetch(GAS_URL+"?action=page_view&page="+encodeURIComponent(page)
+      +"&spot="+encodeURIComponent(detail||"")
+      +"&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now()); }catch(e){}
+  }
+  function logStoreClick(spotId){
+    if(!spotId) return;
+    try{ fetch(GAS_URL+"?action=outbound_click&spotId="+encodeURIComponent(spotId)
+      +"&type=store&source=board&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now()); }catch(e){}
+  }
+
+  // 前に開いた日より新しい紙に「NEW」。初めての人には付けない（全部NEWだと合図にならない）
+  function lastSeen(){ try{ return localStorage.getItem(SEEN_KEY)||""; }catch(e){ return ""; } }
+  function markSeen(today){ try{ localStorage.setItem(SEEN_KEY, today); }catch(e){} }
+
+  function cardHtml(p, isNew){
+    const kind = (p.kind==="shop") ? '<span class="chip shop">お店から</span>' : '<span class="chip jcj">JCJから</span>';
+    const right = p.over ? '<span class="over-tag">この話は終わりました</span>'
+                         : '<span class="cdate">'+esc(dateLabel(p.date))+(isNew?'<span class="new">NEW</span>':'')+'</span>';
+    const img = p.image ? '<img class="cimg" alt="" data-src="'+esc(p.image)+'">' : '';
+    const sign = p.shopName
+      ? '<div class="sign"><img class="lg" alt="" data-src="'+esc(p.shopLogo||"")+'">'
+        +'<span><span class="nm">'+esc(p.shopName)+'</span><span class="pl">'+esc(p.shopPlace||"")+'</span></span></div>'
+      : '';
+    // ボタン：シートに行き先があればそれ。無くてお店IDがあれば「このお店を見る」（隣の shop.html を開く）
+    let btn = '';
+    if(p.btnUrl){
+      btn = '<button class="btn" data-go="ext" data-url="'+esc(p.btnUrl)+'" data-row="'+p.row+'">'+esc(p.btnText||"見てみる")+'</button>';
+    } else if(p.shopId && p.shopName){
+      btn = '<button class="btn" data-go="shop" data-shop="'+esc(p.shopId)+'" data-row="'+p.row+'">このお店を見る</button>';
+    }
+    return '<div class="card'+(p.pin?' pin':'')+(p.over?' over':'')+'">'
+      + '<div class="chead">'+kind+right+'</div>'
+      + '<div class="ctitle">'+esc(p.title)+'</div>'
+      + img
+      + (p.body ? '<p class="cbody">'+esc(p.body)+'</p>' : '')
+      + sign + btn + '</div>';
+  }
+
+  // 画像は「出てから」入れる。壊れていたら枠ごと消す（真っ白な画像が貼られた事故があるため、404も白も同じ扱いで静かに消す）
+  function wireImages(){
+    [...document.querySelectorAll("img[data-src]")].forEach(img=>{
+      const src = img.getAttribute("data-src");
+      if(!src){ img.remove(); return; }
+      img.onerror = ()=>{ img.remove(); };
+      img.src = src;
+    });
+  }
+
+  function render(d){
+    const posts = (d && d.posts) || [];
+    const seen = lastSeen();
+    markSeen(d.today || "");
+
+    if(!posts.length){
+      $("main").innerHTML =
+        '<div class="empty"><div class="eh">いまは貼り紙がありません。</div>'
+        +'<div class="es">次の一軒を探しに行きませんか。</div>'
+        +'<a class="eb" id="toMap">お店を探す</a></div>';
+      $("toMap").onclick = ()=>{ location.href = "https://liff.line.me/"+DISCOVER_LIFF_ID; };
+      $("status").classList.add("hidden"); $("main").classList.remove("hidden");
+      return;
+    }
+
+    let html = '<div class="lead">旅の途中に、こんな話が届いています。</div>';
+    let dividerDone = false;
+    posts.forEach(p=>{
+      if(p.over && !dividerDone){ html += '<div class="divider">ここから前の話</div>'; dividerDone = true; }
+      const isNew = !!(seen && p.date > seen && !p.over);
+      html += cardHtml(p, isNew);
+    });
+    html += '<div class="foot">ここから先は、また紙が増えたときに。</div>';
+    $("main").innerHTML = html;
+    wireImages();
+
+    [...document.querySelectorAll(".btn")].forEach(b=>{
+      b.onclick = ()=>{
+        const row = b.getAttribute("data-row");
+        logView("board_btn", "r"+row);
+        if(b.getAttribute("data-go")==="shop"){
+          const id = b.getAttribute("data-shop");
+          logStoreClick(id);
+          location.href = "shop.html?shop="+encodeURIComponent(id)+"&t="+Date.now();
+        } else {
+          openExt(b.getAttribute("data-url"));
+        }
+      };
+    });
+    $("status").classList.add("hidden"); $("main").classList.remove("hidden");
+  }
+
+  function load(){
+    fetch(GAS_URL+"?action=board_list&_="+Date.now())
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d || d.ok!==true) throw new Error((d&&d.error)||"読み込みに失敗しました");
+        render(d);
+        logView("board", "");
+      })
+      .catch(err=>{
+        $("status").innerHTML = "いま掲示板を開けませんでした。<br>少し時間をおいて、もう一度お試しください。";
+      });
+  }
+
+  // ★ログインできなくても中身は読める（記録が残らないだけ）。中身が見えない方が困るため。
+  (function(){
+    const qUser = (params.get("userId")||"").trim();
+    if(qUser){ USER_ID = qUser; load(); return; }
+    try{
+      liff.init({ liffId: LIFF_ID })
+        .then(()=> liff.isLoggedIn() ? liff.getProfile() : null)
+        .then(pf=>{ if(pf && pf.userId) USER_ID = pf.userId; })
+        .catch(()=>{})
+        .then(()=> load());
+    }catch(e){ load(); }
+  })();
+</script>
+</body>
+</html>
