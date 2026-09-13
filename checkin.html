@@ -106,6 +106,10 @@
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   // 記録（今日の一杯）への遷移用LIFF。空のあいだは枠だけ（遷移なし）。2026-09-06 テストIDを設定＝遷移が有効になった。
+  // ★橋渡しの宛先＝このLINE公式アカウント。★テスト=957zdear / 本番=740rorcl（本番化時に差し替え）
+  const LINE_OA_ID = "957zdear";
+  // ★橋渡しの入切。false にすると今までの画面（LIFFでその場チェックイン）に戻る＝1か所で切り戻せる
+  const BRIDGE_TO_MESSAGE = true;
   const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0"; // 今日の一杯（テスト・エンドポイント= .../log_drink.html）。★テスト環境の値。本番IDは置かない（記録ページは書き込み画面のため）
   // 店ロゴ画像＝自社サーバー shop/<店ID>/logo.png（2026-08-31 移設完了）。店IDで導出。
   //   フォールバック順＝①logo.png → ②外観写真exterior.jpg → ③頭文字モノグラム。ロゴ無し店(404)は②③へ。
@@ -481,6 +485,23 @@
     if(!st || !st.ok){
       if (st && st.error === "shop_not_found"){ showStatusText("お店が見つかりませんでした。プレートのリンクをご確認ください。"); return; }
       showStatusText("読み込みに失敗しました：" + (st && st.error || "unknown")); return;
+    }
+    // ★★橋渡し（審査会2026-09-13・設計骨子②）＝ここが今回の作り直しの中心。
+    //   プレート（NFC/QR）から開いたこの画面では `liff.sendMessages` が403で使えず、
+    //   このままチェックインしても【トークには何も残りません】。オーナー評価＝
+    //   「トーク画面にカードが出るのはありがたい。今はリッチメニューからしか確認できない」。
+    //   ⇒ お客さま自身に一文を送ってもらい、その【返信】としてカードを出す（★無料・pushを1通も使わない）。
+    //   ★これで63枚のプレートを1枚も刷り直さずに済む（2026-09-13 オーナーの実機で合格）。
+    //   ★戻すときは BRIDGE_TO_MESSAGE を false にするだけ（このページ1か所）。
+    if (BRIDGE_TO_MESSAGE && liff.isInClient && liff.isInClient()) {
+      const nm = String((st && st.shopName) || "").trim();
+      if (nm) {
+        showLoading("チェックインの画面をひらいています…");
+        location.href = "https://line.me/R/oaMessage/@" + LINE_OA_ID + "/?"
+                      + encodeURIComponent(nm + " に来ました");
+        return;
+      }
+      // 店名が取れないときは橋渡しをやめ、今までの画面へ落とす（安全側）
     }
     renderPrompt();
   }

@@ -60,6 +60,14 @@
   #empty .emo{font-size:40px}
   #empty .t{font-size:17px;font-weight:800;margin:14px 0 8px;color:var(--ink)}
   #empty .m{font-size:13px;color:var(--ink-sub);line-height:1.8}
+  .todo{background:#fff;border:1px solid #E2DAD2;border-radius:14px;padding:14px 14px 10px;margin-bottom:14px}
+  .todoT{font-size:13.5px;font-weight:800;color:#2A2A2A;margin-bottom:10px}
+  .todoRow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #F1ECE6;text-decoration:none;color:inherit}
+  .todoRow:first-of-type{border-top:0}
+  .todoD{font-size:11.5px;color:#8A8A8A;flex:0 0 auto}
+  .todoN{font-size:13.5px;font-weight:700;color:#2A2A2A;flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .todoGo{font-size:12px;font-weight:800;color:#1F3A2E;border:1.5px solid #1F3A2E;border-radius:8px;padding:5px 12px;flex:0 0 auto}
+  .todoMore{font-size:11.5px;color:#8A8A8A;padding-top:9px;border-top:1px solid #F1ECE6;margin-top:2px}
 </style>
 </head>
 <body>
@@ -140,7 +148,31 @@
     $("nShop").textContent = Object.keys(shops).length;
     $("nPref").textContent = Object.keys(prefs).length;
 
-    $("list").innerHTML = rows.map(r=>{
+    // ★審査会 関門4（2026-09-13・行動デザイン役）＝「あとから戻ってくる場所」を成立させる。
+    //   トークのカードはチェックインが増えるほど上へ流れて見つからなくなる。
+    //   ⇒ 書いていない一杯を【この画面の一番上】に集める。これが無いと「後日書く」は絵に描いた餅。
+    //   ★直近30日に限る＝古いものまで並べると件数が大きくなり、責められている感じになるため。
+    //   ★1件も無ければ何も出さない（空の箱を出さない）。
+    const NOT_YET_DAYS = 30;
+    const nowMs = Date.now();
+    const notYet = rows.filter(r => r.visit && !r.dr && r.ms && (nowMs - r.ms) <= NOT_YET_DAYS*86400000);
+    let todoHtml = "";
+    if (notYet.length){
+      const top = notYet.slice(0, 3);
+      todoHtml =
+        '<div class="todo"><div class="todoT">まだ書いていない一杯が ' + notYet.length + '件あります</div>' +
+        top.map(r=>{
+          const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(r.shopId||"")
+                  + "&name="+encodeURIComponent(r.shopName||"")+"&date="+encodeURIComponent(r.date||"");
+          return '<a class="todoRow" href="'+u+'"><span class="todoD">'+esc(r.date)+'</span>'
+               + '<span class="todoN">'+esc(r.shopName||"お店")+'</span>'
+               + '<span class="todoGo">書く</span></a>';
+        }).join("") +
+        (notYet.length>3 ? '<div class="todoMore">ほか '+(notYet.length-3)+'件は、下の一覧から書けます</div>' : '') +
+        '</div>';
+    }
+
+    $("list").innerHTML = todoHtml + rows.map(r=>{
       const dr=r.dr;
       const recorded = !!dr;
       const logo = r.shopId

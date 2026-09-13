@@ -33,6 +33,22 @@
   .btnP{display:block;width:100%;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
     border-radius:12px;padding:14px;text-decoration:none;box-shadow:0 4px 10px rgba(192,74,85,.25);margin-bottom:10px;border:0;cursor:pointer}
   .btnP.saved{background:var(--done-tint);color:var(--state-done);box-shadow:none}
+  .gciBtn{display:block;width:100%;margin:14px 0 0;padding:15px;border:0;border-radius:12px;
+          background:var(--brand-deep,#1F3A2E);color:#fff;font-weight:800;font-size:15px;text-align:center}
+  .gciBtn:disabled{opacity:.55}
+  .gciNote{font-size:10.5px;color:#8A8A8A;text-align:center;margin-top:6px}
+  .gciBox:empty{display:none}
+  .gciBox{margin-top:10px;background:#fff;border:1px solid #E2DAD2;border-radius:12px;padding:13px}
+  .gciT{text-align:center;font-size:14.5px;font-weight:800;line-height:1.5}
+  .gciM{font-size:12px;color:#6B6B6B;line-height:1.8;margin-top:9px}
+  .gciPlate{width:150px;margin:12px auto 0;background:#fff;border:1px solid #D8CFC4;border-radius:7px;padding:12px 10px;text-align:center}
+  .gciPlate .br{font-size:9.5px;color:var(--brand-deep,#1F3A2E);font-weight:800;letter-spacing:.06em}
+  .gciPlate .lg{width:56px;height:56px;border-radius:50%;background:var(--brand-deep,#1F3A2E);margin:9px auto 0;
+                display:flex;align-items:center;justify-content:center;overflow:hidden;color:#fff;font-size:15px;font-weight:800}
+  .gciPlate .lg img{width:100%;height:100%;object-fit:contain;background:#fff}
+  .gciPlate .cp{font-size:11px;color:var(--brand-deep,#1F3A2E);font-weight:800;margin-top:9px}
+  .gciPlate .qr{width:40px;height:40px;margin:8px auto 0;background:repeating-conic-gradient(var(--brand-deep,#1F3A2E) 0% 25%,#fff 0% 50%) 50%/8px 8px;border:2px solid #fff;outline:1px solid #D8CFC4}
+  .gciWhere{font-size:10.5px;color:#8A8A8A;text-align:center;margin-top:9px;line-height:1.6}
   .refer{display:none;background:var(--paper);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink);text-align:center;margin:-2px 0 12px}
   .refer.on{display:block}
   .refer b{color:var(--brand-deep)}
@@ -54,6 +70,9 @@
     <div class="copy" id="copy"></div>
     <div class="name" id="name"></div>
     <div class="place" id="place"></div>
+    <button class="gciBtn" id="gciBtn" style="display:none">このお店でチェックインする</button>
+    <div class="gciNote" id="gciNote" style="display:none">お店に着いてから押してください</div>
+    <div class="gciBox" id="gciBox"></div>
     <button class="btnP" id="saveBtn">行きたいに保存する</button>
     <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>と、あなたにもマイルがたまります。</div>
     <div class="links" id="links"></div>
@@ -191,6 +210,16 @@
     } else {
       $("saveBtn").style.display="none";
     }
+    // 📍 GPSチェックイン＝入口は新設せず、いま見ているこの画面に置く。GPSは「そこにいるか」の証明だけ。
+    //    ★関門0：位置は「その場で取り直す・高精度」。maximumAge:60000 は41秒後に前回と同じ座標を返す
+    //      ことを実測済み（2026-09-12）＝古い位置の使い回し。緩めると半径を何mにしても判定が成立しない。
+    // 📈 このお店のページを開いたことを記録（投げっぱなし＝表示は止めない・店IDつき）
+    try{ if(UID && /^U[0-9a-f]{32}$/i.test(UID) && s.id)
+      fetch(GAS_URL+"?action=page_view&page=shop&spot="+encodeURIComponent(s.id)
+            +"&userId="+encodeURIComponent(UID)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
+
+    gciSetup(s);
+
     // 友だちに教える（紹介LIFFへ）
     $("shareBtn").onclick = function(e){ e.preventDefault(); location.href="https://liff.line.me/"+SHARE_LIFF_ID+"?shopId="+encodeURIComponent(s.id)+"&source=shop"; };
 
@@ -210,6 +239,68 @@
     }catch(e){ $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; }
   }
   main();
+
+  function gciGeo(){
+    return new Promise(function(res){
+      if(!navigator.geolocation){ res({geo:"unsupported"}); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(p){ res({lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy||0)}); },
+        function(e){ res({geo:(e&&e.code===1)?"denied":((e&&e.code===3)?"timeout":"unavailable")}); },
+        { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+      );
+    });
+  }
+  // 断り画面のプレートの絵。ロゴはその店のものを規則URLから。読めなければ頭文字＝壊れた枠は出さない。
+  function gciPlate(s){
+    var ini=(s.name||"?").trim().charAt(0);
+    return '<div class="gciPlate"><div class="br">JAPAN COFFEE JOURNEY</div>'
+      + '<div class="lg"><img src="https://japancoffeejourney.com/jcj_passport_img/shop/'
+      + encodeURIComponent(s.id) + '/logo.png" alt="" '
+      + 'onerror="this.parentNode.textContent=' + JSON.stringify(ini) + '"></div>'
+      + '<div class="cp">来店を記録する</div><div class="qr"></div></div>'
+      + '<div class="gciWhere">レジ横や展示物があるエリアなどに置かれています。</div>';
+  }
+  function gciNg(s,title,msg){
+    $("gciBox").innerHTML='<div class="gciT">'+title+'</div><div class="gciM">'+msg+'</div>'+gciPlate(s);
+  }
+  function gciSetup(s){
+    var b=$("gciBtn"), n=$("gciNote"); $("gciBox").innerHTML="";
+    var isEvent = /EV|_FS_/i.test(s.id||"") || (s.name||"").indexOf("イベント")>=0;
+    if(!UID || !s.id || isEvent){ b.style.display="none"; n.style.display="none"; return; }
+    b.style.display=""; n.style.display=""; b.disabled=false; b.textContent="このお店でチェックインする";
+    b.onclick=function(){ gciGo(s); };
+  }
+  async function gciGo(s){
+    var b=$("gciBtn"); if(b.disabled) return;
+    b.disabled=true; b.textContent="いまの場所を確認しています…"; $("gciBox").innerHTML="";
+    var g=await gciGeo();
+    b.textContent="記録しています…";
+    try{
+      var q=new URLSearchParams({action:"checkin_gps_do",userId:UID,spot:s.id,_:Date.now()});
+      if(g.lat!==undefined){ q.set("lat",g.lat); q.set("lng",g.lng); q.set("acc",g.acc); }
+      else { q.set("geo",g.geo||"unavailable"); }
+      var r=await (await fetch(GAS_URL+"?"+q.toString())).json();
+      b.disabled=false; b.textContent="このお店でチェックインする";
+      if(r&&r.ok){
+        $("gciBox").innerHTML='<div class="gciT">お店に着いたことを、確認しました</div>'
+          + '<div class="gciM" style="text-align:center">'
+          + (r.alreadyToday ? "今日はすでに記録ずみです。" : "旅マイル <b>+"+(r.earnedMile||0)+"</b>　合計 "+(r.newTotal||0)+" マイル")
+          + '</div>';
+        b.style.display="none"; $("gciNote").style.display="none";
+        return;
+      }
+      var e=(r&&r.error)||"failed";
+      if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。");
+      else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。");
+      else if(e==="too_far")       gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+      else if(e==="not_registered")gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
+      else if(e==="off")           { b.style.display="none"; $("gciNote").style.display="none"; }
+      else                         gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+    }catch(err){
+      b.disabled=false; b.textContent="このお店でチェックインする";
+      gciNg(s,"通信できませんでした","電波の良い場所で、もう一度お試しください。");
+    }
+  }
 </script>
 </body>
 </html>
