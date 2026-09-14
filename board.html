@@ -85,9 +85,12 @@
     window.open(url,"_blank");
   }
   // 記録（投げっぱなし。返事は使わない＝表示を止めない）
-  function logView(page, detail){
+  // 記録（投げっぱなし）。★spot= は絶対に付けない：
+  //   本番のGASは知らない action を素通りさせ、最後に「userId と spot が両方ある」だけで
+  //   旧NFC/QRチェックイン処理に入る作りになっている（コード.js の doGet 末尾）。
+  //   spot を付けると、掲示板のボタンを押すたびに本番のチェックイン処理が走ってしまう。
+  function logView(page){
     try{ fetch(GAS_URL+"?action=page_view&page="+encodeURIComponent(page)
-      +"&spot="+encodeURIComponent(detail||"")
       +"&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now()); }catch(e){}
   }
   function logStoreClick(spotId){
@@ -163,7 +166,7 @@
     [...document.querySelectorAll(".btn")].forEach(b=>{
       b.onclick = ()=>{
         const row = b.getAttribute("data-row");
-        logView("board_btn", "r"+row);
+        logView("board_btn");
         if(b.getAttribute("data-go")==="shop"){
           const id = b.getAttribute("data-shop");
           logStoreClick(id);
