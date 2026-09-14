@@ -177,12 +177,12 @@
   }
 
   function load(){
-    fetch(GAS_URL+"?action=board_list&_="+Date.now())
+    fetch(GAS_URL+"?action=board_list&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now())
       .then(r=>r.json())
       .then(d=>{
         if(!d || d.ok!==true) throw new Error((d&&d.error)||"読み込みに失敗しました");
         render(d);
-        logView("board", "");
+        // ※「開いた」の記録は board_list の中（GAS側）で1回だけ残している＝ここでは送らない（二重に数えないため）
       })
       .catch(err=>{
         $("status").innerHTML = "いま掲示板を開けませんでした。<br>少し時間をおいて、もう一度お試しください。";
