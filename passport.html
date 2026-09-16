@@ -101,6 +101,13 @@
   .np-photo{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--kinari)}
   .np-lead{font-size:12.5px;font-weight:900;color:var(--terra);margin-bottom:6px}
   .np-head{font-size:16px;font-weight:900;color:#221C1A;line-height:1.5}
+  /* ★2026-09-16（オーナー指示）＝場所と行き方は「情報」。物語の文章と同じ見た目だと埋もれて読まれない。
+     見出し（場所／行き方）を付けて左寄せにする＝読まなくても何の情報か分かる。 */
+  .np-info{background:var(--kinari);border-radius:9px;padding:9px 12px;margin:10px 0 2px;text-align:left;
+           font-size:11.5px;color:#4A4038;line-height:1.75}
+  .np-info .r{display:flex;gap:9px}
+  .np-info .k{flex:0 0 40px;color:var(--sub);font-weight:700}
+  .np-info .v{flex:1}
   .np-body{font-size:12.5px;color:var(--sub);margin:9px 4px 4px;line-height:1.65;white-space:pre-line}  /* ★2026-09-16 pre-line＝GASが改行で渡した行を、行のまま出す（行きたいリストのお知らせ用） */
   .np-push{font-size:12.5px;font-weight:800;color:var(--green);margin:8px 4px 16px}
   .np-go{display:block;background:var(--terra);color:#fff;font-weight:800;font-size:15px;border-radius:12px;padding:14px;text-decoration:none}
@@ -320,6 +327,11 @@
         '<div class="np-pad">'+
         (n.lead ? '<div class="np-lead">'+esc(n.lead)+'</div>' : '')+
         (n.head ? '<div class="np-head">'+esc(n.head)+'</div>' : '')+
+        // ★場所・行き方は文章から切り離して「事実の欄」に。両方とも空なら欄ごと出さない（文字だけで成立する）。
+        ((n.place || n.access) ? '<div class="np-info">'+
+            (n.place  ? '<div class="r"><span class="k">場所</span><span class="v">'+esc(n.place)+'</span></div>' : '')+
+            (n.access ? '<div class="r"><span class="k">行き方</span><span class="v">'+esc(n.access)+'</span></div>' : '')+
+          '</div>' : '')+
         (n.body ? '<div class="np-body">'+esc(n.body)+'</div>' : '')+
         (n.push ? '<div class="np-push">'+esc(n.push)+'</div>' : '')+
         '</div>'+                                   /* .np-pad を閉じる */
