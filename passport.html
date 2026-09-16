@@ -300,7 +300,11 @@
   function handleNotice(n){
     renderNoticeEntry(n);
     if(!n || !n.id) return;
-    if(noticeSeen_()[n.id]) return;       // 同じ番号は二度出さない
+    // ★2026-09-16：once:"server" のお知らせは、端末の記憶を見ない。
+    //   「1人1回」はGAS側の台帳(notice_shown)だけが持っており、そこで出す人を絞り込み済みだから。
+    //   歯止めを二重に置くと、台帳を消しても端末の印が残って二度と出せない＝直しても確かめられなくなる。
+    //   掲示板のお知らせは once を持たない＝今までどおり端末の記憶で「1本につき1回」を判定する。
+    if(n.once !== "server" && noticeSeen_()[n.id]) return;       // 同じ番号は二度出さない
     showNoticePopup(n, noticeUrl_(n));
   }
   function showNoticePopup(n, url){
