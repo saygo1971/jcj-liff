@@ -88,8 +88,13 @@
   .npdim{position:fixed;inset:0;background:rgba(34,28,26,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60}
   /* ★2026-09-16：写真を上端いっぱいに置くため、余白はカードでなく内側(.np-pad)が持つ。
      max-height＋スクロールは歯止め＝小さい端末で縦に伸びても「行き方を見る」に必ず届く。 */
-  .np{background:#fff;border-radius:16px;padding:0;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.35);width:100%;max-width:340px;max-height:88vh;overflow:auto;-webkit-overflow-scrolling:touch}
-  .np-pad{padding:20px 18px 18px}
+  .np{background:#fff;border-radius:16px;padding:0;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.35);width:100%;max-width:340px;max-height:88vh;
+      display:flex;flex-direction:column;overflow:hidden}
+  /* ★2026-09-16（本部v47 条件1）＝スクロールするのは写真と文章だけ。ボタンはカードの下に必ず居る。
+     カード全体をスクロールにすると、文章が長い店で「行き方を見る」が画面の外に出てしまう。 */
+  .np-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .np-foot{flex:0 0 auto;background:#fff;padding:0 18px 18px}
+  .np-pad{padding:20px 18px 0}
   /* 写真：比率を固定＝読み込み前後で高さが動かない（文字が飛び跳ねない）。はみ出しは切り取る。 */
   /* ★比率は3:2。実測（62枚）＝1200x900が41枚・1200x720が21枚。16:9だと4:3の写真は上下25%が切れて看板が消える。
      3:2なら切れるのは最大11%で、いちばん小さい端末(320x568)でもカードがスクロールなしで収まる（実測450→479px）。 */
@@ -304,6 +309,7 @@
     dim.className = "npdim"; dim.id = "noticePop";
     dim.innerHTML =
       '<div class="np">'+
+        '<div class="np-scroll">'+
         // ★2026-09-16：お店の写真（行きたいリストのお知らせ）。https のURLだけ通す。
         //   読み込みに失敗したら下で写真ごと取り除く＝壊れた画像は絶対に出さない。
         (/^https:\/\//.test(String(n.photo||"")) ? '<img class="np-photo" src="'+esc(n.photo)+'" alt="">' : '')+
@@ -312,11 +318,14 @@
         (n.head ? '<div class="np-head">'+esc(n.head)+'</div>' : '')+
         (n.body ? '<div class="np-body">'+esc(n.body)+'</div>' : '')+
         (n.push ? '<div class="np-push">'+esc(n.push)+'</div>' : '')+
+        '</div>'+                                   /* .np-pad を閉じる */
+        '</div>'+                                   /* .np-scroll を閉じる＝ここまでがスクロールする範囲 */
+        '<div class="np-foot">'+                    /* ここから下は固定＝ボタンは必ず見える */
         '<a class="np-go"'+(url?' href="'+url+'"':'')+'>'+esc(n.btn||"見てみる")+'</a>'+
         // ★2026-09-16：close:false のお知らせは「またあとで」ボタンを出さない（オーナー確定・行きたいリストのお知らせ）。
         //   ただし閉じる道は必ず残す＝カードの外側（暗いところ）をタップすれば閉じる。行き止まりを作らない。
         (n.close === false ? '' : '<button class="np-close" type="button">またあとで</button>')+
-        '</div>'+
+        '</div>'+                                   /* .np-foot を閉じる */
       '</div>';
     document.body.appendChild(dim);
     const done = function(){ markNoticeSeen_(n.id); const el=$("noticePop"); if(el && el.parentNode) el.parentNode.removeChild(el); };
