@@ -89,7 +89,7 @@
   .np{background:#fff;border-radius:16px;padding:20px 18px 18px;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.35);width:100%;max-width:340px}
   .np-lead{font-size:12.5px;font-weight:900;color:var(--terra);margin-bottom:6px}
   .np-head{font-size:16px;font-weight:900;color:#221C1A;line-height:1.5}
-  .np-body{font-size:12.5px;color:var(--sub);margin:9px 4px 4px;line-height:1.65}
+  .np-body{font-size:12.5px;color:var(--sub);margin:9px 4px 4px;line-height:1.65;white-space:pre-line}  /* ★2026-09-16 pre-line＝GASが改行で渡した行を、行のまま出す（行きたいリストのお知らせ用） */
   .np-push{font-size:12.5px;font-weight:800;color:var(--green);margin:8px 4px 16px}
   .np-go{display:block;background:var(--terra);color:#fff;font-weight:800;font-size:15px;border-radius:12px;padding:14px;text-decoration:none}
   .np-close{display:block;width:100%;background:var(--kinari);color:var(--sub);font-weight:800;font-size:15px;border-radius:12px;padding:14px;border:1.5px solid var(--line);margin-top:10px;cursor:pointer}
@@ -266,12 +266,19 @@
   // ── お知らせ（アプリを開いた時のポップアップ・CONFIG駆動・「お知らせ1本につき1回」）──
   function noticeSeen_(){ try{ return JSON.parse(localStorage.getItem("jcj_notice_seen")||"{}"); }catch(e){ return {}; } }
   function markNoticeSeen_(id){ try{ var s=noticeSeen_(); s[id]=1; localStorage.setItem("jcj_notice_seen", JSON.stringify(s)); }catch(e){} }
-  function noticeUrl_(n){ return (n && /^\d+-/.test(n.liff)) ? ("https://liff.line.me/"+n.liff) : ""; }
+  //   ★2026-09-16：飛び先は2通り。n.url（https://…のふつうのURL＝お店ページ）を優先し、
+  //     無ければ従来どおり n.liff（LIFF番号）を使う。掲示板のお知らせは n.liff のままなので何も変わらない。
+  function noticeUrl_(n){
+    if (n && /^https:\/\//.test(String(n.url||""))) return String(n.url);
+    return (n && /^\d+-/.test(n.liff)) ? ("https://liff.line.me/"+n.liff) : "";
+  }
   // 入口だけを出す/消す（★キャッシュ描画からも呼ぶ＝2回目以降は開いた瞬間から入口が出ている＝あとから生えない）
   function renderNoticeEntry(n){
     const box = $("noticeEntry");
     if(!box) return;
-    if(!n || !n.id){ box.classList.add("hidden"); box.innerHTML=""; return; }
+    // ★2026-09-16：entry:false のお知らせは画面下の入口リンクを出さない（ポップアップだけ）。
+    //   理由＝ボタンの文字だけが単独で残ると、何のリンクか分からないため（行きたいリストのお知らせ）。
+    if(!n || !n.id || n.entry === false){ box.classList.add("hidden"); box.innerHTML=""; return; }
     const url = noticeUrl_(n);
     box.innerHTML = '<a class="npentry"'+(url?' href="'+url+'"':'')+'>'+esc(n.btn||"見てみる")+'<span class="chev">›</span></a>';
     box.classList.remove("hidden");
@@ -295,11 +302,15 @@
         (n.body ? '<div class="np-body">'+esc(n.body)+'</div>' : '')+
         (n.push ? '<div class="np-push">'+esc(n.push)+'</div>' : '')+
         '<a class="np-go"'+(url?' href="'+url+'"':'')+'>'+esc(n.btn||"見てみる")+'</a>'+
-        '<button class="np-close" type="button">またあとで</button>'+
+        // ★2026-09-16：close:false のお知らせは「またあとで」ボタンを出さない（オーナー確定・行きたいリストのお知らせ）。
+        //   ただし閉じる道は必ず残す＝カードの外側（暗いところ）をタップすれば閉じる。行き止まりを作らない。
+        (n.close === false ? '' : '<button class="np-close" type="button">またあとで</button>')+
       '</div>';
     document.body.appendChild(dim);
     const done = function(){ markNoticeSeen_(n.id); const el=$("noticePop"); if(el && el.parentNode) el.parentNode.removeChild(el); };
-    dim.querySelector(".np-close").addEventListener("click", done);
+    const closeBtn = dim.querySelector(".np-close");
+    if(closeBtn) closeBtn.addEventListener("click", done);
+    dim.addEventListener("click", function(ev){ if(ev.target === dim) done(); });   // 外側タップで閉じる
     const go = dim.querySelector(".np-go");
     if(go) go.addEventListener("click", function(){ markNoticeSeen_(n.id); }); // 飛ぶ前に既読化
   }
