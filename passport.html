@@ -94,9 +94,11 @@
      カード全体をスクロールにすると、文章が長い店で「行き方を見る」が画面の外に出てしまう。 */
   /* ★上の帯＝写真が暗い背景と溶けてカードの輪郭が消えるのを防ぐ。色はパスポート本体の緑帯と同じ。
      スクロールしない（.np-scroll の外）＝カードの見出しとして常に見えている。 */
-  .np-band{flex:0 0 auto;background:var(--green);color:#fff;padding:13px 14px;text-align:center}
-  .np-band .bl{font-size:10.5px;font-weight:800;color:rgba(255,255,255,.82);letter-spacing:1.2px;margin-bottom:4px}
-  .np-band .bn{font-size:14.5px;font-weight:900;line-height:1.4}
+  /* ★2026-09-17（オーナー指示）帯は白・文字は緑。理由＝深緑だと後ろの暗い画面と被って沈む。
+     帯が白／写真の下も白＝上から下まで1枚のカードに見える。 */
+  .np-band{flex:0 0 auto;background:#fff;color:var(--green);padding:14px 14px 12px;text-align:center}
+  .np-band .bl{font-size:10.5px;font-weight:800;color:var(--green2);letter-spacing:1.2px;margin-bottom:4px}
+  .np-band .bn{font-size:15px;font-weight:900;line-height:1.4;color:var(--green)}
   .np-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .np-foot{flex:0 0 auto;background:#fff;padding:0 18px 18px}
   .np-pad{padding:20px 18px 0}
