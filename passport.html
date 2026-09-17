@@ -92,6 +92,11 @@
       display:flex;flex-direction:column;overflow:hidden}
   /* ★2026-09-16（本部v47 条件1）＝スクロールするのは写真と文章だけ。ボタンはカードの下に必ず居る。
      カード全体をスクロールにすると、文章が長い店で「行き方を見る」が画面の外に出てしまう。 */
+  /* ★上の帯＝写真が暗い背景と溶けてカードの輪郭が消えるのを防ぐ。色はパスポート本体の緑帯と同じ。
+     スクロールしない（.np-scroll の外）＝カードの見出しとして常に見えている。 */
+  .np-band{flex:0 0 auto;background:var(--green);color:#fff;padding:13px 14px;text-align:center}
+  .np-band .bl{font-size:10.5px;font-weight:800;color:rgba(255,255,255,.82);letter-spacing:1.2px;margin-bottom:4px}
+  .np-band .bn{font-size:14.5px;font-weight:900;line-height:1.4}
   .np-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .np-foot{flex:0 0 auto;background:#fff;padding:0 18px 18px}
   .np-pad{padding:20px 18px 0}
@@ -318,15 +323,17 @@
     if($("noticePop")) return;
     const dim = document.createElement("div");
     dim.className = "npdim"; dim.id = "noticePop";
+    var hasBand = !!(n.photo && n.head);   // 写真があるお知らせだけ帯を付ける（掲示板は今までどおり）
     dim.innerHTML =
       '<div class="np">'+
+        (hasBand ? '<div class="np-band">'+(n.lead?'<div class="bl">'+esc(n.lead)+'</div>':'')+'<div class="bn">'+esc(n.head)+'</div></div>' : '')+
         '<div class="np-scroll">'+
         // ★2026-09-16：お店の写真（行きたいリストのお知らせ）。https のURLだけ通す。
         //   読み込みに失敗したら下で写真ごと取り除く＝壊れた画像は絶対に出さない。
         (/^https:\/\//.test(String(n.photo||"")) ? '<img class="np-photo" src="'+esc(n.photo)+'" alt="">' : '')+
         '<div class="np-pad">'+
-        (n.lead ? '<div class="np-lead">'+esc(n.lead)+'</div>' : '')+
-        (n.head ? '<div class="np-head">'+esc(n.head)+'</div>' : '')+
+        (!hasBand && n.lead ? '<div class="np-lead">'+esc(n.lead)+'</div>' : '')+
+        (!hasBand && n.head ? '<div class="np-head">'+esc(n.head)+'</div>' : '')+
         // ★場所・行き方は文章から切り離して「事実の欄」に。両方とも空なら欄ごと出さない（文字だけで成立する）。
         ((n.place || n.access) ? '<div class="np-info">'+
             (n.place  ? '<div class="r"><span class="k">場所</span><span class="v">'+esc(n.place)+'</span></div>' : '')+
