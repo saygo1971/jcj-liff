@@ -107,6 +107,24 @@
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
   .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;overflow:hidden}
+  /* 未参加店の写真枠＝NO PHOTO。★エラーに見せない（×印・赤・太枠を使わない。薄い地＋控えめなグレー） */
+  .card .pho.nophoto{background:#F7F4F0;border-right:1px solid var(--line);color:#A69C93;
+    flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:.14em}
+  .card .pho.nophoto .npd{width:22px;height:1px;background:var(--line)}
+  /* 未参加店の札＝白地＋枠線＋グレー（豆割の札はピンク系なので系統が混ざらない） */
+  .tag.p{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500}
+  .lack{font-size:10.5px;color:var(--sub);margin-top:5px}
+  /* 未参加店のピン＝同じ深ピンクのまま、塗りを抜いて輪郭だけ（★色は増やさない） */
+  .pin.pend{fill:#fff;stroke:var(--pin);stroke-width:2.4px}
+  /* 未参加店の誘い文＝カードの中のベージュブロック（色仕様§3）。枠線は付けない（地の色で分ける） */
+  .pendbox{background:var(--paper,#F4EADD);border-radius:12px;margin:12px 0 0;padding:13px 14px}
+  .pendbox .pb-lead{font-size:14.5px;font-weight:700;line-height:1.6;color:var(--ink)}
+  .pendbox .pb-body{font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.85}
+  .forshop{margin:14px 0 0;padding:11px 0 0;border-top:1px solid var(--line)}
+  .forshop .fs-t{font-size:11.5px;font-weight:700;color:var(--sub)}
+  .forshop .fs-m{font-size:11px;color:var(--sub);margin-top:3px;line-height:1.75}
+  .forshop .fs-m a{color:var(--accent);font-weight:700;text-decoration:none}
+  .fine{font-size:10.5px;color:var(--sub);margin-top:11px;line-height:1.7}
   .card .pho img{width:100%;height:100%;object-fit:cover}
   .card .in{padding:10px 12px;flex:1;min-width:0}
   .card .pref{font-size:11px;color:var(--sub);font-weight:700}
@@ -325,15 +343,26 @@
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
         </div>
+        <!-- ★未参加店だけに出る誘い文（案A確定・2026-09-18）。参加店では要素ごと隠す -->
+        <div class="pendbox hidden" id="sdPendBox">
+          <div class="pb-lead" id="sdPendLead"></div>
+          <div class="pb-body" id="sdPendBody"></div>
+        </div>
         <div class="links" id="sdLinks">
           <a class="lk hidden" id="sdWeb" target="_blank" rel="noopener">公式サイト</a>
           <a class="lk hidden" id="sdIg" target="_blank" rel="noopener">Instagram</a>
           <a class="lk hidden" id="sdLineLink" target="_blank" rel="noopener">LINE</a>
         </div>
-        <div class="why">お店に着いたらチェックイン → 旅マイルを貯めて豆のお会計に使えます</div>
+        <div class="why" id="sdWhy">お店に着いたらチェックイン → 旅マイルを貯めて豆のお会計に使えます</div>
         <button class="gciBtn" id="sdGci" style="display:none">このお店でチェックインする</button>
         <div class="gciNote" id="sdGciNote" style="display:none">お店に着いてから押してください</div>
         <div class="gciBox" id="sdGciBox"></div>
+        <!-- ★お店の方へ（審査会 条件A1）。未参加店だけに出す。行き先は設定値1つで差し替えられる -->
+        <div class="forshop hidden" id="sdForShop">
+          <div class="fs-t">お店の方へ</div>
+          <div class="fs-m" id="sdForShopMsg"></div>
+        </div>
+        <div class="fine hidden" id="sdPendFine">写真・営業時間・定休日は、お店の承諾をいただいてから載せています。</div>
       </div>
       <div class="sdfoot">
         <a class="go" id="sdGo" target="_blank" rel="noopener">Googleマップで行き方・営業時間</a>
@@ -354,6 +383,16 @@
   const LIFF_ID       = "2008851980-9MKW9F8W"; // 発見地図用テストLIFF（JCJテスト環境2008851980配下・エンドポイント=discover.html）
   const GAS_URL       = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec"; // テスト匿名デプロイ（discover_shops反映後に有効）
   const SHARE_LIFF_ID = "2008851980-V8WaCaZw"; // 友だちに教える（テスト）
+  // ★未参加店の「お店の方へ」の行き先。本部からURLが来たらここだけ書き換える（1か所）。
+  //   空のあいだは、メールの宛先だけを出す（★届かない宛先は出さない）。
+  // ★テスト用のフォーム（2026-09-18・匿名で開けることと事前入力が効くことを実測で確認）
+  //   ・5問が指定どおりの文字で出ている／ログイン画面に飛ばない（HTTP 200）
+  //   ・?entry.468617520=<店ID> で1問目が埋まる（data-initial-response に反映されることを確認。
+  //     ★わざと1文字違う番号にすると反映されない＝この番号が正しいことの証明）
+  //   ★本番用は「コピーを作成」で別に作るため、entry の番号も本番では取り直すこと。
+  const PEND_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeZrI9gggrnngfgX6q6iFMD5zLh4vkHYIC17gIyEIJAgq51uQ/viewform";
+  const PEND_FORM_ENTRY_SHOPID = "entry.468617520";
+  const PEND_CONTACT_MAIL = "info@japancoffeejourney.com";   // ★オーナー指定の実在アドレス。1文字も変えない
   const REC_LIFF_ID   = "2008851980-Xk7hOmMv"; // 推薦フォーム（テスト）※本番反映時にリリース番が本番 2010671952-SBmKAAzv へ差替
   // ============================
 
@@ -602,7 +641,7 @@
         placed.push([x,y]);
         var el=document.createElementNS("http://www.w3.org/2000/svg","circle");
         el.setAttribute("cx",x);el.setAttribute("cy",y);el.dataset.bx=x;el.dataset.by=y;
-        el.setAttribute("r",7);el.setAttribute("class","pin");el.dataset.i=s.idx;
+        el.setAttribute("r",7);el.setAttribute("class","pin"+(s.pending===1?" pend":""));el.dataset.i=s.idx;
         el.addEventListener("click",function(ev){ev.stopPropagation();onPin(s.idx);});
         pinsG.appendChild(el);pinEls.push(el);
       });
@@ -757,8 +796,20 @@
     logAction("toggle_view",{mode:v});
   };
 
-  function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
-  function ph(s){return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";}
+  function tagHTML(s){
+    // ★未参加店には「JCJが見つけた一軒」＝選んでいることが伝わり、参加店と区別がつく（審査会 条件A5）
+    if(s.pending===1) return '<span class="tag p">JCJが見つけた一軒</span>';
+    return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";
+  }
+  // ★未参加店に「まだ無いもの」を小さく後ろに置く（誘い文の原則＝事務情報は小さく下へ）
+  function lackHTML(s){ return s.pending===1?'<div class="lack">ロゴ・豆割はまだありません</div>':""; }
+  // 写真枠：参加店＝写真（無ければ☕）／★未参加店＝NO PHOTO
+  //   ★ロゴ帳と同じ「頭文字」は使わない。頭文字は「ロゴをまだ登録していないお店」という
+  //   別の意味を既に持っているので、借りると意味まで借りてしまう（オーナー指摘 2026-09-18）。
+  function ph(s){
+    if(s.pending===1) return '<div class="np">NO PHOTO</div><div class="npd"></div>';
+    return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";
+  }
   // 定休日ガード：定休日らしい文字だけ表示（キャンペーン文/ハッシュタグ/@等の混入を弾く）
   function cd(s){ var v=(s.closed||"").trim(); if(!v)return""; if(v.length>24)return""; if(/[#@]|https?:|一周|km|。/.test(v))return""; return /(曜|休)/.test(v)?v:""; }
   function factsHTML(s){
@@ -768,9 +819,9 @@
     return f?'<div class="facts">'+f+'</div>':'';
   }
   function cardHTML(s){
-    return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho">'+ph(s)+'</div><div class="in">'+
+    return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho'+(s.pending===1?" nophoto":"")+'">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+s.pref+'</div><div class="nm">'+s.name+'</div>'+
-      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
+      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+lackHTML(s)+'</div></div>';
   }
   function renderList(){
     var wrap=$("listView"),out="",arr=SHOPS.filter(shopOK);
@@ -794,6 +845,41 @@
   function setRow(rowId,valId,val){ if(val){ $(valId).textContent=val; $(rowId).classList.remove("hidden"); } else { $(rowId).classList.add("hidden"); } }
   function setLink(id,url){ if(url){ $(id).href=url; $(id).classList.remove("hidden"); } else { $(id).classList.add("hidden"); } }
 
+  // ★未参加店だけの出し分け。参加店では触ったものを全部元に戻す（1か所で完結させる）
+  function pendFormLink(s){
+    if(!PEND_FORM_URL) return "";
+    var u=PEND_FORM_URL;
+    // ★アプリから開くときは店IDをフォームに埋める＝どのお店かを取り違えない
+    if(PEND_FORM_ENTRY_SHOPID && s.id){
+      u += (u.indexOf("?")>=0?"&":"?") + encodeURIComponent(PEND_FORM_ENTRY_SHOPID) + "=" + encodeURIComponent(s.id);
+    }
+    return u;
+  }
+  function renderPending(s){
+    var isP = (s.pending===1);
+    ["sdPendBox","sdForShop","sdPendFine"].forEach(function(id){
+      var el=$(id); if(el) el.classList.toggle("hidden", !isP);
+    });
+    // ★「豆のお会計に使えます」は未参加店では言わない（無い物をあると書かない）
+    var why=$("sdWhy");
+    if(why) why.textContent = isP
+      ? "お店に着いたらチェックイン → 旅マイルが貯まります"
+      : "お店に着いたらチェックイン → 旅マイルを貯めて豆のお会計に使えます";
+    if(!isP) return;
+
+    // ★案A確定版の誘い文（2026-09-18・オーナー指摘を受けた書き直し）
+    //   謝らない／JCJの事情を書かない／できることを先に、無いものを後に／
+    //   最後の一行は「この店が足りない」でなく「参加には値打ちがある」向きに。
+    $("sdPendLead").textContent = "この一軒は、JCJが選びました。";
+    $("sdPendBody").innerHTML   = "チェックインできます。旅の記録も、マイルも、いつもと同じように残ります。<br>"
+                                + "ロゴと豆割は、参加されているお店のものです。";
+
+    var link=pendFormLink(s);
+    $("sdForShopMsg").innerHTML = link
+      ? ('掲載の停止・内容の訂正は<a href="'+link+'" target="_blank" rel="noopener">こちらのフォーム</a>から承ります。ご連絡をいただければ、翌朝までに取り下げます。')
+      : ('掲載の停止・内容の訂正は <b>'+PEND_CONTACT_MAIL+'</b> まで。ご連絡をいただければ、翌朝までに取り下げます。');
+  }
+
   window.openSheet=function(i){
     var s=SHOPS[i];
     logAction("view_detail",{shopId:s.id});
@@ -803,6 +889,7 @@
     setRow("sdAccessTop","sdAccessTop",s.access);   // アクセスはヘッダー（場所の下・店名の上）に表示
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",stripZip(s.address));
+    renderPending(s);
     setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
     $("sdWeb").onclick=function(){logOutbound(s.id,"official_web");};
     $("sdIg").onclick=function(){logOutbound(s.id,"instagram");};
@@ -855,8 +942,23 @@
       + '<div class="cp">来店を記録する</div><div class="qr"></div></div>'
       + '<div class="gciWhere">レジ横や展示物があるエリアなどに置かれています。</div>';
   }
-  function gciNg(s,title,msg){
-    $("sdGciBox").innerHTML='<div class="gciT">'+title+'</div><div class="gciM">'+msg+'</div>'+gciPlate(s);
+  // ★未参加店（pending:1）にはチェックインプレートがありません。
+  //   プレートの絵と「置いてあります」の案内を出すと、無い物を案内することになります。
+  //   ⇒ 未参加店では、絵を出さず、プレートに触れない文に差し替えます。
+  //   ※文言は下の GCI_NG_PENDING にまとめてあります（直すのはここ1か所）。
+  var GCI_NG_PENDING = {
+    no_geo:        "いまいる場所が確認できませんでした。お店に着いてから、もう一度どうぞ。",
+    acc_too_large: "場所をうまく読み取れませんでした。お店の中は電波が弱いことがあります。少し場所を変えて、もう一度どうぞ。",
+    too_far:       "このお店の近くにいることが確認できませんでした。お店に着いてから、もう一度どうぞ。",
+    failed:        "うまくいきませんでした。少し時間をおいて、もう一度お試しください。"
+  };
+  function gciNg(s,title,msg,reason){
+    var isPending = (s && s.pending === 1);
+    var body = msg;
+    if (isPending && reason && GCI_NG_PENDING[reason]) body = GCI_NG_PENDING[reason];
+    // 未参加店にはプレートが無いので、絵も出さない
+    var plate = isPending ? "" : gciPlate(s);
+    $("sdGciBox").innerHTML='<div class="gciT">'+title+'</div><div class="gciM">'+body+'</div>'+plate;
   }
   function gciSetup(s){
     var b=$("sdGci"), n=$("sdGciNote"); $("sdGciBox").innerHTML="";
@@ -887,15 +989,15 @@
         return;
       }
       var e=(r&&r.error)||"failed";
-      if(e==="no_geo")            gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。");
-      else if(e==="acc_too_large")gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。");
-      else if(e==="too_far")      gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+      if(e==="no_geo")            gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。","no_geo");
+      else if(e==="acc_too_large")gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。","acc_too_large");
+      else if(e==="too_far")      gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","too_far");
       else if(e==="not_registered") gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
       else if(e==="off")          { b.style.display="none"; $("sdGciNote").style.display="none"; }
-      else                        gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+      else                        gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","failed");
     }catch(err){
       b.disabled=false; b.textContent="このお店でチェックインする";
-      gciNg(s,"通信できませんでした","電波の良い場所で、もう一度お試しください。");
+      gciNg(s,"通信できませんでした","電波の良い場所で、もう一度お試しください。","failed");
     }
   }
 

@@ -214,8 +214,17 @@
     //    ★関門0：位置は「その場で取り直す・高精度」。maximumAge:60000 は41秒後に前回と同じ座標を返す
     //      ことを実測済み（2026-09-12）＝古い位置の使い回し。緩めると半径を何mにしても判定が成立しない。
     // 📈 このお店のページを開いたことを記録（投げっぱなし＝表示は止めない・店IDつき）
+    //   ★2026-09-15 修正：店IDのパラメータ名を spot= から spotId= へ変更。
+    //     2026-09-14 の本番@491 で `if (!p.action && p.userId && p.spot)` のガードが入り、
+    //     いまは spot= でも幻のチェックインは起きない（チェックインの部屋が本番コードで実測済み）。
+    //     それでも spotId= にしてあるのは、本番GASは版を戻すと HEAD 全体が戻る作りで、
+    //     ガードが消えた瞬間に「ページを見ただけでチェックインが入る」が"無音で"復活するから
+    //     （エラーも出ず、checkin_raw が汚れて取り消せない）。
+    //     spotId= は doGet のどの分岐にも引っかからない＝ガードの有無に関係なく落ちない。
+    //     ※ sid= という名前は使えない：Google側が横取りしてGASまで届かない値がある（2026-09-15 実測）。
+    //     ⚠️GAS側 handlePageView_（drink_log.js）は p.spotId を読む（テスト側は対応済み）。
     try{ if(UID && /^U[0-9a-f]{32}$/i.test(UID) && s.id)
-      fetch(GAS_URL+"?action=page_view&page=shop&spot="+encodeURIComponent(s.id)
+      fetch(GAS_URL+"?action=page_view&page=shop&spotId="+encodeURIComponent(s.id)
             +"&userId="+encodeURIComponent(UID)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
 
     gciSetup(s);
@@ -260,8 +269,21 @@
       + '<div class="cp">来店を記録する</div><div class="qr"></div></div>'
       + '<div class="gciWhere">レジ横や展示物があるエリアなどに置かれています。</div>';
   }
-  function gciNg(s,title,msg){
-    $("gciBox").innerHTML='<div class="gciT">'+title+'</div><div class="gciM">'+msg+'</div>'+gciPlate(s);
+  // ★未参加店（pending:1）にはチェックインプレートがありません。
+  //   プレートの絵と「置いてあります」の案内を出すと、無い物を案内することになります。
+  //   ★discover.html と【同じ直し】です（2026-09-18。片方だけ直すと、もう片方で同じ事故が出ます）。
+  var GCI_NG_PENDING = {
+    no_geo:        "いまいる場所が確認できませんでした。お店に着いてから、もう一度どうぞ。",
+    acc_too_large: "場所をうまく読み取れませんでした。お店の中は電波が弱いことがあります。少し場所を変えて、もう一度どうぞ。",
+    too_far:       "このお店の近くにいることが確認できませんでした。お店に着いてから、もう一度どうぞ。",
+    failed:        "うまくいきませんでした。少し時間をおいて、もう一度お試しください。"
+  };
+  function gciNg(s,title,msg,reason){
+    var isPending = (s && s.pending === 1);
+    var body = msg;
+    if (isPending && reason && GCI_NG_PENDING[reason]) body = GCI_NG_PENDING[reason];
+    var plate = isPending ? "" : gciPlate(s);
+    $("gciBox").innerHTML='<div class="gciT">'+title+'</div><div class="gciM">'+body+'</div>'+plate;
   }
   function gciSetup(s){
     var b=$("gciBtn"), n=$("gciNote"); $("gciBox").innerHTML="";
@@ -290,15 +312,15 @@
         return;
       }
       var e=(r&&r.error)||"failed";
-      if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。");
-      else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。");
-      else if(e==="too_far")       gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+      if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。","no_geo");
+      else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。","acc_too_large");
+      else if(e==="too_far")       gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","too_far");
       else if(e==="not_registered")gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
       else if(e==="off")           { b.style.display="none"; $("gciNote").style.display="none"; }
-      else                         gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。");
+      else                         gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","failed");
     }catch(err){
       b.disabled=false; b.textContent="このお店でチェックインする";
-      gciNg(s,"通信できませんでした","電波の良い場所で、もう一度お試しください。");
+      gciNg(s,"通信できませんでした","電波の良い場所で、もう一度お試しください。","failed");
     }
   }
 </script>
