@@ -845,6 +845,20 @@
   function setRow(rowId,valId,val){ if(val){ $(valId).textContent=val; $(rowId).classList.remove("hidden"); } else { $(rowId).classList.add("hidden"); } }
   function setLink(id,url){ if(url){ $(id).href=url; $(id).classList.remove("hidden"); } else { $(id).classList.add("hidden"); } }
 
+  // ★Instagramのアドレスを整える（2026-09-18）。
+  //   いまの62店は全部 https://www.instagram.com/… の形（実測で確認・混在ゼロ）。
+  //   ★これから足す未参加店の行は人が手で書くので、@handle や handle だけで入ることがある。
+  //   ⇒ 読む側で整える。★すでにURLの形のものは1文字も変えない（実測した62店の見え方を守る）。
+  function igUrl(v){
+    var t = String(v==null?"":v).trim();
+    if(!t) return "";
+    if(/^https?:\/\//i.test(t)) return t;                       // ★もうURL＝そのまま（既存62店はここ）
+    if(/^(www\.)?instagram\.com\//i.test(t)) return "https://"+t.replace(/^www\./i,"");
+    var h = t.replace(/^@/,"").replace(/^instagram\.com\//i,"").replace(/\/+$/,"");
+    if(!/^[A-Za-z0-9._]+$/.test(h)) return "";                   // ★それらしくない字は出さない（壊れたリンクを出さない）
+    return "https://www.instagram.com/"+h+"/";
+  }
+
   // ★未参加店だけの出し分け。参加店では触ったものを全部元に戻す（1か所で完結させる）
   function pendFormLink(s){
     if(!PEND_FORM_URL) return "";
@@ -890,7 +904,25 @@
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",stripZip(s.address));
     renderPending(s);
-    setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
+    // ★未参加店に出すリンクは【Instagramだけ】（2026-09-18 オーナー決定）。
+    //   ・公式サイトとLINEは出さない（承諾のないお店の窓口を、こちらで案内しない）
+    //   ・★Instagramが無ければリンクの要素ごと出さない。「準備中」も空のボタンも出さない
+    //     ＝お店によって画面の形が変わると、お客さまが迷うため
+    //   ・文字は「お店のInstagramを見る」＝★押す前に何が開くかを伝える
+    if(s.pending===1){
+      setLink("sdWeb","");                  // 出さない
+      setLink("sdLineLink","");             // 出さない
+      var iu = igUrl(s.ig);
+      setLink("sdIg", iu);
+      // ★既存の setLink は「隠す」だけで飛び先を消しません（共有の部品なので変えません）。
+      //   隠れていれば押せないので害はありませんが、★前に開いたお店の飛び先が残るのは気持ちが悪いので、
+      //   ここで消します。★消すのは未参加店の道だけ＝参加店のふるまいには1つも触りません。
+      if(!iu) $("sdIg").removeAttribute("href");
+      $("sdIg").textContent = "お店のInstagramを見る";
+    } else {
+      setLink("sdWeb",s.web); setLink("sdIg",s.ig); setLink("sdLineLink",s.line);
+      $("sdIg").textContent = "Instagram";  // ★参加店の文字は元のまま（前に開いた未参加店の文字が残らないように）
+    }
     $("sdWeb").onclick=function(){logOutbound(s.id,"official_web");};
     $("sdIg").onclick=function(){logOutbound(s.id,"instagram");};
     $("sdLineLink").onclick=function(){logOutbound(s.id,"official_line");};

@@ -196,8 +196,17 @@
     if (s.mapUrl){ $("mapBtn").href = s.mapUrl; } else { $("mapBtn").style.display="none"; }
 
     let links="";
-    if (s.web)  links += '<a href="'+esc(s.web)+'" target="_blank" rel="noopener">公式サイト</a>';
-    if (s.ig)   links += '<a href="'+esc(s.ig)+'" target="_blank" rel="noopener">Instagram</a>';
+    // ★未参加店に出すリンクは【Instagramだけ】（2026-09-18 オーナー決定）。
+    //   ★discover.html と同じ考え方をそろえる（片方だけ直すと、もう片方で違う画面が出る）。
+    //   Instagramが無ければ要素ごと出さない＝「準備中」も空のボタンも出さない。
+    var isPend = (s.pending === 1);
+    if (!isPend && s.web) links += '<a href="'+esc(s.web)+'" target="_blank" rel="noopener">公式サイト</a>';
+    if (isPend) {
+      var iu = igUrl(s.ig);
+      if (iu) links += '<a href="'+esc(iu)+'" target="_blank" rel="noopener">お店のInstagramを見る</a>';
+    } else if (s.ig) {
+      links += '<a href="'+esc(s.ig)+'" target="_blank" rel="noopener">Instagram</a>';
+    }
     if (s.line) links += '<a href="'+esc(s.line)+'" target="_blank" rel="noopener">LINE</a>';
     $("links").innerHTML = links;
 
@@ -260,6 +269,19 @@
     });
   }
   // 断り画面のプレートの絵。ロゴはその店のものを規則URLから。読めなければ頭文字＝壊れた枠は出さない。
+  // ★Instagramのアドレスを整える（discover.html と同じ中身。2026-09-18）
+  //   いまの62店は全部URLの形（実測・混在ゼロ）。これから足す行が @handle でも困らないように。
+  //   ★すでにURLの形のものは1文字も変えない。
+  function igUrl(v){
+    var t = String(v==null?"":v).trim();
+    if(!t) return "";
+    if(/^https?:\/\//i.test(t)) return t;
+    if(/^(www\.)?instagram\.com\//i.test(t)) return "https://"+t.replace(/^www\./i,"");
+    var h = t.replace(/^@/,"").replace(/^instagram\.com\//i,"").replace(/\/+$/,"");
+    if(!/^[A-Za-z0-9._]+$/.test(h)) return "";
+    return "https://www.instagram.com/"+h+"/";
+  }
+
   function gciPlate(s){
     var ini=(s.name||"?").trim().charAt(0);
     return '<div class="gciPlate"><div class="br">JAPAN COFFEE JOURNEY</div>'
