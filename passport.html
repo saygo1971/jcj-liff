@@ -50,13 +50,21 @@
   .cir.got img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%}
   .cir.emp{background:var(--empty);border:1.5px dashed #cbbba0}
   .tapnote{text-align:right;font-size:10px;color:var(--sub);margin-top:7px;cursor:pointer}
-  /* 行きたいリスト入口（保存したお店へ再訪＝送客） */
+  /* 行きたいリスト入口（保存したお店へ再訪＝送客）
+     ★2026-09-15 変更2点（この1ブロックだけ。他の画面・他のブロックには広げない）
+       ①緑→ピンク：トンマナは「ピンク＝これから起こすこと／グリーン＝終わったこと」。
+         ここは"まだ行っていないお店"＝これから＝ピンク(--terra #C04A55)が正しい。今までは逆だった。
+       ②件数バッジ(.cnt)を追加：他のブロックは全部その人の数字が入るのに、ここだけ固定の文字で
+         「3軒保存している人にも0軒の人にも同じ」に見えていた＝空かもしれない箱は押されない。 */
   .wish{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:12px 0 0;cursor:pointer}
   .wish svg{width:22px;height:22px;flex:0 0 auto}
   .wish .tx{flex:1}
-  .wish .tx b{display:block;font-size:12.5px;color:var(--green);font-weight:800}
+  .wish .tx b{display:block;font-size:12.5px;color:var(--terra);font-weight:800}
   .wish .tx span{font-size:10px;color:var(--sub)}
-  .wish .arw{color:var(--sub);font-size:14px}
+  /* 数字は色だけに頼らない＝「まだ」という文字を必ず添える（色が分からない人にも伝わる第2の手がかり） */
+  .wish .cnt{flex:0 0 auto;background:var(--terra);color:#fff;font-size:11px;font-weight:800;
+             border-radius:999px;padding:3px 9px;line-height:1.5;white-space:nowrap}
+  .wish .arw{color:var(--terra);font-size:14px;font-weight:700}
   /* 個人の数字 */
   .stats{display:flex;gap:8px;margin:13px 0 11px}
   .stats .s{flex:1;background:#fff;border:1px solid var(--line);border-radius:10px;text-align:center;padding:9px 4px}
@@ -148,10 +156,11 @@
       <div class="circles" id="circles"></div>
       <div class="tapnote" id="logoTap">ロゴ帳をひらく ›</div>
 
-      <!-- 行きたいリスト入口（案A：既存の保存カルーセルをトークに出す） -->
+      <!-- 行きたいリスト入口（保存したお店の一覧 saved.html へ）※旧コメントの「案A カルーセル」は廃案＝実際はsaved.htmlへ遷移する -->
       <div class="wish" id="wishList">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
-        <span class="tx"><b>行きたいリスト</b><span>保存したお店へ、次の一歩を</span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#C04A55" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <span class="tx"><b>行きたいリスト</b><span id="wishSub">保存したお店へ、次の一歩を</span></span>
+        <span class="cnt hidden" id="wishCnt"></span>
         <span class="arw">›</span>
       </div>
 
@@ -222,6 +231,50 @@
     //   本番はフォルダ運用(例 /passport/)ゆえ /saved/ 等 別フォルダに置くと相対 saved.html が404になる
     //   （パスポート本番化で shop.html 未同梱404の前例あり）。アップ前に配置と相対パスを実機確認。
     location.href = "saved.html";
+  }
+
+  // ── 行きたいリストの件数（「まだ行っていない」軒数）────────────────────────
+  //   出どころは既にある2つの入口だけ（新しい入口は作っていない）：
+  //     action=saved_list   … その人が保存したお店の一覧
+  //     action=user_context … その人が行ったお店の一覧（visited）
+  //   この2本は本体(action=passport)と並行で投げ、返事を待たずに画面は出す。
+  //   落ちた/遅い時は数字を出さないだけ＝今までと同じ見た目に留まる（表示は絶対に止めない）。
+  function renderWish(n){          // n＝まだ行っていない軒数（null＝まだ分からない）
+    const cnt = $("wishCnt"), sub = $("wishSub");
+    if(!cnt || !sub) return;
+    if(n === null || n === undefined || isNaN(n)){ return; }        // 分からない間は今までの文のまま
+    if(n > 0){
+      cnt.textContent = "行きたい" + n + "軒";   // ★2026-09-15 オーナー確定。「まだ」は催促に読めるので使わない
+      cnt.classList.remove("hidden");
+      sub.textContent = "保存したお店へ、次の一歩を";
+      return;
+    }
+    cnt.classList.add("hidden");
+    sub.textContent = (n === 0 && _wishSaved > 0)
+      ? "保存したお店には、ぜんぶ行きました"
+      : "気になるお店を保存すると、ここに並びます";
+  }
+  let _wishSaved = 0;              // 保存した総数（0軒の人と「全部行った人」を言い分けるために持つ）
+  async function loadWish(userId){
+    try{
+      const c = JSON.parse(localStorage.getItem("jcj_wish_"+userId)||"null");
+      if(c && typeof c.n === "number"){ _wishSaved = c.saved||0; renderWish(c.n); }
+    }catch(e){}
+    try{
+      const [sv, cx] = await Promise.all([
+        fetch(GAS_URL+"?action=saved_list&userId="+encodeURIComponent(userId)+"&_="+Date.now()).then(r=>r.json()).catch(()=>null),
+        fetch(GAS_URL+"?action=user_context&userId="+encodeURIComponent(userId)+"&_="+Date.now()).then(r=>r.json()).catch(()=>null)
+      ]);
+      if(_started && userId !== _started) return;      // 別の人に切り替わった後の古い返事は捨てる
+      if(!(sv && sv.ok) || !(cx && cx.ok)) return;     // 取れなければ数字は出さない（今まで通りの文だけ）
+      const visited = cx.visited || {};
+      const shops = sv.shops || [];
+      let n = 0;
+      shops.forEach(function(x){ if(!visited[x.id]) n++; });
+      _wishSaved = shops.length;
+      renderWish(n);
+      try{ localStorage.setItem("jcj_wish_"+userId, JSON.stringify({n:n, saved:shops.length})); }catch(e){}
+    }catch(e){}
   }
 
   // 地球何周目メーター（totalKm / goalKm から算出）
@@ -394,6 +447,19 @@
       if (prev){ const pd = JSON.parse(prev); render(pd); renderNoticeEntry(pd.notice); }  // 入口はキャッシュから即出す（ポップアップは最新応答で判定）
     }catch(e){}
     loadData(userId);
+    loadWish(userId);      // 行きたいリストの件数（本体と並行・遅れて入る）
+    sendPageView(userId);  // このパスポートを開いた記録
+  }
+
+  // [計測] パスポートを開いた記録（投げっぱなし＝返事を待たない・表示は止めない）
+  //   この画面は店IDを送る必要がないので、spot= も spotId= も付けない。
+  //   同じ端末で前の人のIDが残っている場合に備え、同じIDは1回だけ送る。
+  const _pvDone = {};
+  function sendPageView(userId){
+    if(!/^U[0-9a-f]{32}$/i.test(userId) || _pvDone[userId]) return;
+    _pvDone[userId] = 1;
+    try{ fetch(GAS_URL+"?action=page_view&page=passport&userId="+encodeURIComponent(userId)+"&_="+Date.now(),
+               {method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
   }
 
   async function main(){

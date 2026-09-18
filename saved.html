@@ -48,6 +48,10 @@
   .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
+  /* ★2026-09-15 追加：もう行った店の印。トンマナ「ピンク＝これから／グリーン＝終わったこと」。
+     色は同じファイルの .milepill.rest と同じ緑を使い回す＝新しい色を増やさない。
+     ★灰色の膜はかけない・カードは押せるまま（再訪したい人がいる）。色だけに頼らず必ず文字を出す。 */
+  .tag.v{background:#e1f5ee;color:#085041}
   .empty{text-align:center;padding:60px 20px;color:var(--sub)}
   .empty .big{font-size:15px;color:var(--brown-d);font-weight:800;margin-bottom:8px}
   .empty a{display:inline-block;margin-top:14px;background:var(--accent);color:#fff;font-weight:800;
@@ -112,7 +116,11 @@
     if(c) f+='<div>🗓 定休日：'+esc(c)+'</div>';
     return f?'<div class="facts">'+f+'</div>':'';
   }
-  function tagHTML(s){return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";}
+  // ★もう行った店かどうか＝すでに持っている USER_CTX.visited を見るだけ（新しい入口は作らない）。
+  //   パスポートのバッジ「行きたい◯軒」は"まだ行っていない数"なので、印が無いと
+  //   「3軒と言われて開いたら5軒あった」になる。その食い違いをここで消す。
+  function visitedHTML(s){ return (USER_CTX.visited && USER_CTX.visited[s.id]) ? '<span class="tag v">行きました</span>' : ""; }
+  function tagHTML(s){return visitedHTML(s)+(s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"");}
   // カードごとの「行き方を見る」ボタンは廃止（オーナー確定2026-09-03：縦長で写真比率が崩れるため）。
   // 送客＝カード全体タップ→お店のページ shop.html（そこに行き方＝Googleマップ）で担保＝ロースター一覧と同じ挙動。
   function openShop(id){ location.href = "shop.html?shop=" + encodeURIComponent(id); }

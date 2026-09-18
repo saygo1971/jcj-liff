@@ -61,7 +61,7 @@
   <div class="lbl">② 測り方</div>
   <div class="chips" id="mode">
     <div class="chip on" data-m="new">いま取り直す（新しい設定）</div>
-    <div class="chip" data-m="old">いまのアプリと同じ</div>
+    <div class="chip" data-m="old">昔の設定（比較用）</div>
   </div>
 
   <button class="go" id="go">測る</button>
@@ -197,7 +197,7 @@
       var movedTxt = first ? "—" : (Math.round(movedM)+"m");
       var res = judge(first?0:movedM, elapsed, first);
       show(true, a,
-        '<span>場所</span> '+W+' ／ <span>設定</span> '+(M==="new"?"取り直す・高精度":"いまのアプリと同じ")
+        '<span>場所</span> '+W+' ／ <span>設定</span> '+(M==="new"?"取り直す・高精度":"昔の設定（比較用）")
         +'<br><span>緯度</span> '+here[0].toFixed(6)+' ／ <span>経度</span> '+here[1].toFixed(6)
         +'<br><span>取得にかかった時間</span> '+sec+' 秒'
         +(first?"":'<br><span>前回から</span> '+movedTxt+'（'+elapsed+'秒後）'));
