@@ -6,39 +6,62 @@
   <title>試飲チケット</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
+    /* ★★2026-09-22：会社の色の決まりに合わせました（00_全社共通/ブランド指針/JCJ_カラー仕様_トンマナ.md・2026-08-31 オーナー決定）。
+       ★使うのは下の10色だけです。★ここに無い色を足さないでください。 */
+    :root{
+      --brand-base:#CB7B68;       /* コーラルピンク：面・ロゴ地。★白文字を載せない（読めません） */
+      --brand-deep:#C04A55;       /* 深ピンク：主役ボタン・押せる文字。★白文字を載せてよいのはこれだけ */
+      --brand-green-deep:#2B5D4F; /* 深緑：旅の面の見出し */
+      --state-done:#2F7A57;       /* 達成グリーン：終わったこと・✓ */
+      --state-error:#C0392B;      /* 赤：エラーの文言とアイコンだけ。面やボタンの地にしない */
+      --paper:#F4EADD;            /* ベージュ：★カードの中のブロックだけ。画面全体に敷かない */
+      --bg:#FFFFFF;               /* 画面全体の背景 */
+      --ink:#221C1A;              /* 本文 */
+      --ink-sub:#6E655E;          /* 補助・単位（枚・円） */
+      --line:#DDD6CE;             /* 枠線・区切り線・無効状態 */
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: var(--bg); margin: 0; padding: 20px 16px 40px; color: var(--ink); }
     .wrap { max-width: 420px; margin: 0 auto; }
-    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #E0D2B8; border-top-color: #8a6d4b; border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
+    #status { text-align: center; color: var(--ink-sub); font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--line); border-top-color: var(--brand-deep); border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; }
-    .lead { font-size: 13px; color: #8c6e50; line-height: 1.7; margin: 0 0 18px; }
-    .opt { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .opt.selected { border: 2px solid #8a6d4b; }
-    .opt .name { font-size: 15px; font-weight: 600; color: #5a4632; display: flex; align-items: center; gap: 6px; }
-    .opt .sub { font-size: 12px; color: #8c6e50; margin-top: 3px; }
-    .opt .price { font-size: 18px; font-weight: 600; color: #34595A; }
-    .badge { background: #D85A30; color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-    .strike { text-decoration: line-through; color: #b7a184; }
-    .terms { background: #F3EBDD; border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: #7a6247; font-size: 12px; line-height: 1.9; }
+    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; color: var(--ink); }
+    .lead { font-size: 13px; color: var(--ink-sub); line-height: 1.7; margin: 0 0 18px; }
+    /* ★カード＝白地＋枠線（仕様 3章・2026-08-31 改訂） */
+    .opt { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .opt.selected { border: 2px solid var(--brand-deep); }
+    .opt .name { font-size: 15px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+    .opt .sub { font-size: 12px; color: var(--ink-sub); margin-top: 3px; }
+    /* ★数字は墨で大きく、単位だけ小さく灰色（仕様） */
+    .opt .price { font-size: 18px; font-weight: 600; color: var(--ink); }
+    .badge { background: var(--brand-deep); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .strike { text-decoration: line-through; color: var(--ink-sub); }
+    /* 🔴★ここは「会場だけ・お店では使えない・払い戻さない」＝お客さまへの約束ごとです。
+       ★誘いではないので、ベージュで塗らず【白地＋枠線】にしました（本部の指示）。
+       ★仕様そのものには「誘いはベージュ／約束ごとは白地」という決まりは書かれていません＝★本部の判断です。 */
+    .terms { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: var(--ink); font-size: 12px; line-height: 1.9; }
     /* ★2026-09-22（㉑規約同意）用 */
-    .termsbox { background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; margin: 14px 0 0; overflow: hidden; }
-    .termsbox > summary { padding: 12px 14px; font-size: 13px; font-weight: 600; color: #5a4632; cursor: pointer; list-style: none; }
+    .termsbox { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin: 14px 0 0; overflow: hidden; }
+    .termsbox > summary { padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--brand-deep); cursor: pointer; list-style: none; }
     .termsbox > summary::-webkit-details-marker { display: none; }
-    .termsbox > summary::after { content: "　▼ 開いて読む"; font-weight: 400; font-size: 11px; color: #a08a6d; }
+    .termsbox > summary::after { content: "　▼ 開いて読む"; font-weight: 400; font-size: 11px; color: var(--ink-sub); }
     .termsbox[open] > summary::after { content: "　▲ 閉じる"; }
-    .termsbody { padding: 0 14px 14px; font-size: 12px; line-height: 1.85; color: #7a6247; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
-    .agree { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: #5a4632; }
-    .agree input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; }
-    .agree.locked { color: #a08a6d; }
-    .agreehint { font-size: 11px; color: #a08a6d; margin: 6px 0 0; line-height: 1.7; }
-    button#payBtn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; margin-top: 16px; }
-    button#payBtn:disabled { background: #c9bba7; cursor: default; }
-    .foot { text-align: center; color: #a08a6d; font-size: 11px; margin-top: 10px; line-height: 1.7; }
-    .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
+    /* ★規約の全文は「カードの中のブロック」＝ベージュ（仕様 3章） */
+    .termsbody { background: var(--paper); padding: 12px 14px; font-size: 12px; line-height: 1.85; color: var(--ink); max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .agree { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink); }
+    .agree input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--brand-deep); }
+    .agree.locked { color: var(--ink-sub); }
+    .agreehint { font-size: 11px; color: var(--ink-sub); margin: 6px 0 0; line-height: 1.7; }
+    /* ★主役ボタン＝深ピンク＋白文字／★無効＝枠線の色の地＋白文字（仕様 4章） */
+    button#payBtn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: var(--brand-deep); color: #fff; cursor: pointer; margin-top: 16px; }
+    button#payBtn:disabled { background: var(--line); color: #fff; cursor: default; }
+    .foot { text-align: center; color: var(--ink-sub); font-size: 11px; margin-top: 10px; line-height: 1.7; }
+    .notice { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; color: var(--ink); }
     .hidden { display: none; }
-    .done-num { font-size: 28px; font-weight: 600; color: #34595A; }
-    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: none; border-radius: 10px; background: #34595A; color: #fff; cursor: pointer; font-family: inherit; }
+    /* ★受け取れた＝終わったこと ⇒ 達成グリーン（仕様 4章「押した後の完了表示だけグリーン」） */
+    .done-num { font-size: 28px; font-weight: 600; color: var(--state-done); }
+    /* ★副ボタン＝白地＋深ピンクの文字＋深ピンク1px枠（仕様 4章） */
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: 1px solid var(--brand-deep); border-radius: 10px; background: var(--bg); color: var(--brand-deep); cursor: pointer; font-family: inherit; }
   </style>
 </head>
 <body>
@@ -49,12 +72,33 @@
     <h1>試飲チケット</h1>
     <p class="lead">全国の加盟ロースターで、試飲の一杯に。旅の途中でどうぞ。</p>
 
+    <!-- ★2026-09-22：ここに書いてある値段と枚数は【仮の表示】です。
+         ★サーバーが設定から読んだ値で、画面が出る前に必ず置き換わります。
+         ★仮の値は 2026-09-19 オーナー決定に合わせてあります（当日パック＝地図＋3杯 1,500円）。 -->
     <div class="opt selected" id="opt-pack" data-key="pack">
       <div>
-        <div class="name">基本パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
-        <div class="sub" id="pack-sub">6枚セット</div>
+        <div class="name">当日パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
+        <div class="sub" id="pack-sub">地図＋3杯</div>
       </div>
       <div class="price" id="pack-price">¥1,500</div>
+    </div>
+
+    <!-- ★2026-09-22：先行パック（地図＋3杯＋カップ・100セット限定）。★設定で出すと決めたときだけ出ます -->
+    <div class="opt hidden" id="opt-presale" data-key="presale">
+      <div>
+        <div class="name">先行パック <span class="badge">カップ付き</span></div>
+        <div class="sub" id="presale-sub">地図＋3杯＋カップ</div>
+      </div>
+      <div class="price" id="presale-price">¥1,500</div>
+    </div>
+
+    <!-- ★2026-09-22：カップ単品。🔴★券は付きません（★カップは券ではありません） -->
+    <div class="opt hidden" id="opt-cup" data-key="cup">
+      <div>
+        <div class="name">JCJカップ</div>
+        <div class="sub">カップだけ（試飲の券は付きません）</div>
+      </div>
+      <div class="price" id="cup-price">¥600</div>
     </div>
 
     <!-- ★2026-09-22（㉓）バラ売り。★既定は出しません。設定 ticket_bara_on が TRUE のときだけ出ます -->
@@ -63,7 +107,7 @@
         <div class="name">バラ</div>
         <div class="sub">1枚</div>
       </div>
-      <div class="price" id="bara-price">¥350</div>
+      <div class="price" id="bara-price">¥500</div>
     </div>
 
     <!-- ★★2026-09-22：規約v2の申し送り「購入画面に必ず表示する3つ」。
@@ -198,12 +242,23 @@
     $("terms-body").textContent = String(data.termsText || "");
     // ★2026-09-22（㉓）バラ売りは、設定で出すと決めたときだけ出します。
     //   ★出さないときは、選ぶこともできません（選ばれていたらパックに戻します）。
-    if (data.baraOn === true) {
-      $("opt-bara").classList.remove("hidden");
-    } else {
-      $("opt-bara").classList.add("hidden");
-      if (selectedKey === "bara") selectOpt("pack");
+    // ★2026-09-22：出す／出さないは、全部サーバーの返事で決めます（★画面が勝手に決めません）。
+    const show = function (key, on) {
+      const el = $("opt-" + key);
+      if (!el) return;
+      if (on) { el.classList.remove("hidden"); }
+      else { el.classList.add("hidden"); if (selectedKey === key) selectOpt("pack"); }
+    };
+    show("bara", data.baraOn === true);
+    // ★2026-09-22：完売するのは【先行パック】だけです。★当日パックは売り続けます。
+    //   ★以前は画面ぜんたいを止める形にしていましたが、★それだと当日パックまで買えなくなります。
+    show("presale", !!(data.presale && data.presale.on) && data.soldOut !== true);
+    show("cup", !!(data.cup && data.cup.on));
+    if (data.presale && data.presale.price) {
+      $("presale-price").textContent = yen(data.presale.price);
+      $("presale-sub").textContent = "地図＋" + data.presale.count + "杯＋カップ";
     }
+    if (data.cup && data.cup.price) $("cup-price").textContent = yen(data.cup.price);
     $("pack-price").textContent = yen(data.pack.price);
     $("bara-price").textContent = yen(data.bara.price);
     if (!data.testMode) $("test-note").textContent = "";
@@ -217,8 +272,10 @@
 
   function selectOpt(key) {
     selectedKey = key;
-    $("opt-pack").classList.toggle("selected", key === "pack");
-    $("opt-bara").classList.toggle("selected", key === "bara");
+    ["pack", "bara", "presale", "cup"].forEach(function (k) {
+      const el = $("opt-" + k);
+      if (el) el.classList.toggle("selected", key === k);
+    });
   }
 
   // ★2026-09-22（㉑）：規約を「開いて読んだ」あとに、はじめて同意のチェックが押せるようになります。
@@ -268,6 +325,20 @@
           setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
           return;
         }
+        if (err === "sold_out") {
+          setStatus("おかげさまで完売しました。\nたくさんのお申し込み、ありがとうございました。", false);
+          return;   // ★もう買えないので、ボタンは戻しません
+        }
+        if (err === "campaign_config_ng") {
+          setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
+          return;
+        }
+        if (err === "presale_off" || err === "cup_off") {
+          setStatus("こちらはいま取り扱っておりません。\n当日パックをお選びください。", false);
+          selectOpt("pack");
+          $("payBtn").disabled = false;
+          return;
+        }
         if (err === "bara_off") {
           setStatus("バラ売りはいま取り扱っておりません。\nセットをお選びください。", false);
           selectOpt("pack");
@@ -297,6 +368,8 @@
     //   ★「ご来場いただけなかった場合も、払い戻しはいたしません」が欠けたまま売ると、
     //   ★2026-09-22 のオーナー決定（払い戻さないと先に書いておく）の意味がなくなります。
     //   ★ここで止めても、もう1段 奥（apiTicketBuyCheckout）でも断ります＝画面だけの歯止めにしません。
+    // ★★2026-09-22（100セット限定）★完売したら、購入に進めない形にします。
+    //   ★2026-09-17 の資料「100セット限定・完売しても追加しない」＝お客さまへの約束です。
     if (!data.termsVersion || !data.termsText || (data.noticeLines || []).length < 3) {
       hideStatus();
       $("closed").classList.remove("hidden");
@@ -324,8 +397,10 @@
     currentUserName = profile.displayName || "";
     if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
 
-    $("opt-pack").addEventListener("click", () => selectOpt("pack"));
-    $("opt-bara").addEventListener("click", () => selectOpt("bara"));
+    ["pack", "bara", "presale", "cup"].forEach(function (k) {
+      const el = $("opt-" + k);
+      if (el) el.addEventListener("click", function () { selectOpt(k); });
+    });
     $("payBtn").addEventListener("click", goCheckout);
     // ★2026-09-22（㉑）：規約を開いたら同意できるようになる／同意でボタンが押せるようになる
     $("termsbox").addEventListener("toggle", function () {
