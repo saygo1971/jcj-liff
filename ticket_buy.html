@@ -21,6 +21,17 @@
     .badge { background: #D85A30; color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
     .strike { text-decoration: line-through; color: #b7a184; }
     .terms { background: #F3EBDD; border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: #7a6247; font-size: 12px; line-height: 1.9; }
+    /* ★2026-09-22（㉑規約同意）用 */
+    .termsbox { background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; margin: 14px 0 0; overflow: hidden; }
+    .termsbox > summary { padding: 12px 14px; font-size: 13px; font-weight: 600; color: #5a4632; cursor: pointer; list-style: none; }
+    .termsbox > summary::-webkit-details-marker { display: none; }
+    .termsbox > summary::after { content: "　▼ 開いて読む"; font-weight: 400; font-size: 11px; color: #a08a6d; }
+    .termsbox[open] > summary::after { content: "　▲ 閉じる"; }
+    .termsbody { padding: 0 14px 14px; font-size: 12px; line-height: 1.85; color: #7a6247; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .agree { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: #5a4632; }
+    .agree input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; }
+    .agree.locked { color: #a08a6d; }
+    .agreehint { font-size: 11px; color: #a08a6d; margin: 6px 0 0; line-height: 1.7; }
     button#payBtn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; margin-top: 16px; }
     button#payBtn:disabled { background: #c9bba7; cursor: default; }
     .foot { text-align: center; color: #a08a6d; font-size: 11px; margin-top: 10px; line-height: 1.7; }
@@ -46,7 +57,8 @@
       <div class="price" id="pack-price">¥1,500</div>
     </div>
 
-    <div class="opt" id="opt-bara" data-key="bara">
+    <!-- ★2026-09-22（㉓）バラ売り。★既定は出しません。設定 ticket_bara_on が TRUE のときだけ出ます -->
+    <div class="opt hidden" id="opt-bara" data-key="bara">
       <div>
         <div class="name">バラ</div>
         <div class="sub">1枚</div>
@@ -54,12 +66,27 @@
       <div class="price" id="bara-price">¥350</div>
     </div>
 
-    <div class="terms">
-      <div>発行から<span id="expiry-days">180</span>日間 有効</div>
+    <!-- ★★2026-09-22：規約v2の申し送り「購入画面に必ず表示する3つ」。
+         ★文はサーバーが作ります（画面に文章を置きません＝直す場所を1か所に保つ）。
+         ★「発行から180日間 有効」は、2026-09-22 のオーナー決定（会期中だけ）で嘘になったので外しました。 -->
+    <div class="terms" id="notice-box">
+      <div id="notice-lines"></div>
       <div>1枚で試飲 1杯 と交換</div>
     </div>
 
-    <button id="payBtn">決済に進む</button>
+    <!-- ★2026-09-22（㉑規約同意）★文面はサーバーから受け取ります（画面に文章を持ちません＝1か所） -->
+    <details class="termsbox" id="termsbox">
+      <summary>利用規約</summary>
+      <div class="termsbody" id="terms-body"></div>
+    </details>
+
+    <label class="agree locked" id="agree-row">
+      <input type="checkbox" id="agree-check" disabled>
+      <span>利用規約を読み、同意します</span>
+    </label>
+    <div class="agreehint" id="agree-hint">まず「利用規約」を開いてお読みください。</div>
+
+    <button id="payBtn" disabled>利用規約に同意して購入する</button>
     <div class="foot">Stripeで安全に決済します<br><span id="test-note">テスト環境：実際の請求は発生しません</span></div>
   </div>
 
@@ -73,8 +100,12 @@
 <script>
   // ★このLIFFの設定★
   const LIFF_ID = "2008851980-trDQgLA1";
-  // GAS_URL：買う窓口(?action=buy_*)がある配備＝@413（テスト専用・誰でも可）。本番化時に差し替え。
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzoGKzwf2P4pxF1QHjIqg1udwQ6gGnhQcRFnApPWzleHDJuRrMQRNKoYXzrOgomnQoj/exec";
+  // GAS_URL：買う窓口(?action=buy_*)がある配備（テスト専用・誰でも可）。本番化時に差し替え。
+  // ★2026-09-22：問い合わせ先を @429 → ★@542 へ切り替え（本部号令）。
+  //   ★あわせて、上の説明文にあった「＝@413」を消しました。★実物は @429 でした＝★説明文が古く、嘘になっていました。
+  //   ★理由＝@429 には、この2週間ぶんの直し（規約の同意・会場と会期の条件・連打の歯止め）が1つも入っていません。
+  //   ★古い口を向いたまま画面だけ直すと、「直したのに変わらない」が必ず起きます。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   // 「パスポートに戻る」＝この買う画面(LIFF)を閉じて元のトーク(パスポートのカードがある場所)へ戻す。
   // パスポートはWebページでなくトーク内のFlexカードのため、URL遷移ではなく liff.closeWindow() を使う。
   const backBtnHtml = '<button type="button" class="backBtn" onclick="backToPassport()">トークに戻る</button>';
@@ -83,6 +114,10 @@
   let currentUserName = "";
   let selectedKey = "pack";
   let campaignActive = false;
+  // ★2026-09-22（㉑）：サーバーから受け取った「オーナーが承認した規約の版」。購入のときにそのまま送り返します。
+  //   ★画面がこの版を作ることはありません（＝画面が勝手に「同意済み」を作れない）。
+  let termsVersion = "";
+  let termsOpened = false;
 
   const $ = (id) => document.getElementById(id);
   // loading=true のときだけ くるくる を出す（エラー文言では出さない）
@@ -150,7 +185,25 @@
 
   function renderPrices(data) {
     campaignActive = !!data.campaignActive;
-    $("expiry-days").textContent = data.expiryDays;
+    // ★2026-09-22：必ず出す3つ。★文字を組み立てず、サーバーが作った文をそのまま並べます。
+    const box = $("notice-lines");
+    box.innerHTML = "";
+    (data.noticeLines || []).forEach(function (t) {
+      const d = document.createElement("div");
+      d.textContent = t;          // ★文章として入れる（組み立てない＝取り違えが起きない）
+      box.appendChild(d);
+    });
+    // ★2026-09-22（㉑）規約の全文を差し込む（文章はサーバーから来たものだけ）。
+    termsVersion = String(data.termsVersion || "");
+    $("terms-body").textContent = String(data.termsText || "");
+    // ★2026-09-22（㉓）バラ売りは、設定で出すと決めたときだけ出します。
+    //   ★出さないときは、選ぶこともできません（選ばれていたらパックに戻します）。
+    if (data.baraOn === true) {
+      $("opt-bara").classList.remove("hidden");
+    } else {
+      $("opt-bara").classList.add("hidden");
+      if (selectedKey === "bara") selectOpt("pack");
+    }
     $("pack-price").textContent = yen(data.pack.price);
     $("bara-price").textContent = yen(data.bara.price);
     if (!data.testMode) $("test-note").textContent = "";
@@ -168,7 +221,30 @@
     $("opt-bara").classList.toggle("selected", key === "bara");
   }
 
+  // ★2026-09-22（㉑）：規約を「開いて読んだ」あとに、はじめて同意のチェックが押せるようになります。
+  //   ★理由＝本部の申し送り「規約を読まずに購入できる形にしないこと」。
+  function onTermsOpened() {
+    if (termsOpened) return;
+    termsOpened = true;
+    $("agree-check").disabled = false;
+    $("agree-row").classList.remove("locked");
+    $("agree-hint").textContent = "お読みいただけましたら、上のチェックを入れてください。";
+  }
+
+  // ★同意のチェックと「購入する」ボタンを連動させる（★これは親切のための仕掛けであり、歯止めではありません。
+  //   ★本当の歯止めは、サーバー側の apiTicketBuyCheckout にあります）
+  function onAgreeChanged() {
+    const ok = $("agree-check").checked === true;
+    $("payBtn").disabled = !ok;
+    $("agree-hint").textContent = ok ? "" : "お読みいただけましたら、上のチェックを入れてください。";
+  }
+
   async function goCheckout() {
+    // ★念のため、画面側でも同意が無ければ送りません（サーバーでも断ります）。
+    if ($("agree-check").checked !== true) {
+      setStatus("利用規約に同意のチェックを入れてください。", false);
+      return;
+    }
     $("payBtn").disabled = true;
     setStatus("決済ページを開いています…", true);
     try {
@@ -176,10 +252,28 @@
         "?action=buy_checkout" +
         "&userId=" + encodeURIComponent(currentUserId) +
         "&userName=" + encodeURIComponent(currentUserName) +
+        "&terms=" + encodeURIComponent(termsVersion) +
         "&product=" + encodeURIComponent(selectedKey));
       if (data && data.ok && data.url) {
         window.location.href = data.url;
       } else {
+        // ★2026-09-22（㉑）：規約まわりで断られたときは、何をすればよいかを書きます。
+        //   ★「決済ページを開けませんでした」だけでは、お客さまが同じ操作を繰り返します。
+        const err = (data && data.error) || "";
+        if (err === "terms_version_mismatch") {
+          setStatus("利用規約が新しくなりました。\nこの画面を閉じて、もう一度お開きください。", false);
+          return;   // ★同じ版で押し直しても通らないので、ボタンは戻しません
+        }
+        if (err === "terms_not_agreed" || err === "terms_not_approved") {
+          setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
+          return;
+        }
+        if (err === "bara_off") {
+          setStatus("バラ売りはいま取り扱っておりません。\nセットをお選びください。", false);
+          selectOpt("pack");
+          $("payBtn").disabled = false;
+          return;
+        }
         $("payBtn").disabled = false;
         setStatus("決済ページを開けませんでした。時間をおいてお試しください。", false);
       }
@@ -194,6 +288,16 @@
     const data = await fetchJson("?action=buy_state&userId=" + encodeURIComponent(currentUserId));
     if (!data || !data.ok) { setStatus("価格の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。", false); return; }
     if (!data.triggerOn) {
+      hideStatus();
+      $("closed").classList.remove("hidden");
+      return;
+    }
+    // ★★2026-09-22（㉑）★**この歯止めは、オーナーが承認していない利用規約で券を売ることを禁止します。**
+    //   ★承認された版と全文、そして必ず出す3つの文がサーバーから来ていなければ、購入の画面そのものを出しません。
+    //   ★「ご来場いただけなかった場合も、払い戻しはいたしません」が欠けたまま売ると、
+    //   ★2026-09-22 のオーナー決定（払い戻さないと先に書いておく）の意味がなくなります。
+    //   ★ここで止めても、もう1段 奥（apiTicketBuyCheckout）でも断ります＝画面だけの歯止めにしません。
+    if (!data.termsVersion || !data.termsText || (data.noticeLines || []).length < 3) {
       hideStatus();
       $("closed").classList.remove("hidden");
       return;
@@ -223,6 +327,11 @@
     $("opt-pack").addEventListener("click", () => selectOpt("pack"));
     $("opt-bara").addEventListener("click", () => selectOpt("bara"));
     $("payBtn").addEventListener("click", goCheckout);
+    // ★2026-09-22（㉑）：規約を開いたら同意できるようになる／同意でボタンが押せるようになる
+    $("termsbox").addEventListener("toggle", function () {
+      if ($("termsbox").open) onTermsOpened();
+    });
+    $("agree-check").addEventListener("change", onAgreeChanged);
 
     await loadState();
   }
