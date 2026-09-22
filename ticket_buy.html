@@ -76,21 +76,8 @@
     <h1>試飲チケット</h1>
     <p class="lead">全国の加盟ロースターで、試飲の一杯に。旅の途中でどうぞ。</p>
 
-    <!-- ★2026-09-22：ここに書いてある値段と枚数は【仮の表示】です。
-         ★サーバーが設定から読んだ値で、画面が出る前に必ず置き換わります。
-         ★仮の値は 2026-09-19 オーナー決定に合わせてあります（当日パック＝地図＋3杯 1,500円）。 -->
-    <div class="opt selected" id="opt-pack" data-key="pack">
-      <img class="thumb hidden" id="img-pack" alt="">
-      <div class="body">
-        <div class="name">当日パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
-        <div class="sub" id="pack-sub">地図＋3杯</div>
-        <div class="note">東海地区のロースターの地図付き／無料の試飲1杯付き</div>
-      </div>
-      <div class="price" id="pack-price">¥1,500</div>
-    </div>
-
     <!-- ★2026-09-22：先行パック（地図＋3杯＋カップ・100セット限定）。★設定で出すと決めたときだけ出ます -->
-    <div class="opt hidden" id="opt-presale" data-key="presale">
+    <div class="opt selected hidden" id="opt-presale" data-key="presale">
       <img class="thumb hidden" id="img-presale" alt="">
       <div class="body">
         <div class="name">先行パック <span class="badge">カップ付き</span></div>
@@ -98,6 +85,19 @@
         <div class="note">東海地区のロースターの地図付き／無料の試飲1杯付き</div>
       </div>
       <div class="price" id="presale-price">¥1,500</div>
+    </div>
+
+    <!-- ★2026-09-22：ここに書いてある値段と枚数は【仮の表示】です。
+         ★サーバーが設定から読んだ値で、画面が出る前に必ず置き換わります。
+         ★仮の値は 2026-09-19 オーナー決定に合わせてあります（当日パック＝地図＋3杯 1,500円）。 -->
+    <div class="opt" id="opt-pack" data-key="pack">
+      <img class="thumb hidden" id="img-pack" alt="">
+      <div class="body">
+        <div class="name">当日パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
+        <div class="sub" id="pack-sub">地図＋3杯</div>
+        <div class="note">東海地区のロースターの地図付き／無料の試飲1杯付き</div>
+      </div>
+      <div class="price" id="pack-price">¥1,500</div>
     </div>
 
     <!-- ★2026-09-22：カップ単品。🔴★券は付きません（★カップは券ではありません） -->
@@ -164,10 +164,26 @@
   // 「パスポートに戻る」＝この買う画面(LIFF)を閉じて元のトーク(パスポートのカードがある場所)へ戻す。
   // パスポートはWebページでなくトーク内のFlexカードのため、URL遷移ではなく liff.closeWindow() を使う。
   const backBtnHtml = '<button type="button" class="backBtn" onclick="backToPassport()">トークに戻る</button>';
+  // ★2026-09-22：券を買った方に出すボタン。★行き先は設定から来ます（★本番では別のIDになるため）。
+  //   ★設定が空なら、★いままでどおり「トークに戻る」を出します（★行き先の無いボタンを出さない）。
+  let historyUrl = "";
+  function passportBtnHtml() {
+    if (!historyUrl) return backBtnHtml;
+    return '<button type="button" class="backBtn" onclick="goHistory()">パスポートで確認する</button>';
+  }
+  // ★別の画面へ飛ぶ書き方は、この事業部で既に動いている形に合わせました
+  //   （checkin.html / board.html と同じ liff.openWindow）。
+  function goHistory() {
+    try {
+      if (liff && liff.isInClient && liff.isInClient()) { liff.openWindow({ url: historyUrl, external: false }); return; }
+    } catch (e) { /* 飛べないときは、下の書き方で開きます */ }
+    location.href = historyUrl;
+  }
+  window.goHistory = goHistory;
 
   let currentUserId = "";
   let currentUserName = "";
-  let selectedKey = "pack";
+  let selectedKey = "pack";   // ★2026-09-22：出し分けの結果で、読み込み時に選び直します
   let campaignActive = false;
   // ★2026-09-22（㉑）：サーバーから受け取った「オーナーが承認した規約の版」。購入のときにそのまま送り返します。
   //   ★画面がこの版を作ることはありません（＝画面が勝手に「同意済み」を作れない）。
@@ -220,6 +236,11 @@
   async function runConfirmStage(sessionId) {
     setStatus("お支払いを確認しています…", true);
     try {
+      // ★2026-09-22：確認の画面は loadState を通らないので、★行き先だけ先に受け取ります。
+      try {
+        const st = await fetchJson("?action=buy_state&userId=");
+        if (st && st.ok) historyUrl = String(st.historyUrl || "").trim();
+      } catch (e) { /* 取れなければ、いままでどおり「トークに戻る」 */ }
       const data = await fetchJson("?action=buy_confirm&session_id=" + encodeURIComponent(sessionId));
       hideStatus();
       const box = $("result");
@@ -232,9 +253,12 @@
       const gotCups = Number(data.cup || 0);
       if (data.ok && (gotTickets > 0 || gotCups > 0)) {
         if (gotTickets > 0) {
-          box.innerHTML = '<div class="done-num">' + gotTickets + '枚</div>試飲チケットを受け取りました。<br>パスポートでいつでも確認できます。' +
-            (gotCups > 0 ? '<br>JCJカップは、当日 受付でお渡しします。' : '') + backBtnHtml;
+          // ★券を買った方＝パスポートに残ります。★そこへ行けるボタンを出します。
+          box.innerHTML = '<div class="done-num">' + gotTickets + '枚</div>試飲チケットを受け取りました。<br>パスポートからいつでも確認できます。' +
+            (gotCups > 0 ? '<br>JCJカップは、当日 受付でお渡しします。' : '') + passportBtnHtml();
         } else {
+          // 🔴★カップだけの方＝★パスポートには出ません。★「確認できます」と書くと嘘になります。
+          //   ★だからここは文言を変えず、★パスポートへのボタンも出しません。
           box.innerHTML = 'JCJカップのお申し込みを承りました。<br>当日 受付でお渡しします。' + backBtnHtml;
         }
       } else if (data.ok && data.already) {
@@ -270,13 +294,23 @@
       const el = $("opt-" + key);
       if (!el) return;
       if (on) { el.classList.remove("hidden"); }
-      else { el.classList.add("hidden"); if (selectedKey === key) selectOpt("pack"); }
+      else { el.classList.add("hidden"); }   // ★選び直しは、このあとでまとめて行います（★当日パックが出ていないことがあるため）
     };
     show("bara", data.baraOn === true);
-    // ★2026-09-22：完売するのは【先行パック】だけです。★当日パックは売り続けます。
-    //   ★以前は画面ぜんたいを止める形にしていましたが、★それだと当日パックまで買えなくなります。
-    show("presale", !!(data.presale && data.presale.on) && data.soldOut !== true);
+    // ★★2026-09-22：★先行と当日の出し分けは、★サーバーが決めた答えをそのまま使います。
+    //   ★期間・完売・人の停止を全部 見たうえでの答えです（★画面が判断しません）。
+    //   ★先行が買えるあいだは、当日パックを出しません（★同じ値段で先行にはカップが付くため）。
+    //   ★先行が完売するか、終わりの時刻を過ぎると、★その場で当日パックに切り替わります。
+    show("presale", !!(data.presale && data.presale.on));
+    show("pack", data.packOn === true);
     show("cup", !!(data.cup && data.cup.on));
+    // ★出ているものが1つも選ばれていなければ、★出ているものの先頭を選びます。
+    //   ★理由＝先行の期間中は当日パックが出ないので、★既定のままだと「出ていないもの」を選んだ状態になります。
+    const shownKeys = ["presale", "pack", "cup", "bara"].filter(function (k) {
+      const el = $("opt-" + k); return el && !el.classList.contains("hidden");
+    });
+    if (shownKeys.length && shownKeys.indexOf(selectedKey) < 0) selectOpt(shownKeys[0]);
+    historyUrl = String(data.historyUrl || "").trim();
     if (data.presale && data.presale.price) {
       $("presale-price").textContent = yen(data.presale.price);
       $("presale-sub").textContent = "地図＋" + data.presale.count + "杯＋カップ";
@@ -366,10 +400,12 @@
           setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
           return;
         }
+        if (err === "pack_off") {
+          setStatus("いまは先行パックのお取り扱いです。\nカップ付きでお得ですので、そちらをお選びください。", false);
+          return;   // ★同じものを押し直しても通らないので、ボタンは戻しません
+        }
         if (err === "presale_off" || err === "cup_off") {
-          setStatus("こちらはいま取り扱っておりません。\n当日パックをお選びください。", false);
-          selectOpt("pack");
-          $("payBtn").disabled = false;
+          setStatus("こちらはいま取り扱っておりません。\nお手数ですが、この画面を閉じて、もう一度お開きください。", false);
           return;
         }
         if (err === "bara_off") {
