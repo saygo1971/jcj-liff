@@ -114,13 +114,19 @@
       try{
         var r=await (await fetch(GAS_URL+"?"+q.toString())).json();
         if(r&&r.ok){ r.shopName=r.shopName||w.shopName; done(r); return; }
-        fail((r&&r.error)||"failed", w.spotId);
+        fail((r&&r.error)||"failed", w.spotId, (r&&r.reason)||geo.geo);
       }catch(e){ ng("通信できませんでした","電波の良い場所で、もう一度お試しください。",w.spotId); }
     };
   }
 
-  function fail(e, spotId){
-    if(e==="no_geo")             ng("いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。",spotId);
+  // ★2026-09-22 追加：reason（なぜ位置が取れなかったか）を受け取る。
+  //   理由＝本番の実データで、断られた30件のうち9件が★「お客さま自身が位置情報の利用を断った」だった。
+  //   それまでは「位置が取れなかった」と同じ文言を出していたため、
+  //   ★自分で断った人に「許可すれば使えます」と伝えていなかった（＝いちばん多い直せる取りこぼし）。
+  function fail(e, spotId, reason){
+    if(e==="no_geo" && reason==="denied")
+                                 ng("位置情報の利用が、許可されていません","この方法は、いまいる場所とお店の場所を照らし合わせて記録します。スマホの設定でLINEに位置情報の利用を許可すると、次からお使いいただけます。<br><br>いますぐチェックインするときは、お店に置いてある<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。",spotId);
+    else if(e==="no_geo")        ng("いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。",spotId);
     else if(e==="acc_too_large") ng("場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。",spotId);
     else if(e==="no_shop_here")  ng("この近くに、JCJのお店が見つかりませんでした","お店の中にいる場合は、<b>このチェックインプレート</b>を探して、スマホをかざしてください。",spotId);
     else if(e==="too_far")       ng("お店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。",spotId);
@@ -147,7 +153,7 @@
     try{
       var w=await (await fetch(GAS_URL+"?"+q.toString())).json();
       if(w&&w.ok){ confirmShop(w,g); return; }
-      fail((w&&w.error)||"failed","");
+      fail((w&&w.error)||"failed","", (w&&w.reason)||g.geo);
     }catch(err){
       ng("通信できませんでした","電波の良い場所で、もう一度お試しください。","");
     }
