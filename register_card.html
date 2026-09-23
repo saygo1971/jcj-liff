@@ -143,7 +143,7 @@
             </div>
             <div class="distbox">
               <div class="from" id="nearFrom">あなたの出発点から</div>
-              <div class="km"><b id="nearKm">–</b><span> km</span></div>
+              <div class="km"><b id="nearKm">–</b><span id="nearKmUnit"> km</span></div>
               <div class="tag" id="nearTag"></div>
             </div>
             <button class="btn-main" id="nearRouteBtn" style="margin-top:12px">行き方を見る</button>
@@ -335,8 +335,16 @@
       $("nearRegion").textContent = (n.pref || "") + (n.city ? "｜" + n.city : "");
       $("nearName").textContent = n.shopName || "";
       $("nearFrom").textContent = startLabel + "（あなたの出発点）から";
-      const km = (n.distanceKm != null) ? n.distanceKm : null;
-      $("nearKm").textContent = (km != null ? km : "–");
+      // 距離の表示（2026-09-23）：1km未満は「94 m」、1km以上は「1.2 km」。
+      //   サーバーが distanceText（単位つきの文字）を送ってくるので、数字と単位に分けて置く。
+      //   ★サーバーが古くて distanceText を送ってこない場合は、これまでどおり「◯ km」で出す＝壊れない。
+      const km = (n.distanceM != null) ? (n.distanceM / 1000)
+               : ((n.distanceKm != null) ? n.distanceKm : null);
+      // ★String() で包む：文字でない値が来ても、画面が真っ白にならないため。
+      const dText = String(n.distanceText || ((n.distanceKm != null) ? (n.distanceKm + " km") : ""));
+      const sp = dText.lastIndexOf(" ");
+      $("nearKm").textContent     = (sp > 0) ? dText.slice(0, sp) : (dText || "–");
+      $("nearKmUnit").textContent = (sp > 0) ? dText.slice(sp)    : "";
       $("nearTag").textContent = distTag(km);
       if(n.photo){ $("nearPhoto").style.backgroundImage = "url('" + n.photo + "')"; $("nearPhoto").textContent = ""; }
       if(n.logo){ $("nearLogo").style.backgroundImage = "url('" + n.logo + "')"; $("nearLogo").textContent = ""; }
