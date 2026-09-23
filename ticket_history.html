@@ -60,10 +60,11 @@
 
 <script>
   const LIFF_ID = "2008851980-Ja5SU8nr";
-  // GAS_URL：履歴窓口(?action=ticket_history)がある配備＝@417/@418（買う・使う画面と同じ）。本番化時に差し替え。
-  // ★2026-09-22：問い合わせ先を @429 → ★@542 へ切り替え（本部号令）。
-  //   ★理由＝@429 には、この2週間ぶんの直し（規約の同意・会場と会期の条件・連打の歯止め）が1つも入っていません。
-  //   ★古い口を向いたまま画面だけ直すと、「直したのに変わらない」が必ず起きます。
+  // GAS_URL：履歴窓口(?action=ticket_history)がある配備の住所（買う・使う画面と同じ）。本番化時に差し替え。
+  // ★★2026-09-23 訂正：ここに版の番号（@417/@418・@542）を書いていましたが、★これは罠でした。
+  //   ★下の住所は【配備の住所】で、★版を出すたびに中身だけが入れ替わります。★住所は変わりません。
+  //   ⇒ ★版の番号をここに書くと、★次に版を出した日から、説明文が嘘になります。★だから書きません。
+  //   ★覚えておくこと＝古い住所を向いたまま画面だけ直すと、「直したのに変わらない」が必ず起きます。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
   const $ = (id) => document.getElementById(id);
@@ -96,13 +97,19 @@
   }
   window.backToTalk = backToTalk;
 
+  // ★★2026-09-22：券の名前。★サーバーが作った文字をそのまま使います。
+  //   ★何で買ったか（先行パック／当日パック…）と、どのイベント用かが入っています。
+  //   🔴★サーバーが作れなかったときは、★いままでどおり「試飲チケット」と出します。
+  //   ★理由＝★名前が出ないより、★券の枚数が見えなくなる方が悪いためです。
+  function ticketName(t) { return (t && t.label) ? t.label : "試飲チケット"; }
+
   function renderActive(list) {
     if (!list.length) { $("sec-active").innerHTML = '<div class="emptyline">使えるチケットはありません</div>'; return; }
     $("sec-active").innerHTML = list.map(function (t) {
       const soon = (t.daysLeft != null && t.daysLeft <= 30);
       const metaText = t.expiry + " まで" + (soon ? "（あと" + t.daysLeft + "日）" : "");
       const sub = t.source ? '<div class="sub">' + esc(t.source) + "</div>" : "";
-      return '<div class="row"><div><div class="main">試飲チケット</div>' + sub + '</div>' +
+      return '<div class="row"><div><div class="main">' + esc(ticketName(t)) + '</div>' + sub + '</div>' +
         '<div class="meta' + (soon ? " soon" : "") + '">' + esc(metaText) + "</div></div>";
     }).join("");
   }
@@ -110,7 +117,8 @@
   function renderUsed(list) {
     if (!list.length) { $("sec-used").innerHTML = '<div class="emptyline">まだ使っていません</div>'; return; }
     $("sec-used").innerHTML = list.map(function (t) {
-      return '<div class="row"><div class="main">' + esc(t.shop || "お店") + "</div>" +
+      return '<div class="row"><div><div class="main">' + esc(t.shop || "お店") + "</div>" +
+        '<div class="sub">' + esc(ticketName(t)) + '</div></div>' +
         '<div class="meta">' + esc(t.at) + "</div></div>";
     }).join("");
   }
@@ -118,7 +126,7 @@
   function renderExpired(list) {
     if (!list.length) { $("sec-expired").innerHTML = '<div class="emptyline">まだありません</div>'; return; }
     $("sec-expired").innerHTML = list.map(function (t) {
-      return '<div class="row"><div class="main">試飲チケット</div>' +
+      return '<div class="row"><div class="main">' + esc(ticketName(t)) + '</div>' +
         '<div class="meta">' + esc(t.expiry) + " 失効</div></div>";
     }).join("");
   }
