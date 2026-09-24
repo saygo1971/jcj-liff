@@ -704,9 +704,13 @@
     Object.keys(byCode).forEach(function(code){
       code=+code;var arr=byCode[code];var placed=[];
       arr.forEach(function(s,k){
-        var x,y;
-        if(s.lat!=null&&s.lng!=null){ var p=projPin(s.lng,s.lat,code); x=p.x; y=p.y; }
-        else { var c; try{c=centroid(prefEls[code]);}catch(e){c={x:PROJ.W/2,y:PROJ.H/2};} x=c.x;y=c.y; if(arr.length>1){var a0=(k/arr.length)*6.283;x+=Math.cos(a0)*12;y+=Math.sin(a0)*12;} }
+        // 🆕 2026-09-24（⑧）★座標がまだ無いお店は、点を出さない。
+        //   ★前は「県の真ん中」に置いていました＝★お店が無い場所に点がある状態でした。
+        //   ★お客さまがその点を見て向かうと、そこには何もありません。
+        //   ★「点が無い」より「違う場所に点がある」ほうが悪い、というオーナー決定（2026-09-24）。
+        //   ★一覧には今までどおり出ますし、カードには「その場でのチェックインができません」と出ます。
+        if(s.lat==null||s.lng==null) return;
+        var p=projPin(s.lng,s.lat,code), x=p.x, y=p.y;
         // 同じ地点で重なるピンだけ少しずらす（実座標はできるだけ保つ）
         var bump=0;placed.forEach(function(pp){var dx=x-pp[0],dy=y-pp[1];if(dx*dx+dy*dy<121)bump++;});
         if(bump>0){var a=bump*2.399;x+=Math.cos(a)*10;y+=Math.sin(a)*10;}
@@ -1213,8 +1217,11 @@
   }
 
   function refresh(){
-    var n=0;
-    pinEls.forEach(function(c){var s=SHOPS[+c.dataset.i];var ok=shopOK(s);c.classList.toggle("dim",!ok);if(ok)n++;});
+    // 🆕 2026-09-24（⑧）★お店の数は【お店】を数える。点を数えない。
+    //   ★座標が無い11軒は点を出さなくなったので、点を数えると「全331店」と出て、
+    //     一覧の342枚と食い違います（2026-09-24 気づいて直した）。
+    var n=SHOPS.filter(shopOK).length;
+    pinEls.forEach(function(c){var s=SHOPS[+c.dataset.i];c.classList.toggle("dim",!shopOK(s));});
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){var code=+g.getAttribute("data-code");g.classList.toggle("dim",curArea!=="全国"&&CODE2AREA[code]!==curArea);});
     var pc={};SHOPS.filter(shopOK).forEach(function(s){if(s.code)pc[s.code]=1;});
     $("count").textContent="全"+n+"店・"+Object.keys(pc).length+"県";
