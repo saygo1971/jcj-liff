@@ -114,6 +114,9 @@
   /* 未参加店の札＝白地＋枠線＋グレー（豆割の札はピンク系なので系統が混ざらない） */
   .tag.p{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500}
   .lack{font-size:10.5px;color:var(--sub);margin-top:5px}
+  /* 🆕 2026-09-24（⑦）座標がまだ無いお店。★マイルの行が「ただ出ない」と壊れて見えるので、一言 出す */
+  .nogeo{font-size:11px;color:var(--sub);font-weight:700;margin-top:7px;line-height:1.5}
+  .nogeo b{color:var(--brown-d)}
   /* 未参加店のピン＝同じ深ピンクのまま、塗りを抜いて輪郭だけ（★色は増やさない） */
   .pin.pend{fill:#fff;stroke:var(--pin);stroke-width:2.4px}
   /* 🆕 2026-09-24 ①全国・エリアを見ているあいだは、お店の丸が指を受け取らない＝県の形だけが押せる */
@@ -786,7 +789,7 @@
     b.classList.remove("hidden");
   }
   // ── 地図の拡大（エリア単位）──viewBoxをそのエリアの県の外接範囲へ差し替え。線の太さはCSSで一定、ピンrはviewBox幅に比例させ見た目を一定に。
-  var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, ORIG_VB_H=984, zoomedArea=null;
+  var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, ORIG_VB_H=984, zoomedArea=null, zoomedPref=0;   // 🆕 zoomedPref＝いま県まで拡大している県（0＝していない）
   function applyPinScale(vbW){ var r=7*(vbW/ORIG_VB_W); pinEls.forEach(function(c){c.setAttribute("r",r);}); }
   function showBack(on){ var b=$("zoomBack"); if(b) b.classList.toggle("hidden",!on); }
   // ── 沖縄の別枠（inset）──全国では左上の元位置。九州・沖縄に拡大したときだけ、別枠（県の形＋枠＋ラベル）と沖縄のピンを“同じ変換”で拡大後の画面の左下へ。九州・沖縄以外の拡大では出さない。ピンのrはapplyPinScaleが統一＝見た目サイズは一定。
@@ -852,14 +855,39 @@
     if(bw/bh<AR){bw=bh*AR;}else{bh=bw/AR;}   // 地図枠の縦横比に合わせる＝枠は伸び縮みしない
     return [cx-bw/2,cy-bh/2,bw,bh];
   }
+  // 🆕 2026-09-24（⑥）県を選んだら、その県の形いっぱいに地図を拡大する（もう一段）。
+  //   ★エリアの拡大と同じ仕組み（見える範囲の差し替え＝viewBox）を、県ひとつに使っています。
+  //   ★_mainbox は「いちばん大きなかたまり」を取るので、離れた島は枠に入りません
+  //     （東京の伊豆・小笠原、鹿児島の南西諸島など）。
+  //   ★最後に地図枠の縦横比に合わせるので、細長い県でも画面からはみ出しません。
+  //   ★沖縄(47)は全国マップで別枠に描いているため、この拡大は使いません（false を返す）。
+  function prefViewBox(code){
+    if(code===47) return null;
+    var g=prefEls[code]; if(!g) return null;
+    var P=_pts(g); if(P.length<3) return null;
+    var mb=_mainbox(P);
+    var x0=mb[0],y0=mb[1],x1=mb[2],y1=mb[3];
+    var padx=Math.max((x1-x0)*0.18,8), pady=Math.max((y1-y0)*0.18,8);
+    x0-=padx;x1+=padx;y0-=pady;y1+=pady;
+    var bw=x1-x0,bh=y1-y0,cx=(x0+x1)/2,cy=(y0+y1)/2,AR=ORIG_VB_W/ORIG_VB_H;
+    if(bw/bh<AR){bw=bh*AR;}else{bh=bw/AR;}   // 地図枠の縦横比に合わせる＝はみ出さない
+    return [cx-bw/2,cy-bh/2,bw,bh];
+  }
+  function zoomToPref(code){
+    var vb=prefViewBox(code); if(!vb) return false;
+    svg.setAttribute("viewBox",vb[0]+" "+vb[1]+" "+vb[2]+" "+vb[3]);
+    zoomedPref=code; applyPinScale(vb[2]); showBack(true);
+    okiHide();   // 県まで寄ったら、沖縄の別枠は出さない
+    return true;
+  }
   function zoomToArea(area){
     var vb=areaViewBox(area); if(!vb) return;
     svg.setAttribute("viewBox",vb[0]+" "+vb[1]+" "+vb[2]+" "+vb[3]);
-    zoomedArea=area; applyPinScale(vb[2]); showBack(true);
+    zoomedArea=area; zoomedPref=0; applyPinScale(vb[2]); showBack(true);   // 🆕 エリアに戻したら県の拡大は解除
     if(area==="九州・沖縄") okiToCorner(vb); else okiHide();   // 沖縄の別枠＋ピンは九州・沖縄の拡大時だけ左下に出す
   }
   window.zoomOut=function(){
-    svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
+    svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; zoomedPref=0; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
     buildCityChips(0); setPinTap(false);   // 🆕 案B（全国に戻る＝県を選んでいない）＋①丸を押せなくする
     okiHome();   // 沖縄の別枠＋ピンを全国の位置（左上）に戻す
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
@@ -893,9 +921,12 @@
         }
       }
     } else {
-      // 既にそのエリアに拡大中 → 中の県で絞り込み（拡大はそのまま）
+      // 既にそのエリアに拡大中 → 🆕（⑥）その県まで もう一段 拡大して、中の県で絞り込み
       if(prefEls[code]) prefEls[code].classList.add("sel");
-      buildCityChips(code); setPinTap(true);       // 🆕 案B（★先に作る）＋①県を選んだので丸を押せる
+      if(zoomedPref!==code){
+        zoomToPref(code);                          // 🆕 ⑥（沖縄など拡大しない県では、そのまま）
+        buildCityChips(code); setPinTap(true);     // 🆕 案B（★先に作る）＋①県を選んだので丸を押せる
+      }
       var arr=(byCode[code]||[]).filter(shopOK);
       showPicks(arr, FN(code)+"のお店", arr.length?0:code);
     }
@@ -943,10 +974,22 @@
     if(c) f+='<div>🗓 定休日：'+c+'</div>';
     return f?'<div class="facts">'+f+'</div>':'';
   }
+  // 🆕 2026-09-24（⑦）座標がまだ無いお店に出す一言。
+  //   ★なぜ要るか＝座標が無いと mileInfo が null を返し、マイルの行が【ただ消えます】。
+  //     何も書かないと「壊れている」ように見えます（オーナー指摘 2026-09-24）。
+  //   ★「できません」で終わらせず、できることを書く。
+  //   ★根拠＝文字を送るチェックインは座標を見ていません（コード.js 4428〜4439行。
+  //     座標が無いときは距離ぶんが付かず、マイルは 10 のまま。チェックインそのものは通ります）。
+  //     ★これはコードを読んで確かめたもので、実機のLINEで送って試してはいません。
+  function nogeoHTML(s){
+    if(s.lat!=null&&s.lng!=null) return "";
+    return '<div class="nogeo">この場所では、その場でのチェックインができません。<br>'+
+           'トークに <b>「'+esc(s.name)+' に来ました」</b> と送ると、チェックインできます</div>';
+  }
   function cardHTML(s){
     return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho'+(s.pending===1?" nophoto":"")+'">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+s.pref+'</div><div class="nm">'+s.name+'</div>'+
-      factsHTML(s)+mileHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+lackHTML(s)+'</div></div>';
+      factsHTML(s)+mileHTML(s)+nogeoHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+lackHTML(s)+'</div></div>';
   }
   // 🆕 2026-09-24（③案え）一覧の中に出す市区町村の段。★地図の段と同じ数え方（cityStatsFor）を使う。
   function cityRowHTML(code){
