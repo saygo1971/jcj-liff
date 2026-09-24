@@ -107,13 +107,11 @@
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
   .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;overflow:hidden}
-  /* 未参加店の写真枠＝NO PHOTO。★エラーに見せない（×印・赤・太枠を使わない。薄い地＋控えめなグレー） */
-  .card .pho.nophoto{background:#F7F4F0;border-right:1px solid var(--line);color:#A69C93;
-    flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:.14em}
-  .card .pho.nophoto .npd{width:22px;height:1px;background:var(--line)}
+  /* 🆕 2026-09-24（⑨-1）未参加店の写真枠＝無地の落ち着いた面。
+     ★前は「NO PHOTO」と出していました。★英語で「無い」と宣言しない（オーナー指示）。 */
+  .card .pho.nophoto{background:#F7F4F0;border-right:1px solid var(--line)}
   /* 未参加店の札＝白地＋枠線＋グレー（豆割の札はピンク系なので系統が混ざらない） */
   .tag.p{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500}
-  .lack{font-size:10.5px;color:var(--sub);margin-top:5px}
   /* 🆕 2026-09-24（⑦）座標がまだ無いお店。★マイルの行が「ただ出ない」と壊れて見えるので、一言 出す */
   .nogeo{font-size:11px;color:var(--sub);font-weight:700;margin-top:7px;line-height:1.5}
   .nogeo b{color:var(--brown-d)}
@@ -962,12 +960,12 @@
     return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";
   }
   // ★未参加店に「まだ無いもの」を小さく後ろに置く（誘い文の原則＝事務情報は小さく下へ）
-  function lackHTML(s){ return s.pending===1?'<div class="lack">ロゴ・豆割はまだありません</div>':""; }
-  // 写真枠：参加店＝写真（無ければ☕）／★未参加店＝NO PHOTO
+  // 写真枠：参加店＝写真（無ければ☕）／★未参加店＝無地の面（2026-09-24 ⑨-1）
   //   ★ロゴ帳と同じ「頭文字」は使わない。頭文字は「ロゴをまだ登録していないお店」という
   //   別の意味を既に持っているので、借りると意味まで借りてしまう（オーナー指摘 2026-09-18）。
+  //   ★「NO PHOTO」の文字はやめました。無いものを英語で宣言しないため（オーナー指示 2026-09-24）。
   function ph(s){
-    if(s.pending===1) return '<div class="np">NO PHOTO</div><div class="npd"></div>';
+    if(s.pending===1) return "";
     return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";
   }
   // 定休日ガード：定休日らしい文字だけ表示（キャンペーン文/ハッシュタグ/@等の混入を弾く）
@@ -990,10 +988,20 @@
     return '<div class="nogeo">この場所では、その場でのチェックインができません。<br>'+
            'トークに <b>「'+esc(s.name)+' に来ました」</b> と送ると、チェックインできます</div>';
   }
+  // 🆕 2026-09-24（⑨-3）カードの1行目に市区町村まで出す。
+  //   ★前は「東京都」だけ＝162軒すべて同じ文字で、場所の手がかりが1つもありませんでした。
+  //   ★市区町村は住所から切り出しています（配られる中身は増えていません）。
+  //   ★切り出せないお店は、今までどおり都道府県だけ出します。
+  function prefCityHTML(s){
+    var c=cityOf(s);
+    return esc(s.pref)+(c?' '+esc(c):'');
+  }
+  // ★2026-09-24（⑨-2）「ロゴ・豆割はまだありません」の行を消しました。
+  //   ★無いものを言わない（参加店に「試飲チケットはありません」と書かないのと同じ）。
   function cardHTML(s){
     return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho'+(s.pending===1?" nophoto":"")+'">'+ph(s)+'</div><div class="in">'+
-      '<div class="pref">'+s.pref+'</div><div class="nm">'+s.name+'</div>'+
-      factsHTML(s)+mileHTML(s)+nogeoHTML(s)+'<div class="tags">'+tagHTML(s)+'</div>'+lackHTML(s)+'</div></div>';
+      '<div class="pref">'+prefCityHTML(s)+'</div><div class="nm">'+s.name+'</div>'+
+      factsHTML(s)+mileHTML(s)+nogeoHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
   }
   // 🆕 2026-09-24（③案え）一覧の中に出す市区町村の段。★地図の段と同じ数え方（cityStatsFor）を使う。
   function cityRowHTML(code){
@@ -1067,9 +1075,13 @@
     // ★案A確定版の誘い文（2026-09-18・オーナー指摘を受けた書き直し）
     //   謝らない／JCJの事情を書かない／できることを先に、無いものを後に／
     //   最後の一行は「この店が足りない」でなく「参加には値打ちがある」向きに。
-    $("sdPendLead").textContent = "この一軒は、JCJが選びました。";
-    $("sdPendBody").innerHTML   = "チェックインできます。旅の記録も、マイルも、いつもと同じように残ります。<br>"
-                                + "ロゴと豆割は、参加されているお店のものです。";
+    // ★2026-09-24（⑨-4）一覧の札と同じ言葉に揃えました。
+    //   ★前は「JCJが選びました」＝一覧の「JCJが見つけた一軒」と違うことを言っていました。
+    //   ★「選んだ」とは言いません（選考はしていないため）。
+    $("sdPendLead").textContent = "JCJが見つけた一軒";
+    // ★2026-09-24（⑨-5）「ロゴと豆割は、参加されているお店のものです。」を消しました。
+    //   ★無いものを言わない（⑨-2と同じ理由）。
+    $("sdPendBody").innerHTML   = "チェックインできます。旅の記録も、マイルも、いつもと同じように残ります。";
 
     var link=pendFormLink(s);
     $("sdForShopMsg").innerHTML = link
