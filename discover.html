@@ -743,7 +743,7 @@
     //     ★いまは snapToLand_ で「いちばん近い陸」へ寄せます。★数字は検算に書いてあります。
     pinsG=document.createElementNS("http://www.w3.org/2000/svg","g");svg.appendChild(pinsG);pinEls=[];
     Object.keys(byCode).forEach(function(code){
-      code=+code;var arr=byCode[code];var placed=[];
+      code=+code;var arr=byCode[code];
       arr.forEach(function(s,k){
         // 🆕 2026-09-24（⑧）★座標がまだ無いお店は、点を出さない。
         //   ★前は「県の真ん中」に置いていました＝★お店が無い場所に点がある状態でした。
@@ -752,9 +752,15 @@
         //   ★一覧には今までどおり出ますし、カードには「その場でのチェックインができません」と出ます。
         if(s.lat==null||s.lng==null) return;
         var p=projPin(s.lng,s.lat,code), x=p.x, y=p.y;
-        // 同じ地点で重なるピンだけ少しずらす（実座標はできるだけ保つ）
-        var bump=0;placed.forEach(function(pp){var dx=x-pp[0],dy=y-pp[1];if(dx*dx+dy*dy<121)bump++;});
-        if(bump>0){var a=bump*2.399;x+=Math.cos(a)*10;y+=Math.sin(a)*10;}
+        // 🆕 2026-09-24（案あ・オーナー決定）★重なりずらしを【やめました】。
+        //   ★前は「別のピンと11目盛り（約23km）以内なら、10目盛り（約21km）横へずらす」作りでした。
+        //   ★実測＝210個のうち156個（74%）がずらされ、本当の場所からのずれは
+        //     中央 約19km・最大 約27km。ほぼ正確なのは53個だけでした。
+        //   ★決めた理由＝ピンは「そこにお店がある」という約束。19kmずらすのは その約束を破ります。
+        //     ★重なって見えるのは見た目の問題、ずれは約束の問題で、大きさが違います。
+        //     ★重なりは拡大すれば解けます（拡大するとピンは小さくなる作りです）。
+        //   ★おまけに、ずらす量は「先に置いたピン」で決まっていたので、1個 変わると
+        //     以降が連鎖して変わりました。★やめたので、同じ座標なら何度 作っても同じ場所になります。
         x=Math.max(6,Math.min(PROJ.W-6,x));y=Math.max(6,Math.min(PROJ.H-6,y));
         // 🆕 2026-09-24 陸に吸着：★その店に【いちばん近い陸】へ寄せる。
         //   ★前（2026-08-28）は「その県の四角い枠の中心」へ寄せる作りでした。
@@ -767,7 +773,6 @@
         //     （★「県の中心へ寄せる」と、江東区の店が新宿の方へ動いてしまいます）。
         //   ★沖縄も対象にします（別枠に描いてあるので、座標の入れ直しをしてから判定する）。
         var sp=snapToLand_(prefEls[code],x,y); x=sp.x; y=sp.y;
-        placed.push([x,y]);
         var el=document.createElementNS("http://www.w3.org/2000/svg","circle");
         el.setAttribute("cx",x);el.setAttribute("cy",y);el.dataset.bx=x;el.dataset.by=y;
         el.setAttribute("r",7);el.setAttribute("class","pin"+(s.pending===1?" pend":""));el.dataset.i=s.idx;
