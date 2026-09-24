@@ -248,6 +248,8 @@
       <div class="frow"><span class="lab">こだわり</span>
         <button class="chip" data-tag="beans" onclick="setTag(this)">🫘 豆割あり</button>
       </div>
+      <!-- 🆕 2026-09-24（案B）市区町村でしぼる。★県を選んだときだけ出す（中身は buildCityChips が入れる） -->
+      <div class="frow hidden" id="cityRow"><span class="lab">市区町村</span></div>
     </div>
 
     <div class="mapwrap" id="mapView">
@@ -424,6 +426,11 @@
 
   var svg, pinsG, pinEls=[], SHOPS=[], byCode={}, prefEls={}, PREFCOUNT=0;
   var curArea="全国", curBeans=false, USER_ID="", IS_SAMPLE=false;
+  // 🆕 2026-09-24（案B）市区町村でしぼる。curCity="" ＝しぼっていない／"__other__" ＝［その他］。
+  //   curPrefCode ＝いま選んでいる県。★県を選んでいないときは 0 で、市区町村の段は出さない。
+  var curCity="", curPrefCode=0, CITY_TOP=[];
+  const CITY_MIN=20;   // ★その県のお店がこの数より少なければ、市区町村の段は出さない（そのまま見た方が早いため）
+  const CITY_MAX=8;    // ★ボタンは多い順にこの数まで。残りは［その他］にまとめる
   var USER_CTX={home:null,homePrecise:false,visited:{},now:0};
   var NINETY_DAYS=90*24*60*60*1000;
   function haversineKm(a1,o1,a2,o2){var R=6371,dA=(a2-a1)*Math.PI/180,dO=(o2-o1)*Math.PI/180,h=Math.sin(dA/2)*Math.sin(dA/2)+Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dO/2)*Math.sin(dO/2);return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));}
@@ -609,6 +616,44 @@
     AREAS.forEach(function(a){var b=document.createElement("button");b.className="chip";b.textContent=a;b.dataset.area=a;b.onclick=function(){setArea(b);};row.appendChild(b);});
   }
 
+  // 🆕 2026-09-24（案B）市区町村のボタンを作り直す。★県を選んだときだけ出す。
+  //   code=0（県を選んでいない）や、その県のお店が CITY_MIN より少ないときは、段ごと出さない。
+  function buildCityChips(code){
+    var row=$("cityRow"); if(!row) return;
+    curCity=""; CITY_TOP=[]; curPrefCode=0;
+    row.innerHTML='<span class="lab">市区町村</span>';
+    var arr=code?(byCode[code]||[]):[];
+    if(!code || arr.length<CITY_MIN){ row.classList.add("hidden"); return; }
+    curPrefCode=code;
+    var cnt={}, kinds=[];
+    arr.forEach(function(s){ var c=cityOf(s); if(!c) return; if(cnt[c]==null){cnt[c]=0;kinds.push(c);} cnt[c]++; });
+    kinds.sort(function(a,b){ return (cnt[b]-cnt[a]) || (a<b?-1:1); });   // 多い順／同じ数なら文字の順
+    CITY_TOP=kinds.slice(0,CITY_MAX);
+    var covered=0; CITY_TOP.forEach(function(c){ covered+=cnt[c]; });
+    var rest=arr.length-covered;
+    function chip(key,label,on){
+      var b=document.createElement("button");
+      b.className="chip"+(on?" on":""); b.textContent=label; b.dataset.city=key;
+      b.onclick=function(){ setCity(b); };
+      row.appendChild(b);
+    }
+    chip("","すべて "+arr.length,true);
+    CITY_TOP.forEach(function(c){ chip(c,c+" "+cnt[c],false); });
+    if(rest>0) chip("__other__","その他 "+rest,false);
+    row.classList.remove("hidden");
+  }
+  window.setCity=function(el){
+    curCity=el.dataset.city||"";
+    [].forEach.call(el.parentNode.querySelectorAll(".chip"),function(c){c.classList.remove("on");});
+    el.classList.add("on");
+    refresh();
+    // 地図の下の一覧も、いま選んでいる県のぶんを出し直す
+    if(curPrefCode){
+      var arr=(byCode[curPrefCode]||[]).filter(shopOK);
+      showPicks(arr, FN(curPrefCode)+"のお店", arr.length?0:curPrefCode);
+    }
+  };
+
   function centroid(g){var sr=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal,r=g.getBoundingClientRect();return {x:(r.left+r.width/2-sr.left)/sr.width*vb.width,y:(r.top+r.height/2-sr.top)/sr.height*vb.height};}
 
   // GPS正確な投影（地図SVGと同じ式）。経度→X（cos補正）、緯度→Y。
@@ -648,8 +693,50 @@
     });
   }
 
+  // 🆕 2026-09-24（案B）住所から市区町村を切り出す。★配られる中身は増やしていません（住所は前から来ています）。
+  //   ・郵便番号を落とす → 先頭の都道府県名を落とす → 最初の「市／区／町／村」までを取る
+  //   ・政令指定都市は「名古屋市」までにまとめる（★区まで分けるとボタンが名古屋の区だけで埋まるため）
+  //   ・★四日市市・廿日市市・野々市市は、先に見ないと「四日市」で切れてしまうので先に当てる
+  //   ・★取れない住所（区が抜けている等）は "" を返し、［その他］に出す＝お店が消えることはない
+  const CITY_EXC=["四日市市","廿日市市","野々市市"];
+  function cityOf(s){
+    if(s._city!=null) return s._city;                      // 1軒につき1回だけ計算する
+    var a=stripZip(s.address||"");
+    if(s.pref && a.indexOf(s.pref)===0) a=a.slice(s.pref.length);
+    a=a.replace(/^\s+/,"");
+    var c="";
+    for(var i=0;i<CITY_EXC.length;i++){ if(a.indexOf(CITY_EXC[i])===0){ c=CITY_EXC[i]; break; } }
+    if(!c){ var m=/^(.+?[市区町村])/.exec(a); c=m?m[1]:""; }
+    s._city=c; return c;
+  }
+  // ★［その他］＝上位のボタンに入らなかったお店（市区町村が取れなかったお店も、ここに出る）
+  function isOtherCity(s){ return CITY_TOP.indexOf(cityOf(s))<0; }
+  function cityOK(s){
+    if(!curCity) return true;                              // しぼっていない
+    if(!curPrefCode || s.code!==curPrefCode) return true;  // ★別の県のお店は、このしぼりの対象外（消さない）
+    return (curCity==="__other__") ? isOtherCity(s) : (cityOf(s)===curCity);
+  }
+
+  // 🆕 2026-09-24（案A）並べ方。★参加しているお店が先（並びは1つも動かさない）／未参加のお店だけ混ぜる。
+  //   ★混ぜ方はお店のIDの文字だけから決める＝何度 見ても、誰が見ても同じ並びになる（日替わりにはしない）。
+  function pendOrderKey(s){
+    var t=String(s.id||s.name||""), h=2166136261;
+    for(var i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=(h*16777619)>>>0; }
+    return h;
+  }
+  function orderForDisplay(list){
+    var joined=[], pend=[];
+    list.forEach(function(s){ (s.pending===1?pend:joined).push(s); });
+    pend.sort(function(a,b){
+      var d=pendOrderKey(a)-pendOrderKey(b);
+      if(d!==0) return d;
+      return String(a.id)<String(b.id)?-1:1;               // ★同じ数になっても並びが揺れないようにする
+    });
+    return joined.concat(pend);
+  }
+
   function regionOK(s){return curArea==="全国"||s.area===curArea;}
-  function shopOK(s){return regionOK(s)&&(!curBeans||s.beans===1);}
+  function shopOK(s){return regionOK(s)&&(!curBeans||s.beans===1)&&cityOK(s);}
 
   function hidePicks(){ var b=$("picks"); if(b){ b.classList.add("hidden"); b.innerHTML=""; } }
   // 地図で選んだ県/エリアのお店を、地図の下に並べる（案1）。お店を押すと詳細。お店がまだ無い県は推薦導線を残す。
@@ -662,7 +749,7 @@
     } else {
       // 一覧タブと同じ写真つきカード(cardHTML)を使う＝情報量を揃える（新しい見た目を発明しない）
       b.innerHTML='<div class="pick-hdr"><b>'+header+'</b><span class="pick-cnt">'+shops.length+'店</span></div>'+
-        shops.map(cardHTML).join("");
+        orderForDisplay(shops).map(cardHTML).join("");   // ★参加しているお店が先／未参加は固定の混ぜ方（案A）
     }
     b.classList.remove("hidden");
   }
@@ -741,6 +828,7 @@
   }
   window.zoomOut=function(){
     svg.setAttribute("viewBox",ORIG_VB); zoomedArea=null; applyPinScale(ORIG_VB_W); showBack(false); hidePicks();
+    buildCityChips(0);   // 🆕 案B（全国に戻る＝県を選んでいない）
     okiHome();   // 沖縄の別枠＋ピンを全国の位置（左上）に戻す
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
   };
@@ -764,15 +852,18 @@
         if(code===47){
           // ★沖縄は全国マップで独立した別枠＝タップしたら「沖縄のお店」を直接出す（九州全体ではなく沖縄だけ）
           if(prefEls[code]) prefEls[code].classList.add("sel");
+          buildCityChips(code);   // 🆕 案B（★先に作る。しぼりが前の県のまま残らないように）
           var oa=(byCode[code]||[]).filter(shopOK);
           showPicks(oa, FN(code)+"のお店", oa.length?0:code);
         } else {
+          buildCityChips(0);      // 🆕 案B（エリア全体＝県を選んでいないので出さない）
           showAreaPicks(area);
         }
       }
     } else {
       // 既にそのエリアに拡大中 → 中の県で絞り込み（拡大はそのまま）
       if(prefEls[code]) prefEls[code].classList.add("sel");
+      buildCityChips(code);       // 🆕 案B（★先に作る）
       var arr=(byCode[code]||[]).filter(shopOK);
       showPicks(arr, FN(code)+"のお店", arr.length?0:code);
     }
@@ -781,7 +872,9 @@
   window.setArea=function(el){
     curArea=el.dataset.area;
     [].forEach.call(el.parentNode.querySelectorAll(".chip"),function(c){c.classList.remove("on");});
-    el.classList.add("on");refresh();
+    el.classList.add("on");
+    buildCityChips(0);   // 🆕 案B（エリアを変えたら、市区町村のしぼりは外す）
+    refresh();
     // ★エリア名チップ＝そのエリアに拡大＋そのエリアのお店（「全国」チップで全国に戻る）
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){g.classList.remove("sel");});
     if(curArea==="全国"){ zoomOut(); } else { zoomToArea(curArea); showAreaPicks(curArea); }
@@ -828,7 +921,7 @@
     var codes=[];arr.forEach(function(s){if(s.code&&codes.indexOf(s.code)<0)codes.push(s.code);});
     codes.sort(function(a,b){return a-b;});
     codes.forEach(function(code){
-      var g=arr.filter(function(s){return s.code===code;});
+      var g=orderForDisplay(arr.filter(function(s){return s.code===code;}));   // ★案A
       out+='<div class="prefhdr">'+FN(code)+' <b>'+g.length+'店</b></div>';
       g.forEach(function(s){out+=cardHTML(s);});
     });
