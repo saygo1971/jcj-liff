@@ -68,7 +68,11 @@
   .inset-box{fill:none;stroke:#b7a488;stroke-width:1.6;stroke-dasharray:5 4}
   .inset-label{fill:#6f5b44;font-size:30px;font-weight:700;font-family:"Noto Sans JP",system-ui,sans-serif}
   .pin{fill:var(--pin);stroke:#fff;stroke-width:2px;cursor:pointer;transition:.15s}
-  .pin.dim{fill:var(--pin-dim);opacity:.45}
+  /* 🆕 2026-09-24（案1）薄いピン＝★枠線も薄くする。★透け具合は 0.45→0.8 に上げました。
+     ★理由＝薄い色 #d9c3b2 は、お店が在る県の地の色 #C8A46F と近く、0.45だと地に溶けて
+       「点が無い」ように見えます（★実測した色の値で判断）。
+     ★参加しているお店のピン＝赤い丸→薄い丸（枠線は白のまま）。 */
+  .pin.dim{fill:var(--pin-dim);stroke:#fff;opacity:.8}
   .pin.big{stroke-width:2.6px}
   .gauge{margin:2px 6px 6px;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 11px}
   .gauge .top{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--brown-d);margin-bottom:5px}
@@ -117,6 +121,11 @@
   .nogeo b{color:var(--brown-d)}
   /* 未参加店のピン＝同じ深ピンクのまま、塗りを抜いて輪郭だけ（★色は増やさない） */
   .pin.pend{fill:#fff;stroke:var(--pin);stroke-width:2.4px}
+  /* 🆕 2026-09-24（案1）未参加店の薄いピン＝★白い丸のまま、枠線だけ赤→薄い色にする。
+     ★前は .pin.pend の「白い塗り」が .pin.dim の指定に勝っていて、
+       ★変わるのは透け具合だけ＝色が1つも変わっていませんでした（2026-09-24 実測）。
+     ★白い塗りは残します＝地の色（#C8A46F）との差が大きく、点が消えません。 */
+  .pin.pend.dim{fill:#fff;stroke:var(--pin-dim);stroke-width:2.4px;opacity:.8}
   /* 🆕 2026-09-24 ①全国・エリアを見ているあいだは、お店の丸が指を受け取らない＝県の形だけが押せる */
   .jp-map.nopin .pin{pointer-events:none}
   /* 🆕 2026-09-24 ⑤市区町村のボタンは2段に折り返して全部 見せる（★横に隠さない） */
@@ -652,7 +661,8 @@
     curCity=""; CITY_TOP=[]; curPrefCode=0;
     row.innerHTML='<span class="lab">市区町村</span>';
     var st=cityStatsFor(code);
-    if(!st){ row.classList.add("hidden"); return; }
+    if(!st){ row.classList.add("hidden"); refresh(); return; }   // 🔴🆕 ★ここでも塗り直す
+
     curPrefCode=code; CITY_TOP=st.top;
     st.items.forEach(function(it,k){
       var b=document.createElement("button");
@@ -661,6 +671,7 @@
       row.appendChild(b);
     });
     row.classList.remove("hidden");
+    refresh();   // 🔴🆕 2026-09-24 ★しぼりを空に戻したので、ピンの色も塗り直す
   }
 
   // 市区町村を選ぶ（★地図の段からも、一覧の段からも、ここを通る＝ふるまいが1つに決まる）
