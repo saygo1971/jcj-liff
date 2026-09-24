@@ -109,6 +109,9 @@
   .pick-rec{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:800;font-size:13.5px;border-radius:11px;padding:11px;text-decoration:none}
   .prefhdr{font-size:11.5px;font-weight:800;color:var(--brown-d);padding:6px 2px 0;display:flex;align-items:center;gap:6px}
   .prefhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
+  /* 🆕 2026-09-24（案1）市区町村でしぼったときの、かたまりの見出し */
+  .subhdr{font-size:11.5px;font-weight:800;color:var(--brown-d);padding:9px 2px 3px;display:flex;align-items:center;gap:6px}
+  .subhdr b{background:#fbeee6;color:var(--accent-d);font-size:10.5px;padding:1px 8px;border-radius:999px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;cursor:pointer}
   .card .pho{width:132px;min-height:124px;flex:none;background:linear-gradient(135deg,#c3a57c,#7c6448);display:flex;align-items:center;justify-content:center;color:#fff8ee;font-size:26px;overflow:hidden}
   /* 🆕 2026-09-24（⑨-1）未参加店の写真枠＝無地の落ち着いた面。
@@ -700,6 +703,32 @@
   var PROJ={lonMin:123.6602,latMax:45.5232,SX:52.4105,SY:52.4105,cosMid:Math.cos(34.8888*Math.PI/180),W:1000,H:984,okiS:0.99701,okiTx:92,okiTy:-878.576};
   function projPin(lng,lat,code){ var x=(lng-PROJ.lonMin)*PROJ.cosMid*PROJ.SX, y=(PROJ.latMax-lat)*PROJ.SY; if(code===47){ x=x*PROJ.okiS+PROJ.okiTx; y=y*PROJ.okiS+PROJ.okiTy; } return {x:x,y:y}; }
 
+  // 🆕 2026-09-24 地図全体の座標を、県の形の「自分の座標」へ入れ直す。
+  //   ★沖縄は別枠（動かせる入れ物）の中に描いてあるため、これをしないと当たり判定が合いません。
+  //   ★別枠に入っていない県では、この計算は「そのまま」になります（結果は変わりません）。
+  function svgLocalPoint_(g,x,y){
+    var p=svg.createSVGPoint(); p.x=x; p.y=y;
+    try{
+      var root=svg.getCTM(), gm=g.getCTM();
+      if(!root||!gm) return p;
+      var M=root.inverse().multiply(gm);   // 県の座標 → 地図全体の座標
+      return p.matrixTransform(M.inverse());
+    }catch(e){ return p; }
+  }
+  function isInPref_(g,x,y){ try{ return !!(g&&g.isPointInFill&&g.isPointInFill(svgLocalPoint_(g,x,y))); }catch(e){ return false; } }
+  // その店にいちばん近い陸へ寄せる。★見つからなければ1ミリも動かさない（勝手に遠くへ運ばない）。
+  function snapToLand_(g,x,y){
+    if(!g||!g.isPointInFill) return {x:x,y:y};
+    if(isInPref_(g,x,y)) return {x:x,y:y};
+    for(var r=0.5;r<=12.0001;r+=0.5){
+      for(var a=0;a<360;a+=15){
+        var nx=x+Math.cos(a*Math.PI/180)*r, ny=y+Math.sin(a*Math.PI/180)*r;
+        if(isInPref_(g,nx,ny)) return {x:nx,y:ny};
+      }
+    }
+    return {x:x,y:y};
+  }
+
   function buildMap(){
     svg=document.querySelector(".jp-map");
     byCode={};SHOPS.forEach(function(s,i){s.idx=i;s.code=PREF2CODE[s.pref];if(s.code){(byCode[s.code]=byCode[s.code]||[]).push(s);}});
@@ -708,7 +737,10 @@
       if(byCode[code])g.classList.add("has");
       g.style.cursor="pointer";g.addEventListener("click",function(){onPref(code);});
     });
-    // ピンを実座標(緯度経度)で地図と同じ投影で配置＝街の上に正しく乗る
+    // ピンを実座標(緯度経度)で地図と同じ投影で配置。
+    //   ★2026-09-24 訂正：ここの説明は以前「全ピン陸に」と書いていましたが、
+    //     ★実測で210個のうち23個が海や別の県に乗っていました（成り立っていませんでした）。
+    //     ★いまは snapToLand_ で「いちばん近い陸」へ寄せます。★数字は検算に書いてあります。
     pinsG=document.createElementNS("http://www.w3.org/2000/svg","g");svg.appendChild(pinsG);pinEls=[];
     Object.keys(byCode).forEach(function(code){
       code=+code;var arr=byCode[code];var placed=[];
@@ -724,9 +756,17 @@
         var bump=0;placed.forEach(function(pp){var dx=x-pp[0],dy=y-pp[1];if(dx*dx+dy*dy<121)bump++;});
         if(bump>0){var a=bump*2.399;x+=Math.cos(a)*10;y+=Math.sin(a)*10;}
         x=Math.max(6,Math.min(PROJ.W-6,x));y=Math.max(6,Math.min(PROJ.H-6,y));
-        // 陸に吸着：県ポリゴンの外(海沿い簡略化や離島)なら県中心方向へ寄せ、必ず陸に乗せる
-        var pe=prefEls[code];
-        if(code!==47&&pe&&pe.isPointInFill){ try{ if(!pe.isPointInFill(new DOMPoint(x,y))){ var bb=pe.getBBox(),ccx=bb.x+bb.width/2,ccy=bb.y+bb.height/2; for(var t=0.1;t<=1.0001;t+=0.1){ var nx=x+(ccx-x)*t,ny=y+(ccy-y)*t; if(pe.isPointInFill(new DOMPoint(nx,ny))){ x=nx;y=ny;break; } } } }catch(e){} }
+        // 🆕 2026-09-24 陸に吸着：★その店に【いちばん近い陸】へ寄せる。
+        //   ★前（2026-08-28）は「その県の四角い枠の中心」へ寄せる作りでした。
+        //     ★東京都の枠は伊豆諸島・小笠原を含むので、枠の中心は【海】(678,579)。
+        //     ★海へ向かって寄せるので、いつまでも陸に入らず、★元の位置のまま残っていました
+        //     （★2026-09-24 実測＝210個のうち23個がずれていた。東京20・大阪1・沖縄1・神奈川1）。
+        //     ★大阪も枠の中心が大阪湾＝海でした。★離島を持つ県で同じことが起きます。
+        //   ★いまの形＝店の位置から外へ少しずつ探して、最初に見つかった陸に置く。
+        //     ★どの県でも同じやり方で効き、★お店の本当の場所からいちばん近い所に残ります
+        //     （★「県の中心へ寄せる」と、江東区の店が新宿の方へ動いてしまいます）。
+        //   ★沖縄も対象にします（別枠に描いてあるので、座標の入れ直しをしてから判定する）。
+        var sp=snapToLand_(prefEls[code],x,y); x=sp.x; y=sp.y;
         placed.push([x,y]);
         var el=document.createElementNS("http://www.w3.org/2000/svg","circle");
         el.setAttribute("cx",x);el.setAttribute("cy",y);el.dataset.bx=x;el.dataset.by=y;
@@ -786,6 +826,27 @@
   function regionOK(s){return curArea==="全国"||s.area===curArea;}
   function shopOK(s){return regionOK(s)&&(!curBeans||s.beans===1)&&cityOK(s);}
 
+  // 🆕 2026-09-24（案1）市区町村でしぼっているとき、参加しているお店と未参加のお店を
+  //   かたまりに分けて、それぞれに見出しと数を出す。
+  //   ★なぜ要るか＝参加しているお店は市区町村で絞らない決まり（オーナー決定④）のため、
+  //     「足立区 1」を押すと参加店3軒＋足立区の未参加が出ます。見出しが無いと
+  //     「押した区と関係ないお店が出た」ように見えます（オーナー指摘 2026-09-24）。
+  //   ★上の見出しの数は【出ている枚数の合計】のままにします。
+  //     ★理由＝合計と内訳の両方が見えるので、数字の意味がどちらにも取り違えられません。
+  //   ★0軒のかたまりには、見出しを出しません。
+  //   ★しぼっていないときは、いままでどおり1本の並びです（見出しを増やしません）。
+  function cityLabelNow_(){ return (curCity==="__other__") ? "その他" : curCity; }
+  function groupedCardsHTML(list, code){
+    var ord=orderForDisplay(list);
+    if(!curCity || !curPrefCode || curPrefCode!==code) return ord.map(cardHTML).join("");
+    var joined=ord.filter(function(s){return s.pending!==1;});
+    var pend  =ord.filter(function(s){return s.pending===1;});
+    var h="";
+    if(joined.length) h+='<div class="subhdr">JCJの参加店 <b>'+joined.length+'店</b></div>'+joined.map(cardHTML).join("");
+    if(pend.length)   h+='<div class="subhdr">'+esc(cityLabelNow_())+'のお店 <b>'+pend.length+'店</b></div>'+pend.map(cardHTML).join("");
+    return h;
+  }
+
   function hidePicks(){ var b=$("picks"); if(b){ b.classList.add("hidden"); b.innerHTML=""; } }
   // 地図で選んだ県/エリアのお店を、地図の下に並べる（案1）。お店を押すと詳細。お店がまだ無い県は推薦導線を残す。
   function showPicks(shops, header, emptyCode){
@@ -797,7 +858,7 @@
     } else {
       // 一覧タブと同じ写真つきカード(cardHTML)を使う＝情報量を揃える（新しい見た目を発明しない）
       b.innerHTML='<div class="pick-hdr"><b>'+header+'</b><span class="pick-cnt">'+shops.length+'店</span></div>'+
-        orderForDisplay(shops).map(cardHTML).join("");   // ★参加しているお店が先／未参加は固定の混ぜ方（案A）
+        groupedCardsHTML(shops, curPrefCode);   // ★参加が先／未参加は固定の混ぜ方（案A）＋案1の見出し
     }
     b.classList.remove("hidden");
   }
@@ -1033,10 +1094,10 @@
     var codes=[];arr.forEach(function(s){if(s.code&&codes.indexOf(s.code)<0)codes.push(s.code);});
     codes.sort(function(a,b){return a-b;});
     codes.forEach(function(code){
-      var g=orderForDisplay(arr.filter(function(s){return s.code===code;}));   // ★案A
+      var g=arr.filter(function(s){return s.code===code;});
       out+='<div class="prefhdr">'+FN(code)+' <b>'+g.length+'店</b></div>';
       out+=cityRowHTML(code);   // 🆕 2026-09-24（③案え）県の見出しの真下に市区町村のボタンを出す
-      g.forEach(function(s){out+=cardHTML(s);});
+      out+=groupedCardsHTML(g, code);   // ★案A（並べ方）＋案1（かたまりの見出し）
     });
     // ロースター紹介の入口（一覧のいちばん最後）＝推薦フォーム(テスト)へ。src=discover_list
     if(arr.length){
