@@ -33,6 +33,9 @@
   .btnP{display:block;width:100%;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
     border-radius:12px;padding:14px;text-decoration:none;box-shadow:0 4px 10px rgba(192,74,85,.25);margin-bottom:10px;border:0;cursor:pointer}
   .btnP.saved{background:var(--done-tint);color:var(--state-done);box-shadow:none}
+  /* ★「このお店でチェックインする」と「行きたいに保存する」が近すぎる（オーナー指摘 2026-09-25）。
+     ★この2つの間だけ広げる＝0px → 18px。★他の場所の間隔は変えていない。 */
+  #saveBtn{margin-top:18px}
   .gciBtn{display:block;width:100%;margin:14px 0 0;padding:15px;border:0;border-radius:12px;
           background:var(--brand-deep,#1F3A2E);color:#fff;font-weight:800;font-size:15px;text-align:center}
   .gciBtn:disabled{opacity:.55}
