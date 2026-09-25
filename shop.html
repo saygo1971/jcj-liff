@@ -58,6 +58,20 @@
   .btnO{display:block;text-align:center;background:var(--bg);color:var(--brand-deep);border:1.5px solid var(--brand-deep);
     font-weight:800;font-size:14.5px;border-radius:12px;padding:12px;text-decoration:none;margin-bottom:8px;cursor:pointer}
   .sublink{display:block;text-align:center;color:var(--ink-sub);font-size:13.5px;font-weight:600;text-decoration:underline;padding:6px;cursor:pointer}
+  /* 📷 お店の外観写真をお客さまから集める（2026-09-25・設計4章の文をそのまま出す） */
+  .spBox{margin:16px 0 10px;background:var(--paper);border-radius:12px;padding:14px}
+  .spBox h3{margin:0 0 8px;font-size:14.5px;font-weight:900;line-height:1.55;color:var(--ink)}
+  .spUse{font-size:12.5px;line-height:1.75;color:var(--ink);margin:0 0 8px}
+  .spUse b{color:var(--brand-deep)}
+  .spList{margin:0 0 10px;padding-left:1.1em;font-size:12px;line-height:1.85;color:var(--ink-sub)}
+  .spBtn{display:block;width:100%;background:var(--bg);border:1.5px solid var(--brand-deep);color:var(--brand-deep);
+    font-weight:800;font-size:14.5px;border-radius:12px;padding:12px;cursor:pointer}
+  .spBtn:disabled{opacity:.55}
+  .spPrev{margin-top:10px}
+  .spPrev img{max-width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+  .spMsg{font-size:12.5px;line-height:1.75;margin-top:9px}
+  .spMsg.ng{color:var(--state-error);font-weight:700}
+  .spMsg.ok{color:var(--state-done);font-weight:700}
 </style>
 </head>
 <body>
@@ -76,6 +90,21 @@
     <button class="btnP" id="saveBtn">行きたいに保存する</button>
     <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>と、あなたにもマイルがたまります。</div>
     <div class="links" id="links"></div>
+    <!-- 📷 お店の写真を送っていただく（★設計4章の文をそのまま。★用途の1行を外さない） -->
+    <div class="spBox hidden" id="spBox">
+      <h3>このお店の写真を撮って送っていただけませんか。</h3>
+      <p class="spUse">いただいた写真は、<b>このお店のページに、お店の写真として載せます。</b></p>
+      <ul class="spList">
+        <li><b>お店の外から見た1枚</b>をお願いします（<b>横向き</b>でお願いします）</li>
+        <li><b>人のお顔が写らないように</b>お願いします</li>
+        <li>載せるかどうかは<b>当社で確認してから</b>決めます。載らないこともあります</li>
+        <li>あとで<b>取り下げたい</b>ときは、このトークで「<b>写真を取り下げたい</b>」とお送りください（<b>info@plowinc.jp</b> でも受け付けます）</li>
+      </ul>
+      <input type="file" id="spInput" accept="image/*" hidden>
+      <button type="button" class="spBtn" id="spBtn">このお店の写真を送る</button>
+      <div class="spPrev hidden" id="spPrev"><img id="spImg" alt=""></div>
+      <div class="spMsg hidden" id="spMsg"></div>
+    </div>
     <a class="btnO" id="shareBtn" href="#">友だちに教える</a>
     <a class="sublink" id="mapBtn" target="_blank" rel="noopener">行き方を見る（Googleマップ）</a>
   </div>
@@ -186,6 +215,99 @@
     setTimeout(go,2500);   // 保険（写真が返ってこない回線でも必ず動く）
   }
 
+  /* 📷 お店の外観写真をお客さまから受け取る（2026-09-25・設計9章の①）
+     ★出すのは「そのお店の写真がまだ無いとき」だけ。★1軒1枚なので、入っているお店には出しません。
+     ★送れるのはLINEから開いた方だけ（★誰が送ったかを記録に残すため＝設計14章）。
+     ★端末側で 横1600・JPEG に縮めてから送ります（★1.5MBを超えたら送りません）。
+     ★GAS側（shop_photo.js）も同じ上限と形式で、もう一度 断ります＝画面をすり抜けても止まります。 */
+  var SP_MAX_B64 = 2000000;          // ≒1.5MB（★GAS側 SHOP_PHOTO_MAX_B64 と同じ値）
+  var SP_LONG_SIDE = 1600;           // 長いほうの辺（画素）
+  var SP_QUALITY = [0.85,0.7,0.55,0.4];
+  var spBusy = false;
+
+  function spSay(text, cls){
+    var el = $("spMsg");
+    el.textContent = text;
+    el.className = "spMsg" + (cls ? (" " + cls) : "");
+    el.classList.remove("hidden");
+  }
+
+  // 選ばれた写真を JPEG のデータURLに縮める。横向きでなければ断る。
+  function spShrink(file, cb){
+    var fr = new FileReader();
+    fr.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        if (img.height > img.width){
+          cb({ ok:false, msg:"横向き（横長）の写真をお願いします。もう一度、横に構えて撮っていただけますか。" });
+          return;
+        }
+        var w = img.width, h = img.height;
+        if (w > SP_LONG_SIDE){ h = Math.round(h * SP_LONG_SIDE / w); w = SP_LONG_SIDE; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        for (var i = 0; i < SP_QUALITY.length; i++){
+          var d = c.toDataURL("image/jpeg", SP_QUALITY[i]);
+          var b64 = d.split(",")[1] || "";
+          if (b64.length <= SP_MAX_B64){ cb({ ok:true, data:d }); return; }
+        }
+        cb({ ok:false, msg:"写真が大きすぎました（1.5MBまで）。もう少し引いて撮り直していただけますか。" });
+      };
+      img.onerror = function(){ cb({ ok:false, msg:"写真を読めませんでした。別の写真でお試しください。" }); };
+      img.src = fr.result;
+    };
+    fr.onerror = function(){ cb({ ok:false, msg:"写真を読めませんでした。別の写真でお試しください。" }); };
+    fr.readAsDataURL(file);
+  }
+
+  function spSetup(s){
+    // ★出すのは未参加店だけ（★本部決定 2026-09-25。★参加店はすでにお付き合いのあるお店で、立場が違う）
+    // 写真がもう在るお店には出さない（★1軒1枚）／LINEから開いていない方にも出さない
+    if (!UID || !s || !s.id || s.pending !== 1 || (s.photo && String(s.photo).trim())) return;
+    $("spBox").classList.remove("hidden");
+    $("spBtn").onclick = function(){ if (!spBusy) $("spInput").click(); };
+    $("spInput").onchange = function(){
+      var file = this.files && this.files[0];
+      this.value = "";
+      if (!file || spBusy) return;
+      spBusy = true;
+      $("spBtn").disabled = true; $("spBtn").textContent = "写真を確かめています…";
+      spShrink(file, function(r){
+        if (!r.ok){
+          spBusy = false; $("spBtn").disabled = false; $("spBtn").textContent = "このお店の写真を送る";
+          spSay(r.msg, "ng");
+          return;
+        }
+        $("spImg").src = r.data; $("spPrev").classList.remove("hidden");
+        $("spBtn").textContent = "送っています…";
+        spSay("送っています…", "");
+        fetch(GAS_URL + "?action=shop_photo", {
+          method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+          body: JSON.stringify({ userId:UID, shopId:s.id, photo:r.data })
+        }).then(function(res){ return res.json(); }).then(function(d){
+          spBusy = false;
+          if (d && d.ok){
+            $("spBtn").classList.add("hidden");
+            spSay("ありがとうございます。確認してから載せます。", "ok");
+          } else {
+            $("spBtn").disabled = false; $("spBtn").textContent = "このお店の写真を送る";
+            $("spPrev").classList.add("hidden");
+            var e = (d && d.error) || "";
+            if (e === "already_has_photo") spSay("このお店の写真は、もう集まっていました。ありがとうございます。", "ok");
+            else if (e === "too_large")    spSay("写真が大きすぎました（1.5MBまで）。もう一度お試しください。", "ng");
+            else if (e === "bad_format")   spSay("この形式の写真は受け取れません。写真アプリの普通の写真でお願いします。", "ng");
+            else                           spSay("送れませんでした。時間をおいて、もう一度お試しください。", "ng");
+          }
+        }).catch(function(){
+          spBusy = false;
+          $("spBtn").disabled = false; $("spBtn").textContent = "このお店の写真を送る";
+          $("spPrev").classList.add("hidden");
+          spSay("送れませんでした。電波の良いところで、もう一度お試しください。", "ng");
+        });
+      });
+    };
+  }
+
   function render(s){
     buildSwipe(s);
 
@@ -241,6 +363,7 @@
             +"&userId="+encodeURIComponent(UID)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
 
     gciSetup(s);
+    spSetup(s);
 
     // 友だちに教える（紹介LIFFへ）
     $("shareBtn").onclick = function(e){ e.preventDefault(); location.href="https://liff.line.me/"+SHARE_LIFF_ID+"?shopId="+encodeURIComponent(s.id)+"&source=shop"; };

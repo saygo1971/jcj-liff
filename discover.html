@@ -841,14 +841,36 @@
   //   ★0軒のかたまりには、見出しを出しません。
   //   ★しぼっていないときは、いままでどおり1本の並びです（見出しを増やしません）。
   function cityLabelNow_(){ return (curCity==="__other__") ? "その他" : curCity; }
+
+  // ★2026-09-25（オーナー決定）：まだ登録されていないお店の呼び方は【見出しに1回だけ】出す。
+  //   ★1軒ごとの札は出さない（★お店の数だけ同じ言葉が並ぶと、じゃまになるため）。
+  //   ★文はこの2つだけに書く。★呼ぶ側に書き写さないこと（片方だけ直って食い違うため）。
+  var HDR_JOINED  = "JCJの参加店";
+  var HDR_PENDING = "Japan Coffee Journey がオススメの、まだ登録されていないお店";
+  //   ★件数は、市区町村でしぼったときだけ足す。★言葉そのものは、どの画面でも同じにする。
+  function subhdrHTML_(text, count){
+    return '<div class="subhdr">' + esc(text)
+         + (count === null ? "" : ' <b>' + count + '店</b>') + '</div>';
+  }
+
   function groupedCardsHTML(list, code){
-    var ord=orderForDisplay(list);
-    if(!curCity || !curPrefCode || curPrefCode!==code) return ord.map(cardHTML).join("");
+    var ord=orderForDisplay(list);                                    // ★登録ずみが先・未登録が後ろ（前からの並び）
     var joined=ord.filter(function(s){return s.pending!==1;});
     var pend  =ord.filter(function(s){return s.pending===1;});
+    // ★市区町村でしぼっているときだけ、件数を出す（★参加店は市区町村で絞らない決まりのため、
+    //   「押した区と関係ないお店が出た」と見えないよう、数で内訳を示す＝2026-09-24の形を残す）
+    var withCount = !(!curCity || !curPrefCode || curPrefCode!==code);
     var h="";
-    if(joined.length) h+='<div class="subhdr">JCJの参加店 <b>'+joined.length+'店</b></div>'+joined.map(cardHTML).join("");
-    if(pend.length)   h+='<div class="subhdr">'+esc(cityLabelNow_())+'のお店 <b>'+pend.length+'店</b></div>'+pend.map(cardHTML).join("");
+    // ★登録ずみの見出しは、市区町村でしぼったときだけ出す（ふだんは見出し1つで足りる）
+    if(joined.length){
+      if(withCount) h += subhdrHTML_(HDR_JOINED, joined.length);
+      h += joined.map(cardHTML).join("");
+    }
+    // ★未登録の見出しは、1軒でも在れば出す。★0軒のときは出さない（中身の無い見出しを出さない）
+    if(pend.length){
+      h += subhdrHTML_(HDR_PENDING, withCount ? pend.length : null);
+      h += pend.map(cardHTML).join("");
+    }
     return h;
   }
 
@@ -1037,7 +1059,9 @@
     //   ★「見つけた」は起きたことの報告、「オススメ」はJCJが責任を持つ言葉です。
     //     ★この言葉を使い続けるなら、載せるお店を人が選ぶ手間は省けません
     //     （275軒→151軒に絞り、東京はオーナーが手で選び、4店舗以上を外し、閉店を確かめた上での言葉です）。
-    if(s.pending===1) return '<span class="tag p">JCJがオススメのお店</span>';
+    // ★2026-09-25（オーナー決定）：1軒ごとの札は出さない。★見出しに1回だけ出す形にした。
+    //   ★理由＝お店の数だけ同じ言葉が並ぶと、じゃまになる。
+    if(s.pending===1) return "";
     return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";
   }
   // ★未参加店に「まだ無いもの」を小さく後ろに置く（誘い文の原則＝事務情報は小さく下へ）
@@ -1159,10 +1183,29 @@
     // ★2026-09-24（⑨-4）一覧の札と同じ言葉に揃えました。
     //   ★前は「JCJが選びました」＝一覧の札と違うことを言っていました。
     //   ★2026-09-24（夜）オーナー決定で「JCJがオススメのお店」に変えました（★一覧の札と同じ言葉）。
-    $("sdPendLead").textContent = "JCJがオススメのお店";
+    // ★2026-09-25（オーナー決定・★同日に戻しました）：
+    //   ★消すのは「Japan Coffee Journey が…／JCJが…／オススメ／選んだ」の部分だけ。
+    //     ★理由＝見出しに1回 出るので、詳細で繰り返すとじゃまになる。
+    //   ★★役に立つ情報は、下の sdPendBody に1つにまとめました（★2026-09-25）。
+    //     ★理由＝ここに足すと「チェックイン」を2回 言うことになるため。
+    //   🛑★ここに文を足さないこと。★足すと、下の文と重なります。
+    $("sdPendLead").textContent = "";
+    $("sdPendLead").classList.add("hidden");
     // ★2026-09-24（⑨-5）「ロゴと豆割は、参加されているお店のものです。」を消しました。
     //   ★無いものを言わない（⑨-2と同じ理由）。
-    $("sdPendBody").innerHTML   = "チェックインできます。旅の記録も、マイルも、いつもと同じように残ります。";
+    // ★2026-09-25（オーナー決定）：未登録のお店の説明は、この1文だけにする。
+    //   ★入れている3つ
+    //     (1)「その場でチェックイン」… ★未登録のお店には【チェックインプレートがありません】。
+    //        書いていないと、お客さまが店頭で探し、見つからないことになります。
+    //     (2)「旅の記録も、お店までの距離も、いつもと同じように残ります」… 未登録のお店でも損しません。
+    //     (3)「ロゴはまだ届いていません」… ロゴが無い理由（★お店の不備ではない、と伝わります）。
+    //   🛑★JCJの名前・「オススメ」「選んだ」「気になっている」は書かないこと（★見出しの役目）。
+    //   🛑★「チェックイン」を2回 言わないこと（★文を足すときは、この1文を書き直す）。
+    //   🛑★「マイル」と書かないこと（★2026-09-25 オーナー決定＝終わる機能のため）。
+    //     ★言い換えは「お店までの距離」。★「動いた距離」ではありません（★オーナーの言い方）。
+    $("sdPendBody").innerHTML   =
+      "お店に着いたら「その場でチェックイン」で記録できます。"
+      + "旅の記録も、お店までの距離も、いつもと同じように残ります。ロゴはまだ届いていません。";
 
     var link=pendFormLink(s);
     $("sdForShopMsg").innerHTML = link
