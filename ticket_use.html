@@ -195,7 +195,13 @@
         "&userId=" + encodeURIComponent(currentUserId) +
         "&spotId=" + encodeURIComponent(spotId) +
         "&count=" + encodeURIComponent(n) +
-        "&opId=" + encodeURIComponent(useOpId));
+        "&opId=" + encodeURIComponent(useOpId) +
+        // ★★2026-09-26 追加：当日の「預かる」受け方のために2つ送ります。
+        //   seenBalance ＝この画面がいま表示している残り枚数（★サーバが台帳を読まずに「残り◯枚」を出せます）
+        //   shopName    ＝この画面が表示している店名（★預かる道は店の表を読まないため）
+        //   ★いままでの受け方（その場で減らす）では、この2つは使われません＝何も変わりません。
+        "&seenBalance=" + encodeURIComponent(balance) +
+        "&shopName=" + encodeURIComponent(shopName || ""));
       if (data && data.ok) {
         renderUsed(data);
       } else if (data && data.error === "insufficient") {

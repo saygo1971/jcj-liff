@@ -375,13 +375,22 @@
 
   function wireTicket(bal){
     count = 1;
+    // ★★2026-09-26 追加：この「◯枚を使う」1回分の合言葉を入れておく場所。
+    //   ★券を使う画面（ticket_use.html）には前から在りましたが、★この画面には在りませんでした。
+    //   ★合言葉が無いと、当日の「預かる」受け方で断られます（＝スタッフを呼ぶしかなくなります）。
+    let useOpIdCk = "";
     const render = ()=>{ $("cnt").textContent = count; $("minus").disabled = busy || count<=1; $("plus").disabled = busy || count>=Math.min(bal,10); $("use").textContent = busy ? "処理中…" : (count+"枚を使う"); };
     $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
     $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
     $("use").onclick = async ()=>{
       if(busy) return; busy = true; render();
+      // ★この一押しの合言葉を作ります（★同じ押下の送り直しでは同じ値を使うので、二重には減りません）。
+      useOpIdCk = "use_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
       try{
-        const d = await api("use_do", { spotId: st.shopId, count: count });
+        // ★★2026-09-26：opId（合言葉）・seenBalance（いま出している残り）・shopName（店名）を足しました。
+        //   ★いままでの受け方（その場で減らす）では、この3つは使われません＝何も変わりません。
+        const d = await api("use_do", { spotId: st.shopId, count: count,
+          opId: useOpIdCk, seenBalance: bal, shopName: (st && st.shopName) || "" });
         busy = false;
         if(!d || !d.ok){
           render();
