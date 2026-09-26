@@ -138,9 +138,16 @@
   .nav .lb small{font-size:9px;font-weight:600;opacity:.9}
   .nav svg{width:23px;height:23px}
   /* ☕ 2026-09-26：発見地図を横いっぱいの1本に（★消した2行の跡地へ移す。いまより大きくなる） */
-  .navwide{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--terra);
-           color:#fff;border-radius:12px;padding:15px 10px;margin-bottom:9px;text-decoration:none;cursor:pointer}
-  .navwide .lb{font-size:14.5px;font-weight:800;text-align:center}
+  /* ★2026-09-26（オーナー決定C）：上下の余白を 15px → 10px に。 */
+  .navwide{display:flex;align-items:center;justify-content:center;gap:0;background:var(--terra);
+           color:#fff;border-radius:12px;padding:10px 10px;margin-bottom:9px;text-decoration:none;cursor:pointer}
+  /* ★「発見地図」の文字が【ボタンの中央】に来るようにします。
+     ★虫眼鏡は、その文字の【すぐ左の外側】に置きます。
+     🔴★虫眼鏡は【文字の箱の中】に入れます。★外に置くと、位置の基準がこの箱にならず、
+        ★ボタンの外へ飛んで見えなくなります（★2026-09-26 実際に起きました）。
+     ★位置を数字で決めていないので、★文字が変わってもずれません。 */
+  .navwide .lb{font-size:14.5px;font-weight:800;text-align:center;position:relative;display:inline-block}
+  .navwide .lb svg{position:absolute;right:100%;margin-right:9px;top:50%;transform:translateY(-50%)}
   .navwide .lb small{display:block;font-size:9.5px;font-weight:600;opacity:.92;margin-top:2px}
   /* 🔴★絵の大きさを必ず決める。★決めないと横いっぱいに伸びます（2026-09-26 実際に起きました）。
      ★もとの .nav svg の指定は .nav の中だけに効くので、この枠には届きません。 */
@@ -183,7 +190,6 @@
       <div class="logohd"><span class="t">集めたロースター</span>
         <span class="c"><b class="hwy" id="logoGot">0</b> <small>/ <span class="hwy" id="logoTotal">0</span></small></span></div>
       <div class="circles" id="circles"></div>
-      <div class="tapnote" id="logoTap">ロゴ帳をひらく ›</div>
 
       <!-- 行きたいリスト入口（保存したお店の一覧 saved.html へ）※旧コメントの「案A カルーセル」は廃案＝実際はsaved.htmlへ遷移する -->
       <div class="wish" id="wishList">
@@ -214,7 +220,7 @@
 
     <!-- 移動先3つ -->
     <div class="move">
-      <a class="navwide" id="navDiscover"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.6"/></svg><span class="lb">発見地図<small>次の1軒をさがす</small></span></a>
+      <a class="navwide" id="navDiscover"><span class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.6"/></svg>発見地図<small>次の1軒をさがす</small></span></a>
       <div class="nav">
         <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M14.5 5l3.5 3.5-8.5 8.5-4.5 1 1-4.5z"/></svg><span class="lb">旅の記録</span></a>
         <a class="second" id="navLogo"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.4a2 2 0 0 1 4 0v1.4c0 .8.35 1.1 1 1.45.75.4 1.2.6 1.2 1.65V12H7.8v-1.05c0-1.05.45-1.25 1.2-1.65.65-.35 1-.65 1-1.45z"/><rect x="4.5" y="12.5" width="15" height="5.2" rx="1.2"/></svg><span class="lb">ロゴ帳</span></a>
@@ -365,7 +371,6 @@
 
   function wireNav(){
     $("circles").onclick = () => open("logobook");
-    $("logoTap").onclick = () => open("logobook");
     $("wishList").onclick = openWish;
     $("navLogo").onclick = () => open("logobook");
     $("navHistory").onclick = () => open("history");

@@ -245,7 +245,7 @@
     const discTxt = disc > 0 ? '（¥' + disc + '割引）' : '';
     const exUrl = String((r && r.beansExchangeUrl) || '');
     // 帯グラフはやめ、既存の小さい文字リンク（.link）1行に下げる（本部_v40＋オーナー確定 2026-09-06）。
-    //   ・主役は「この一杯を残す」。豆割は目立たせない
+    //   ・主役は「この一杯を記録する」。豆割は目立たせない（★2026-09-26 文言を画面に合わせて直しました）
     //   ・ただし「あと◯マイル」の数字は必ず残す（進み具合が分かる情報は捨てない）
     //   ・必ず押せるようにする（リッチメニューが3ボタンになり豆割の入り口が減っているため、ここで入り口を潰さない）
     const label = canEx
@@ -330,7 +330,7 @@
     const recordHtml =
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
-      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を残す</a>';
+      '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>';
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
