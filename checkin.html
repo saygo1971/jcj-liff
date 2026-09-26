@@ -121,6 +121,9 @@
 
   let USER_ID = "";
   let SPOT = "";
+  // ★2026-09-26：QRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
+  //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
+  let EV = params.get("ev") || "";
   let st = null;      // checkin_state の結果
   let count = 1;
   let busy = false;
@@ -178,6 +181,7 @@
     b.textContent = "記録しています…";
     try{
       const extra = { spot: SPOT };
+      if (EV) extra.ev = EV;                        // ★2026-09-26：どのイベントかを一緒に送る
       if (geo && geo.ok){ extra.lat = geo.lat; extra.lng = geo.lng; extra.acc = geo.acc; }
       else { extra.geo = (geo && geo.reason) ? geo.reason : "unavailable"; }
       const r = await api("checkin_do", extra);
