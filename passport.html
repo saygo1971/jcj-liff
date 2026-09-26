@@ -137,6 +137,35 @@
   .nav .lb{font-size:12px;font-weight:800;line-height:1.2}
   .nav .lb small{font-size:9px;font-weight:600;opacity:.9}
   .nav svg{width:23px;height:23px}
+  /* ☕ 2026-09-26：発見地図を横いっぱいの1本に（★消した2行の跡地へ移す。いまより大きくなる） */
+  .navwide{display:flex;align-items:center;justify-content:center;gap:9px;background:var(--terra);
+           color:#fff;border-radius:12px;padding:15px 10px;margin-bottom:9px;text-decoration:none;cursor:pointer}
+  .navwide .lb{font-size:14.5px;font-weight:800;text-align:center}
+  .navwide .lb small{display:block;font-size:9.5px;font-weight:600;opacity:.92;margin-top:2px}
+  /* 🔴★絵の大きさを必ず決める。★決めないと横いっぱいに伸びます（2026-09-26 実際に起きました）。
+     ★もとの .nav svg の指定は .nav の中だけに効くので、この枠には届きません。 */
+  .navwide svg{width:22px;height:22px;flex:0 0 auto}
+  /* ★「買ったもの」＝中に文字を足さない（★足すとボタンの大きさがズレて3つ並びが崩れる）。
+     ★まだ使っていない券か、受け取っていないカップがあるとき【だけ】枠をピンクにする。
+     ★この画面の決まり＝ピンク＝これから起こすこと／緑＝終わったこと。 */
+  .nav .second.pink{border-color:var(--terra);color:var(--terra)}
+  /* 「買ったもの」の中身（★同じページの中で切り替える。★新しいLIFFの番号は作らない） */
+  .subhd{display:flex;align-items:center;gap:9px;padding:14px 16px 4px}
+  .subhd .bk{font-size:13px;font-weight:800;color:var(--green);cursor:pointer}
+  .subhd .ti{font-size:15px;font-weight:900;color:var(--green)}
+  .mrow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+        border-radius:11px;padding:11px 12px;margin-top:8px}
+  .mrow .tx{flex:1}
+  .mrow .tx b{display:block;font-size:12.5px;font-weight:800}
+  .mrow .tx span{font-size:10px;color:var(--sub)}
+  .mrow .cnt{flex:0 0 auto;font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;
+             white-space:nowrap;color:#fff}
+  .mrow.yet .tx b{color:var(--terra)}  .mrow.yet .cnt{background:var(--terra)}
+  .mrow.done .tx b{color:var(--sub)}   .mrow.done .cnt{background:#B6AEA3}
+  .emptybox{background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px 13px;
+            text-align:center;margin-top:8px}
+  .emptybox .b{font-size:12.5px;font-weight:800;color:var(--sub)}
+  .emptybox .s{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.8}
 </style>
 </head>
 <body>
@@ -167,7 +196,6 @@
       <!-- 個人の数字 -->
       <div class="stats">
         <div class="s tap" id="statKm"><span class="go">›</span><b class="hwy" id="yourKm">0</b><span>あなたの距離(km)</span></div>
-        <div class="s tap" id="statMile"><span class="go">›</span><b class="hwy" id="mile">0</b><span>使えるマイル</span></div>
         <div class="s tap" id="statShop"><span class="go">›</span><b class="hwy" id="shopCount">0</b><span>訪れた店</span></div>
       </div>
 
@@ -182,17 +210,15 @@
         </div>
       </div>
 
-      <!-- 豆割は主役から外す＝小リンク -->
-      <div class="beans" id="beansLink">使えるマイルの使い道（豆割クーポン）›</div>
     </div>
 
     <!-- 移動先3つ -->
     <div class="move">
-      <div class="h">— さがす・見る —</div>
+      <a class="navwide" id="navDiscover"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.6"/></svg><span class="lb">発見地図<small>次の1軒をさがす</small></span></a>
       <div class="nav">
-        <a class="primary" id="navDiscover"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.6"/></svg><span class="lb">発見地図<br><small>次の1軒をさがす</small></span></a>
         <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M14.5 5l3.5 3.5-8.5 8.5-4.5 1 1-4.5z"/></svg><span class="lb">旅の記録</span></a>
         <a class="second" id="navLogo"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.4a2 2 0 0 1 4 0v1.4c0 .8.35 1.1 1 1.45.75.4 1.2.6 1.2 1.65V12H7.8v-1.05c0-1.05.45-1.25 1.2-1.65.65-.35 1-.65 1-1.45z"/><rect x="4.5" y="12.5" width="15" height="5.2" rx="1.2"/></svg><span class="lb">ロゴ帳</span></a>
+        <a class="second" id="navBought"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lb">買ったもの</span></a>
       </div>
     </div>
 
@@ -200,6 +226,16 @@
     <div id="noticeEntry" class="hidden"></div>
 
     <div class="footline">JAPAN COFFEE JOURNEY<img class="flam" alt="" aria-hidden="true" src="data:image/png;base64,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"></div>
+  </div>
+</div>
+
+<!-- ☕ 2026-09-26「買ったもの」。★同じページの中で切り替えます（★新しいLIFFの番号は作りません）。 -->
+<div id="boughtView" class="wrap hidden">
+  <div class="card">
+    <div class="topline"><span class="pno ocrb" id="bvPno">PASSPORT No. JC-000000</span><span class="resi" id="bvResi"></span></div>
+    <div class="subhd"><span class="bk" id="bvBack">‹ もどる</span><span class="ti">買ったもの</span></div>
+    <div class="see" style="padding-top:2px"><div id="bvBody"></div></div>
+    <div class="footline">JAPAN COFFEE JOURNEY</div>
   </div>
 </div>
 
@@ -318,7 +354,6 @@
     // 個人の数字
     $("shopCount").textContent = (Number(d.shopCount)||0).toLocaleString();
     $("yourKm").textContent    = (Number(d.yourKm)||0).toLocaleString();
-    $("mile").textContent      = (Number(d.mile)||0).toLocaleString();
     // みんなの距離＋地球周回
     $("totalKm").textContent = (Number(d.totalKm)||0).toLocaleString();
     $("members").textContent = (Number(d.members)||0).toLocaleString();
@@ -336,10 +371,85 @@
     $("navHistory").onclick = () => open("history");
     $("navDiscover").onclick = () => open("discover");
     $("distBox").onclick = () => open("distance");
-    $("beansLink").onclick = () => open("beans");
     $("statKm").onclick    = () => open("distance");   // あなたの距離 → 旅メーター
-    $("statMile").onclick  = () => open("beans");       // 使えるマイル → マイルの使い道(豆割)
     $("statShop").onclick   = () => open("logobook");    // 訪れた店 → ロゴ帳
+
+    // ☕ 2026-09-26：「買ったもの」。★この画面を出しきってから、あとで中身を読みに行きます。
+    //   ★理由＝パスポートは今でも数秒かかります。★これ以上 遅くしません。
+    $("navBought").onclick = showBought_;
+    $("bvBack").onclick    = hideBought_;
+  }
+
+  /* ========================================================================
+     ☕ 買ったもの（2026-09-26）
+     ・★並べるのは【券】と【カップ】の2つだけ（★2026-09-26 オーナー決定）。
+       ★増やすときは BOUGHT_ROWS_ に1行 足すだけで並びます。
+     ・★ボタンの中には数を書きません（★書くとボタンの大きさがズレて3つ並びが崩れます）。
+       ★まだ使っていない券か、受け取っていないカップがあるとき【だけ】枠をピンクにします。
+     ・★「買ったもの」は同じページの中で切り替えます。★新しいLIFFの番号は作りません
+       （★この事業は番号の取り違えで一度 転んでいます）。
+     ======================================================================== */
+  let BOUGHT_ = null;   // ★cup_state の返事をそのまま置く場所
+
+  async function loadBought_(userId){
+    if (!userId) return;
+    let s = null;
+    try {
+      const r = await fetch(GAS_URL + "?action=cup_state&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
+      s = await r.json();
+    } catch (e) {
+      return;   // ★取れなければ、何も変えません（★パスポートを壊さない）
+    }
+    if (!s || s.ok !== true) return;
+    if (_started && userId !== _started) return;   // ★別の人に切り替わった後の古い返事は捨てる（loadWish と同じ作法）
+    BOUGHT_ = s;
+    // ★枠の色だけを変えます（★中の文字は増やしません）。
+    const b = $("navBought");
+    if (b) b.classList.toggle("pink", s.hasPending === true);
+  }
+
+  function boughtRowsHtml_(s){
+    const rows = [];
+    const t = Number(s.tickets) || 0;
+    const cup = s.cup || {};
+    const bought = Number(cup.bought) || 0;
+    const remain = Number(cup.remaining) || 0;
+    if (t > 0) {
+      rows.push('<div class="mrow yet"><span class="tx"><b>試飲チケット</b>' +
+        '<span>会場のブースで一杯と交換できます</span></span>' +
+        '<span class="cnt">' + t + '枚</span></div>');
+    }
+    if (remain > 0) {
+      rows.push('<div class="mrow yet"><span class="tx"><b>カップ</b>' +
+        '<span>会場の受付でお受け取りください</span></span>' +
+        '<span class="cnt">' + remain + 'つ まだ</span></div>');
+    } else if (bought > 0) {
+      const when = String(cup.lastHandedAt || "");
+      rows.push('<div class="mrow done"><span class="tx"><b>カップ</b>' +
+        '<span>' + (when ? esc(when) + 'に受け取りました' : '受け取り済みです') + '</span></span>' +
+        '<span class="cnt">受け取り済み</span></div>');
+    }
+    return rows;
+  }
+
+  function showBought_(){
+    const body = $("bvBody");
+    $("bvPno").textContent  = $("pno").textContent;
+    $("bvResi").textContent = $("resi").textContent;
+    const rows = BOUGHT_ ? boughtRowsHtml_(BOUGHT_) : [];
+    body.innerHTML = rows.length
+      ? rows.join("")
+      : '<div class="emptybox"><div class="b">まだありません</div>' +
+        '<div class="s">試飲チケットとカップは、<br>会場と「チケットを買う」から買えます</div></div>';
+    $("main").classList.add("hidden");
+    $("boughtView").classList.remove("hidden");
+    window.scrollTo(0, 0);
+  }
+
+  function hideBought_(){
+    $("boughtView").classList.add("hidden");
+    $("main").classList.remove("hidden");
+    window.scrollTo(0, 0);
   }
 
   // ── お知らせ（アプリを開いた時のポップアップ・CONFIG駆動・「お知らせ1本につき1回」）──
@@ -448,6 +558,7 @@
     }catch(e){}
     loadData(userId);
     loadWish(userId);      // 行きたいリストの件数（本体と並行・遅れて入る）
+    loadBought_(userId);   // ☕ 買ったもの（本体と並行・遅れて入る）★パスポートを遅くしない
     sendPageView(userId);  // このパスポートを開いた記録
   }
 

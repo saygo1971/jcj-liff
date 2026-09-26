@@ -78,6 +78,20 @@
     .areaprog{border-top:1px solid var(--line);margin-top:16px;padding-top:14px;text-align:center;font-size:13px;color:var(--ink)}
     .areaprog b{color:var(--ink);font-weight:800}
     .hidden{display:none}
+    /* ☕ カップのお渡し（2026-09-26）。★受付でカップを渡すのは、この枠だけを見ます。 */
+    .cupsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    .cuphd{font-size:14px;color:#444;font-weight:700}
+    .cupbox{margin-top:10px;background:#FFF6EC;border:1px solid #F0D9A8;border-radius:12px;padding:14px 13px;text-align:center}
+    .cupbox .big{font-size:20px;font-weight:800;color:var(--ink)}
+    .cupbox .sub{font-size:12.5px;color:#6b4c12;margin-top:6px;line-height:1.75}
+    .cupbtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--coral)}
+    .cupbtn:disabled{opacity:.5}
+    /* ★色だけに頼らない＝「お渡し済み」の文字と時刻を必ず添える（会場が暗いことがあるため） */
+    .cupdone{margin-top:10px;background:#F2F1EF;border:1px solid var(--line);border-radius:12px;padding:14px 13px;text-align:center}
+    .cupdone .big{font-size:18px;font-weight:800;color:#6E655E}
+    .cupdone .when{font-size:13px;color:#6E655E;margin-top:4px;font-variant-numeric:tabular-nums}
+    .cupdone .sub{font-size:12px;color:#8a837c;margin-top:6px;line-height:1.75}
+    .cupnote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -272,7 +286,9 @@
       const bal = Number(r.ticketBalance);
       ticketHtml =
         '<div class="tsec">' +
-          '<div class="thd">🎫 試飲チケット <span style="color:#999;font-weight:600">（残'+bal+'枚）</span></div>' +
+          // ★2026-09-26：絵文字を外しました（オーナー指示「チケットとカップの絵文字もいらない」）。
+          //   ★戻すときは「試飲チケット」の前に 🎫 と半角スペースを入れるだけです。
+          '<div class="thd">試飲チケット <span style="color:#999;font-weight:600">（残'+bal+'枚）</span></div>' +
           '<div class="stepper">' +
             '<button id="minus">−</button>' +
             '<div class="cnt"><div class="n"><span id="cnt">1</span>枚</div></div>' +
@@ -324,6 +340,9 @@
       areaHtml +
       beansProgHtml +
       ticketHtml +
+      // ☕ カップ（2026-09-26）。★最初は空の入れ物だけ。★あとから別の小さな問い合わせで埋めます。
+      //   ★理由＝受付の画面を重くしないため。★カップが無い方には、何も出ません。
+      '<div id="cupsec"></div>' +
       refHtml;
 
     // 地域コンプリート進捗＋正しいロゴ（area_progressが logo=R列 と exterior を同梱）。未デプロイ・非対象時は静かに据え置き。
@@ -375,6 +394,103 @@
     };
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
+
+    // ☕ カップ（2026-09-26）。★この画面の他の部分が出そろってから、あとで埋めます。
+    loadCupSection_();
+  }
+
+  /* ========================================================================
+     ☕ カップのお渡し（2026-09-26）
+     ・★受付でカップを渡すのは、ここだけです。★受付の人は【1回 押すだけ】。
+     ・🔴★「お渡ししました」のボタンは【受付の紙のQRから開いたとき】だけ出します。
+       ★合っているかを決めるのはサーバー側です（★この画面では決めません）。
+       ★別の入口から開いても、ボタンそのものが出ません＝★読まなくても止まります。
+     ・★カップを買っていない方には、この枠ごと出ません（★いまの画面と1つも変わりません）。
+     ======================================================================== */
+  let cupBusy = false;
+
+  // ★受付の紙のQRにだけ入っている合言葉。★この画面は中身を判断しません。そのまま渡すだけです。
+  function cupRk_(){ return params.get("rk") || ""; }
+
+  async function loadCupSection_(){
+    const el = $("cupsec");
+    if (!el) return;
+    let s = null;
+    try {
+      const rk = cupRk_();
+      s = await api("cup_state", rk ? { rk: rk } : {});
+    } catch (e) {
+      return;   // ★取れなければ、何も出しません（★受付の画面を壊さない）
+    }
+    if (!s || s.ok !== true || !s.cup) return;
+    renderCupSection_(s);
+  }
+
+  function renderCupSection_(s){
+    const el = $("cupsec");
+    if (!el) return;
+    const cup = s.cup || {};
+    const bought = Number(cup.bought) || 0;
+    const remain = Number(cup.remaining) || 0;
+
+    // ★買っていない方＝何も出さない。
+    if (bought <= 0){ el.innerHTML = ""; return; }
+
+    if (remain > 0){
+      const canDo = (s.canHandover === true);
+      el.innerHTML =
+        '<div class="cupsec">' +
+          '<div class="cuphd">カップ</div>' +
+          '<div class="cupbox">' +
+            '<div class="big">カップ ' + remain + 'つ</div>' +
+            '<div class="sub">' + (canDo ? '受付でお受け取りください'
+                                         : '会場の<b>受付</b>でお受け取りください') + '</div>' +
+            (canDo ? '<button id="cupBtn" class="cupbtn">カップをお渡ししました</button>' : '') +
+          '</div>' +
+          '<div class="cupnote">' + (canDo ? '※ このボタンは受付の人が押します'
+                                           : '※ 受け取りのボタンは、受付の紙のQRから開いたときだけ出ます') + '</div>' +
+        '</div>';
+      const b = $("cupBtn");
+      if (b) b.onclick = doCupHandover_;
+      return;
+    }
+
+    // ★渡し終わったあと。★色だけでなく「お渡し済み」の文字と時刻を必ず出します。
+    el.innerHTML =
+      '<div class="cupsec">' +
+        '<div class="cuphd">カップ</div>' +
+        '<div class="cupdone">' +
+          '<div class="big">お渡し済み</div>' +
+          (cup.lastHandedTime ? '<div class="when">' + esc(cup.lastHandedTime) + '</div>' : '') +
+          '<div class="sub">受け取りは、おひとり1つです</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  async function doCupHandover_(){
+    if (cupBusy) return;
+    cupBusy = true;
+    const b = $("cupBtn");
+    if (b){ b.disabled = true; b.textContent = "記録しています…"; }
+    let r = null;
+    try {
+      r = await api("cup_handover_do", { rk: cupRk_() });
+    } catch (e) {
+      cupBusy = false;
+      if (b){ b.disabled = false; b.textContent = "カップをお渡ししました"; }
+      showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+      return;
+    }
+    cupBusy = false;
+    if (!r || r.ok !== true){
+      if (b){ b.disabled = false; b.textContent = "カップをお渡ししました"; }
+      showMsgInline((r && r.message) ? r.message : "いまお渡しできませんでした。", false);
+      // ★断られた理由が「もう渡してある」なら、画面を最新にし直します。
+      if (r && r.reason === "already") loadCupSection_();
+      return;
+    }
+    // ★書けたあと、★もう一度 読み直してから出します（★画面の数字を自分で作らない）。
+    loadCupSection_();
   }
 
   function wireTicket(bal){
