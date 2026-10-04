@@ -34,6 +34,8 @@
   .topline{display:flex;justify-content:space-between;align-items:center;padding:17px 16px;background:var(--green)}
   .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px}
   .resi{font-size:11px;color:rgba(255,255,255,.9)}
+  /* ★2026-10-05 お住まいの行は押せる（お住まいの郵便番号の画面へ） */
+  .resi.tap{text-decoration:underline;text-underline-offset:2px;cursor:pointer}
   /* 最下部の帯（緑・白文字・ブランド名＋右にフラミンゴ） */
   .footline{position:relative;background:var(--green);text-align:center;padding:15px 48px 15px 18px;
     letter-spacing:3px;font-size:11px;font-weight:800;color:#fff}
@@ -255,6 +257,7 @@
     history:  "2008851980-6s0zFwwl",
     logobook: "2008851980-9f9JHRZM",
     distance: "2008851980-esv1Ko37",
+    homecity: "2008851980-Hi0Atdxp",   // ★お住まいの郵便番号（テスト・2008851980配下）
     beans:    "2008851980-trJY7IX9",
     saved:    "2008851980-XXXXXXXX"   // ★行きたいリスト(案B saved.html)専用LIFF＝本番アップ時に発行→差替。未発行中は案A(カルーセル)にフォールバック
   };
@@ -262,6 +265,7 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
+  let _resiRaw = "";   // ★お住まいの文字（› を付けない素のまま。「買ったもの」の見出しで使う）
 
   // 行きたいリスト（案B・専用ページ saved.html）。
   // 本番＝専用LIFF(LIFF.saved)へ。テスト（saved LIFF未発行）＝同一オリジンへ相対遷移＝
@@ -340,7 +344,11 @@
 
   function render(d){
     $("pno").textContent  = "PASSPORT No. " + (d.no || "JC-000000");
-    $("resi").textContent = d.residence || "";
+    // ★2026-10-05 お住まいの行（審査会 A-3 条件1：すでに設定済みの方にも、ここから入れる）
+    //   設定済み＝「東京都 目黒区 上目黒」／未設定＝「東京都」。どちらでも押せる。
+    _resiRaw = [d.residence || "", d.homeCity || ""].filter(Boolean).join(" ");
+    $("resi").textContent = _resiRaw ? (_resiRaw + " ›") : "お住まいを入れる ›";
+    $("resi").classList.add("tap");
     // ロゴ帳の丸（取得ロゴ＋空丸。合計は最低16マスまで空丸で満たす＝並びが崩れない）
     const got = Number(d.logoGot)||0, total = Number(d.logoTotal)||0;
     $("logoGot").textContent   = got;
@@ -381,6 +389,7 @@
 
     // ☕ 2026-09-26：「買ったもの」。★この画面を出しきってから、あとで中身を読みに行きます。
     //   ★理由＝パスポートは今でも数秒かかります。★これ以上 遅くしません。
+    $("resi").onclick     = () => open("homecity");  // ★お住まいの行 → お住まいの郵便番号の画面
     $("navBought").onclick = showBought_;
     $("bvBack").onclick    = hideBought_;
   }
@@ -440,7 +449,7 @@
   function showBought_(){
     const body = $("bvBody");
     $("bvPno").textContent  = $("pno").textContent;
-    $("bvResi").textContent = $("resi").textContent;
+    $("bvResi").textContent = _resiRaw;
     const rows = BOUGHT_ ? boughtRowsHtml_(BOUGHT_) : [];
     body.innerHTML = rows.length
       ? rows.join("")
