@@ -35,6 +35,15 @@
   .phbad{max-height:none;min-height:74px;object-fit:unset;cursor:default;display:flex;align-items:center;justify-content:center;color:#b05a52;font-size:12.5px;font-weight:700;border:1px dashed #e0c3bd}
   .hmemo{margin-top:10px;background:var(--paper);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.65;color:var(--ink);white-space:pre-wrap;word-break:break-word}
   /* ロースター紹介の入口 */
+  /* ★2026-10-05 コーヒー日記（審査会A-1）：お店が決まっていない記録の入口。
+     ふだんの画面＝枠線（この画面の塗りのボタンは「お店を教える」の1つだけ＝1画面1つを守る）。
+     まだ1件も無い人の画面＝塗り（そこでは、これが一番やってほしいこと）。 */
+  .recnew{display:block;text-align:center;background:var(--bg);border:1.5px solid var(--brand-deep);
+    color:var(--brand-deep);font-weight:800;font-size:14px;border-radius:12px;padding:12px;
+    text-decoration:none;cursor:pointer;margin:0 0 6px}
+  .recnew-s{font-size:11.5px;color:var(--ink-sub);text-align:center;margin:0 0 16px}
+  #empty .recnew{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff;
+    display:inline-block;padding:13px 28px;margin-top:20px}
   .jointo{margin:16px 0 4px;background:var(--bg);border:1.5px dashed var(--brand-deep);border-radius:14px;padding:16px 14px;text-align:center}
   .ji-h{font-size:14.5px;font-weight:900;color:var(--ink);line-height:1.5}
   .ji-s{font-size:12px;color:var(--ink-sub);margin:7px 2px 13px;line-height:1.65}
@@ -82,6 +91,10 @@
     <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
     <div class="s"><b id="nPref">0</b><span>行った県</span></div>
   </div>
+  <!-- ★2026-10-05 コーヒー日記（審査会A-1）：お店が決まっていない記録の入口。
+       お店を渡さずに記録の画面を開く＝向こうで「どこで飲みましたか？」から選べる。 -->
+  <a class="recnew" id="recNewBtn">今日の一杯を残す</a>
+  <div class="recnew-s">お店でも、家でも。</div>
   <div id="list"></div>
   <!-- ロースター紹介の入口（旅の記録の最後）＝推薦フォーム(テスト)へ -->
   <div class="jointo" id="jointo">
@@ -95,6 +108,10 @@
   <div class="emo">☕️</div>
   <div class="t">最初の一杯は、どこで飲みますか？</div>
   <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここに旅の記録が並んでいきます。</div>
+  <!-- ★2026-10-05 コーヒー日記（審査会A-1）：★ここを忘れると、家でしか淹れない方は
+       1件目がいつまでも書けない（この画面しか出ないため）。 -->
+  <a class="recnew" id="recNewBtn2">今日の一杯を残す</a>
+  <div class="recnew-s">お店でも、家でも。</div>
 </div>
 
 <!-- 写真の拡大（タップで開く／背景か×で閉じる） -->
@@ -103,6 +120,15 @@
 <script>
   const LIFF_ID = "2008851980-6s0zFwwl"; // 旅の記録（テスト・2026-08-31発行）
   const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0"; // 今日の一杯（記録を追加する遷移先）
+  // ★2026-10-05 コーヒー日記（審査会A-1）：お店を渡さずに記録の画面を開く＝向こうで場所を選べる。
+  //   2か所（ふだんの画面／まだ1件も無い人の画面）に同じ飛び先を付ける。
+  function wireRecNew(){
+    const u = "https://liff.line.me/" + LOG_DRINK_LIFF_ID;   // ★わざと お店を渡さない
+    ["recNewBtn", "recNewBtn2"].forEach(function(id){
+      const el = document.getElementById(id);
+      if (el) el.href = u;
+    });
+  }
   const REC_LIFF_ID = "2008851980-Xk7hOmMv"; // 推薦フォーム（テスト）※本番反映時はリリース番が本番の推薦LIFFへ差替（本番IDは引き継ぎメモ参照）
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
@@ -253,6 +279,7 @@
   }
 
   async function main(){
+    wireRecNew();   // ★2026-10-05 記録の入口の飛び先を付ける（読み込みの前に付ける＝どちらの画面でも効く）
     const previewUid = String(params.get("uid")||"").trim();
     const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
     if(!liffReady){ USER_ID = previewUid; return load(); }
