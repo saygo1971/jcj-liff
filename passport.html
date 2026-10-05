@@ -269,7 +269,16 @@
   const SAVED_READY = /^\d+-[A-Za-z0-9]+$/.test(LIFF.saved) && LIFF.saved.indexOf("XXXX") < 0;
   const $ = id => document.getElementById(id);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const open = key => { location.href = "https://liff.line.me/" + LIFF[key]; };
+  // ★2026-10-05 お住まいの画面だけ、住所の末尾に版を付けて開く。
+  //   理由＝端末が古い画面を覚えていると、直したことが届きません（実際に起きました）。
+  //         末尾の数字が変わると「見たことのない住所」になるので、必ず新しいものを取りに行きます。
+  //   ★お住まいの画面（home_city.html）を直したら、ここの数字を1つ上げる。
+  //     上げ忘れても、間違った動きにはなりません（新しいものが届くのが遅れるだけです）。
+  const HOMECITY_V = "4";
+  const open = key => {
+    const q = (key === "homecity" && HOMECITY_V) ? ("?v=" + HOMECITY_V) : "";
+    location.href = "https://liff.line.me/" + LIFF[key] + q;
+  };
   let _resiRaw = "";   // ★お住まいの文字（› を付けない素のまま。「買ったもの」の見出しで使う）
 
   // 行きたいリスト（案B・専用ページ saved.html）。
