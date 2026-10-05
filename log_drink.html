@@ -23,6 +23,25 @@
   #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
   .chk{background:var(--done-tint);color:var(--state-done);font-size:12.5px;font-weight:700;border-radius:10px;
     padding:9px 11px;display:flex;gap:6px;align-items:center;margin-bottom:14px}
+  /* ★2026-10-05 コーヒー日記（審査会A-1）：飲んだ場所を自分で選ぶ所 */
+  .chkedit{margin-left:auto;background:#fff;border:1px solid var(--state-done);color:var(--state-done);
+    font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit}
+  .picker{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;background:var(--paper)}
+  .picker .sec{margin-top:0}
+  .pick{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:12px 13px;font-size:14px;font-weight:700;color:var(--ink);
+    cursor:pointer;margin-bottom:8px;font-family:inherit}
+  .pick.sel{border-color:var(--brand-deep);color:var(--brand-deep)}
+  .picklist{max-height:240px;overflow-y:auto;margin:4px 0 8px}
+  .picklist .row{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    font-size:13.5px;color:var(--ink);cursor:pointer;margin-bottom:6px}
+  .picklist .row .d{font-size:11px;color:var(--ink-sub);margin-top:2px}
+  .pickother{display:flex;gap:7px;margin:4px 0 8px}
+  .pickother input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
+    font-family:inherit;background:var(--bg);color:var(--ink)}
+  .pickok{background:var(--brand-deep);color:#fff;border:0;border-radius:10px;padding:10px 14px;
+    font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit}
+  .pickmsg{font-size:12px;color:var(--ink-sub);line-height:1.6;min-height:16px}
   .store{font-size:19px;font-weight:800;margin:2px 0 1px;color:var(--ink)}
   .store-pl{font-size:12.5px;color:var(--ink-sub);margin-bottom:16px}
   .q{font-size:15px;font-weight:800;margin:0 0 4px;color:var(--ink)}
@@ -76,7 +95,23 @@
 <div id="status">読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
-  <div class="chk" id="chkLine">✓ <span id="chkStore">お店</span> に来ました</div>
+  <!-- ★2026-10-05 コーヒー日記（審査会A-1・条件1）：飲んだ場所を自分で選べるようにした。
+       チェックインのあと・旅の記録から来たときは、いままでと同じ見た目（お店が決まっている）。
+       「かえる」を押したときだけ下の選ぶ所がひらき、お店の一覧も押したときだけ読む。 -->
+  <div class="chk" id="chkLine">✓ <span id="chkStore">お店</span> に来ました<button type="button" class="chkedit hidden" id="chkEdit">かえる</button></div>
+
+  <div class="picker hidden" id="picker">
+    <div class="sec">どこで飲みましたか？</div>
+    <button type="button" class="pick" id="pickHome">家で淹れた</button>
+    <button type="button" class="pick" id="pickVisited">行ったことのあるお店からえらぶ</button>
+    <button type="button" class="pick" id="pickOther">その他（お店の名前を書く）</button>
+    <div class="picklist hidden" id="pickList"></div>
+    <div class="pickother hidden" id="pickOtherBox">
+      <input type="text" id="otherName" maxlength="40" placeholder="お店の名前">
+      <button type="button" class="pickok" id="otherOk">これにする</button>
+    </div>
+    <div class="pickmsg" id="pickMsg"></div>
+  </div>
 
   <div class="q" id="qHead">今日の一杯は？</div>
   <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
@@ -141,6 +176,10 @@
   const SHOP_ID   = String(params.get("shop") || "").trim();
   const SHOP_NAME = String(params.get("name") || "").trim();
   const SHOP_PREF = String(params.get("pref") || "").trim();
+  // ★2026-10-05：いま選ばれている場所。URLで来たときはそれが初めの値。
+  //   お店の台帳に在るお店＝curShopId に店のID／家で淹れた・その他＝curShopId は空で curShopName だけ入る。
+  let curShopId   = SHOP_ID;
+  let curShopName = SHOP_NAME;
   const REC_DATE  = String(params.get("date") || "").trim(); // 過去の来店に足す時のみ（epoch ms）
   const IS_BACK   = REC_DATE !== "";
 
@@ -198,9 +237,100 @@
     };
   }
 
+  // ★2026-10-05 コーヒー日記（審査会A-1）：ここから下4つが「飲んだ場所を自分で選ぶ」の動き。
+  // 一番上の行の見た目を、いま選ばれている場所に合わせる。
+  function paintPlace(){
+    if (IS_BACK) return;                      // 過去の来店に足すときは、その日のその店で固定
+    if (curShopId){
+      $("chkLine").innerHTML = '✓ <span id="chkStore"></span> に来ました';
+      $("chkStore").textContent = curShopName || "お店";
+    } else if (curShopName){
+      $("chkLine").innerHTML = '☕ <span id="chkStore"></span>';
+      $("chkStore").textContent = curShopName;
+    } else {
+      $("chkLine").innerHTML = '☕ <span id="chkStore">どこで飲んだかをえらんでください</span>';
+    }
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chkedit"; b.id = "chkEdit"; b.textContent = "かえる";
+    b.onclick = openPicker;
+    $("chkLine").appendChild(b);
+    wireRef();
+  }
+
+  // 紹介のボタンは「どのお店を紹介するか」が決まるときだけ出す（家で淹れた・手入力では出さない）。
+  function wireRef(){
+    if (/^\d+-/.test(SHARE_LIFF_ID) && curShopId){
+      $("refBtn").href = "https://liff.line.me/" + SHARE_LIFF_ID + "?shopId=" + encodeURIComponent(curShopId) + "&source=log_drink";
+      $("refWrap").classList.remove("hidden");
+    } else { $("refWrap").classList.add("hidden"); }
+  }
+
+  function openPicker(){ $("picker").classList.remove("hidden"); }
+
+  // 場所を決める。shopId が空＝お店の台帳に無い場所（家で淹れた・手入力）。
+  function setPlace(shopId, shopName){
+    curShopId = String(shopId || "");
+    curShopName = String(shopName || "").trim().slice(0, 40);
+    $("picker").classList.add("hidden");
+    $("pickList").classList.add("hidden");
+    $("pickOtherBox").classList.add("hidden");
+    $("pickMsg").textContent = "";
+    $("err").textContent = "";
+    paintPlace();
+  }
+
+  // 「行ったことのあるお店からえらぶ」＝押したときだけ読む（この画面を開くのは遅くならない）。
+  let visitedLoaded = false;
+  async function loadVisited(){
+    $("pickList").classList.remove("hidden");
+    $("pickOtherBox").classList.add("hidden");
+    if (visitedLoaded) return;
+    $("pickMsg").textContent = "行ったお店を読んでいます…（少し時間がかかります）";
+    try {
+      const res = await fetch(GAS_URL + "?action=my_history&userId=" + encodeURIComponent(USER_ID) + "&_=" + Date.now());
+      const d = await res.json();
+      if (!d || !d.ok) throw new Error("ng");
+      // 同じお店は1つにまとめ、最後に行った日が新しい順に並べる
+      const map = {};
+      (d.checkins || []).forEach(function(c){
+        const id = String(c.shopId || "").trim();
+        if (!id) return;
+        if (!map[id] || (c.ms || 0) > map[id].ms) map[id] = { id: id, name: c.shopName || "お店", ms: c.ms || 0, date: c.date || "" };
+      });
+      const list = Object.keys(map).map(k => map[k]).sort((a, b) => b.ms - a.ms);
+      if (!list.length){
+        $("pickMsg").textContent = "まだ行ったお店の記録がありません。「その他（お店の名前を書く）」からどうぞ。";
+        $("pickList").classList.add("hidden");
+        visitedLoaded = true;
+        return;
+      }
+      $("pickList").innerHTML = "";
+      list.forEach(function(s){
+        const row = document.createElement("div");
+        row.className = "row";
+        const nm = document.createElement("div"); nm.textContent = s.name;
+        const dt = document.createElement("div"); dt.className = "d"; dt.textContent = s.date ? ("最後に行った日 " + s.date) : "";
+        row.appendChild(nm); row.appendChild(dt);
+        row.onclick = function(){ setPlace(s.id, s.name); };
+        $("pickList").appendChild(row);
+      });
+      $("pickMsg").textContent = list.length + " 軒";
+      visitedLoaded = true;
+    } catch(e){
+      $("pickMsg").textContent = "行ったお店を読めませんでした。「その他（お店の名前を書く）」からどうぞ。";
+      $("pickList").classList.add("hidden");
+    }
+  }
+
   async function submit(){
     $("err").textContent = "";
     const memo = $("memo").value.trim();
+    // ★2026-10-05：どこで飲んだかが決まっていない記録は送らない（受け口も断る作りになっている）
+    if (!curShopId && !curShopName){
+      $("err").textContent = "どこで飲んだかを、上からえらんでください。";
+      openPicker();
+      return;
+    }
     // 写真だけの記録も許可（飲みもの等が無くても写真があればOK）
     if (!sel.drink && !sel.country && !sel.process && !memo && !window._photoData){
       $("err").textContent = "飲みものか生産国を1つえらぶか、写真を追加してください。";
@@ -216,14 +346,15 @@
         const res = await fetch(GAS_URL + "?action=drink_log_full", {
           method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
           body: JSON.stringify({
-            userId:USER_ID, shopId:SHOP_ID, drink:sel.drink, country:sel.country,
+            userId:USER_ID, shopId:curShopId, shopName:curShopName,
+            drink:sel.drink, country:sel.country,
             process:sel.process, memo:memo, date:REC_DATE, photo:window._photoData
           })
         });
         d = await res.json();
       } else {
         const q = new URLSearchParams({
-          action:"drink_log_submit", userId:USER_ID, shopId:SHOP_ID, shopName:SHOP_NAME,
+          action:"drink_log_submit", userId:USER_ID, shopId:curShopId, shopName:curShopName,
           drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE,
           photoUrl:"", _:Date.now()
         });
@@ -273,10 +404,29 @@
       $("goHist").href = "https://liff.line.me/" + HISTORY_LIFF_ID;
     } else { $("goHist").classList.add("hidden"); }
     // 友だちに紹介＝既存シェアLIFF（送る側 share）へ。★shopId 必須（この店を紹介する）。shop.html と同じ付け方。
-    // SHARE未設定 or 店ID無し（＝どの店の紹介か決まらない）なら紹介ブロックを隠す（導線を壊さない）。
-    if (/^\d+-/.test(SHARE_LIFF_ID) && SHOP_ID){
-      $("refBtn").href = "https://liff.line.me/" + SHARE_LIFF_ID + "?shopId=" + encodeURIComponent(SHOP_ID) + "&source=log_drink";
-    } else { $("refWrap").classList.add("hidden"); }
+    // ★2026-10-05：選び直せるようになったので、つなぎ方は wireRef() に移した（場所を変えるたびに付け替える）。
+    wireRef();
+    // ★2026-10-05 コーヒー日記（審査会A-1・条件1）：飲んだ場所を自分で選ぶ。
+    //   過去の来店に足すとき（旅の記録から）は、その日のその店の記録なので選び直させない。
+    if (!IS_BACK){
+      $("chkEdit").classList.remove("hidden");
+      $("chkEdit").onclick = openPicker;
+      $("pickHome").onclick    = function(){ setPlace("", "家で淹れた"); };
+      $("pickVisited").onclick = function(){ loadVisited(); };
+      $("pickOther").onclick   = function(){
+        $("pickOtherBox").classList.remove("hidden");
+        $("pickList").classList.add("hidden");
+        $("pickMsg").textContent = "";
+        $("otherName").focus();
+      };
+      $("otherOk").onclick = function(){
+        const v = $("otherName").value.trim();
+        if (!v){ $("pickMsg").textContent = "お店の名前を書いてください。"; return; }
+        setPlace("", v);
+      };
+      // お店が決まっていないで開いたとき（＝家で淹れた一杯を書きに来たとき）は、選ぶ所を先にひらく
+      if (!curShopId && !curShopName){ paintPlace(); openPicker(); }
+    }
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
   }
