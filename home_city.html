@@ -280,6 +280,11 @@
   }
 
   function showDone(pref, city){
+    // ★2026-10-05（ア）パスポートの画面が端末に覚えている中身を消す。
+    //   消さないと、パスポートへ戻ったときに【古い県が一瞬 出てから】書き換わる。
+    //   ★消すのは保存が成功したときだけ。他の場面では消さない（速く見せる作りを壊さないため）。
+    //   ★同じ置き場なので、この画面から消せます。
+    try{ localStorage.removeItem("jcj_passport_" + USER_ID); }catch(e){}
     $("main").classList.add("hidden");
     $("doneTitle").textContent = "設定しました";
     $("doneSub").textContent = "これから、" + [pref, city].filter(Boolean).join(" ")

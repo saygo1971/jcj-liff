@@ -52,6 +52,8 @@
   .cir.got img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%}
   .cir.emp{background:var(--empty);border:1.5px dashed #cbbba0}
   .tapnote{text-align:right;font-size:10px;color:var(--sub);margin-top:7px;cursor:pointer}
+  /* ★2026-10-05 最新が取れなかったときの小さな知らせ */
+  .stalenote{text-align:center;font-size:10.5px;color:var(--sub);margin-top:8px;line-height:1.5}
   /* 行きたいリスト入口（保存したお店へ再訪＝送客）
      ★2026-09-15 変更2点（この1ブロックだけ。他の画面・他のブロックには広げない）
        ①緑→ピンク：トンマナは「ピンク＝これから起こすこと／グリーン＝終わったこと」。
@@ -229,6 +231,9 @@
         <a class="second" id="navBought"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lb">買ったもの</span></a>
       </div>
     </div>
+
+    <!-- ★2026-10-05 最新が取れなかったとき、黙らずに小さく出す -->
+    <div id="staleNote" class="stalenote hidden"></div>
 
     <!-- お知らせの入口（ポップアップを閉じても残る。CONFIGのonの間だけ表示） -->
     <div id="noticeEntry" class="hidden"></div>
@@ -541,8 +546,18 @@
   }
 
   let _started = "";   // 既にstart済みの userId（二重fetch・古い応答の取り違え防止）
+  let _lastLoadAt = 0; // ★最後に最新を取りに行った時刻（立て続けの呼び出しを1回にまとめる）
+
+  // ★2026-10-05（ウ）最新が取れなかったことを、黙らずに小さく出す。
+  //   ★前回分の表示は消さない（消すと、電波の悪い方は何も見えなくなります）。
+  function showStale_(on){
+    const el = $("staleNote"); if(!el) return;
+    el.textContent = on ? "いま最新を取れませんでした。表示は前回のものです。" : "";
+    el.classList.toggle("hidden", !on);
+  }
 
   async function loadData(userId){
+    _lastLoadAt = Date.now();
     try{
       const res = await fetch(GAS_URL + "?action=passport&userId=" + encodeURIComponent(userId) + "&_=" + Date.now());
       const d = await res.json();
@@ -551,13 +566,30 @@
         render(d);
         handleNotice(d.notice);   // お知らせ（CONFIG駆動・最新取得の時だけ判定）
         try{ localStorage.setItem("jcj_passport_"+userId, JSON.stringify(d)); }catch(e){}
+        showStale_(false);        // ★取れたので知らせを消す
       } else if ($("main").classList.contains("hidden")) {
         $("status").textContent = "読み込みに失敗しました。電波の良い場所でお試しください。";
+      } else {
+        showStale_(true);         // ★★前回分を出したあとに失敗＝前は黙っていた所
       }
     }catch(e){
       if ($("main").classList.contains("hidden")) $("status").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
+      else showStale_(true);     // ★★ここも前は黙っていた
     }
   }
+
+  // ★2026-10-05（イ）画面が表に戻ってきたら、裏で取り直す。
+  //   ★「前回分を先に出す」作り（本部v36・2026-09-01 オーナー承認）は そのままです。
+  //     そのうえで最新を取り直すだけなので、速く見える良さは落ちません。
+  //   理由＝お住まいを直してパスポートへ戻っても読み直さないので、古い県が出たままだった。
+  function reloadIfVisible_(){
+    if (document.visibilityState !== "visible") return;
+    if (!_started) return;                       // まだ始まっていない
+    if (Date.now() - _lastLoadAt < 2000) return; // 立て続けに呼ばれても1回だけ
+    loadData(_started);
+  }
+  document.addEventListener("visibilitychange", reloadIfVisible_);
+  window.addEventListener("pageshow", reloadIfVisible_);
 
   function start(userId){
     if(!userId){ if($("main").classList.contains("hidden")) $("status").textContent = "ユーザー情報が取得できませんでした。"; return; }
