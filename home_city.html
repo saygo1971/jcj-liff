@@ -165,6 +165,10 @@
   //   ② ①が無ければ 置き場（下のアドレス）を読む ＝本番サーバーに1ファイルも置かずに動く
   //   ※ ①が「無い」の数え方＝取れなかった／200で返ってきても中身が読めなかった、の両方。
   //      置いていないサーバーが、ファイルの代わりにエラーの画面を200で返すことがあるため。
+  // ★2026-10-05 この画面の版。保存のときサーバーへ一緒に送り、記録の「入れ方」欄に残る。
+  //   ★画面を直したら、ここの数字を1つ上げる。古い画面が端末に残っていても、記録を見れば分かる。
+  //   ★お客さまには何も見えません。
+  const SCREEN_VERSION = "v4";
   const ZIP_BASES = ["zip", "https://saygo1971.github.io/jcj-liff/zip"];
   let ZIP_FOUND = null;   // いま画面に出している引き当て結果
   const ZIP_CACHE = {};   // 一度読んだ一覧は持っておく
@@ -301,7 +305,7 @@
     lockButtons(true);
     $(where).className = "msg"; $(where).textContent = "設定中…";
     try{
-      const q = new URLSearchParams(Object.assign({ action:"set_home_city", userId:USER_ID, _:Date.now() }, params));
+      const q = new URLSearchParams(Object.assign({ action:"set_home_city", userId:USER_ID, v:SCREEN_VERSION, _:Date.now() }, params));
       const res = await fetch(GAS_URL + "?" + q.toString(), { method: "GET" });
       const data = await res.json();
       if(data && data.ok){ showDone(data.pref, data.city); return; }
