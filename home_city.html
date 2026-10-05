@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
-<title>お住まいの市区町村</title>
+<title>お住まい</title>
 <style>
   :root{
     --cream:#FFFFFF; --paper:#ffffff; --ink:#221C1A; --sub:#6E655E;
@@ -64,7 +64,7 @@
   .done .t{font-size:19px;font-weight:800;margin-top:12px}
   .done .s{font-size:13.5px;color:var(--sub);margin-top:8px;line-height:1.7;font-weight:600}
 
-  .msg{font-size:12.5px;font-weight:700;margin-top:12px;text-align:center;min-height:18px}
+  .msg{font-size:12.5px;font-weight:700;margin-top:12px;text-align:center;min-height:18px;white-space:pre-line;line-height:1.6}
   .msg.err{color:var(--coralBtn)}
 </style>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -124,7 +124,7 @@
   <div id="doneView" class="hidden">
     <div class="done">
       <div class="ic">📍</div>
-      <div class="t" id="doneTitle">ここからコーヒー旅がはじまります</div>
+      <div class="t" id="doneTitle">設定しました</div>
       <div class="s" id="doneSub"></div>
     </div>
   </div>
@@ -209,7 +209,7 @@
     try{ r = await zipLookup(zip); }catch(e){ r = null; }
     if(!r){
       $("zipMsg").className = "msg err";
-      $("zipMsg").textContent = "この郵便番号は見つかりませんでした。もう一度お確かめください。";
+      $("zipMsg").textContent = "この郵便番号は見つかりませんでした。もう一度お確かめください。\nわからないときは、下の『郵便番号がわからない方・海外にお住まいの方はこちら』から選べます。";
       return;
     }
     ZIP_FOUND = { zip:zip, pref:r.pref, city:r.city, town:r.town };
@@ -286,7 +286,7 @@
   //   このとき台帳は1マスも書き替わっていない＝いまのお住まいのまま距離は正しく数えられる。
   function showRefused(reason, where){
     const t = (reason === "zip_not_found")
-      ? "この郵便番号は見つかりませんでした。もう一度お確かめください。"
+      ? "この郵便番号は見つかりませんでした。もう一度お確かめください。\nわからないときは、下の『郵便番号がわからない方・海外にお住まいの方はこちら』から選べます。"
       : (reason === "not_registered")
         ? "まだ登録が終わっていないようです。先にパスポートの登録をお願いします。"
         : "いまのままにしました。お住まいの場所を確かめきれませんでした。あなたの旅の距離は、いまのお住まいのまま 正しく数えます。";
@@ -306,7 +306,7 @@
       showRefused(data && (data.reason || data.error), where);
     }catch(err){
       $(where).className = "msg err";
-      $(where).textContent = "通信に失敗しました。電波の良い場所でお試しください。";
+      $(where).textContent = "いまはつながりませんでした。電波の良い場所でもう一度お試しください。\nこれまでの距離は、何も変わっていません。";
       lockButtons(false);
     }
   }
