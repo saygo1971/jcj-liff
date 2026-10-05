@@ -156,8 +156,14 @@
      出どころ＝郵便番号と住所の対応は日本郵便、町名ごとの場所は geolonia japanese-addresses（MIT）。
      ★ここで読むのは「画面に出して確かめていただくため」。
        台帳に入れる場所は、サーバーが自分で引き当てたものを使う（画面からは7桁しか送らない）。
-     ★本番へ上げるときは、この画面と同じ階層に zip/ フォルダをまるごと置くこと。 */
-  const ZIP_BASE = "zip";
+     ★本番サーバーには、この一覧を置かなくても動きます（置き場を読みます）。
+       置いた場合は、置いた方が自動で使われます（直す所はありません）。 */
+  // ★2026-10-05 読む場所は【2つ、この順】。アドレスを増やさず、置き直しても直さずに済む形。
+  //   ① この画面と同じ場所の zip/ ＝在ればこれを読む（本番サーバーに置いた日から、何も直さずにこちらへ切り替わる）
+  //   ② ①が無ければ 置き場（下のアドレス）を読む ＝本番サーバーに1ファイルも置かずに動く
+  //   ※ ①が「無い」の数え方＝取れなかった／200で返ってきても中身が読めなかった、の両方。
+  //      置いていないサーバーが、ファイルの代わりにエラーの画面を200で返すことがあるため。
+  const ZIP_BASES = ["zip", "https://saygo1971.github.io/jcj-liff/zip"];
   let ZIP_FOUND = null;   // いま画面に出している引き当て結果
   const ZIP_CACHE = {};   // 一度読んだ一覧は持っておく
 
@@ -170,9 +176,18 @@
   async function zipLookup(zip){
     const head = zip.substring(0,3), tail = zip.substring(3);
     if(!ZIP_CACHE[head]){
-      const res = await fetch(ZIP_BASE + "/" + head + ".json", { cache: "no-store" });
-      if(!res.ok) return null;
-      ZIP_CACHE[head] = await res.json();
+      let tbl = null;
+      for(let i=0; i<ZIP_BASES.length; i++){
+        try{
+          const res = await fetch(ZIP_BASES[i] + "/" + head + ".json", { cache: "no-store" });
+          if(!res.ok) continue;                 // 無い → 次の場所へ
+          tbl = JSON.parse(await res.text());   // 中身が読めない → 次の場所へ
+          if(tbl && typeof tbl === "object") break;
+          tbl = null;
+        }catch(e){ tbl = null; }                // どちらの場所も読めないことがある
+      }
+      if(!tbl) return null;
+      ZIP_CACHE[head] = tbl;
     }
     const r = ZIP_CACHE[head][tail];
     if(!r) return null;
