@@ -288,9 +288,14 @@
       const cardUrl = CHECKIN_CARD_BASE + encodeURIComponent(shopId) + "/checkin.jpg";
       banner = '<img id="donecard" class="donecard" alt="チェックイン完了" src="' + esc(cardUrl) + '">';
     }
+    // ★2026-10-07：足される数が0のときは、数字そのものを出しません。
+    //   ★「＋0マイル」と出すと、お客さまに「損をした」と読まれます。
+    //   ★0になるのは【イベントのブース】だけです（ふつうのお店は最低10なので0になりません）。
     const mileHtml = r.alreadyToday
       ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
-      : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
+      : ((Number(r.earnedMile)||0) > 0
+          ? '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>'
+          : '');
 
     // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
     const noteHtml = '<div style="font-size:13px;color:#332822;font-weight:500;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
@@ -329,9 +334,12 @@
     const extUrl = CHECKIN_CARD_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/exterior.jpg";
     const logoUrl = CHECKIN_CARD_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/logo.png";
     const initial = esc(String(r.shopName || "?").trim().slice(0,1) || "?");
+    // ★2026-10-07：0 のときは出しません（上の mileHtml と同じ理由・同じ条件）。
     const cimile = r.alreadyToday
       ? '<div class="citotal">同じ日の重複はマイルを二重に付けません</div>'
-      : '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>';
+      : ((Number(r.earnedMile)||0) > 0
+          ? '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>'
+          : '');
     const headerHtml =
       '<div class="cihead">' +
         '<img id="cilogoImg" class="cilogo" src="' + esc(logoUrl) + '" data-ext="' + esc(extUrl) + '" alt="" onerror="if(this.dataset.ext&&this.src!==this.dataset.ext){this.src=this.dataset.ext;this.removeAttribute(\'data-ext\');}else{this.style.display=\'none\';var f=this.nextElementSibling;if(f)f.style.display=\'flex\';}">' +
