@@ -291,20 +291,45 @@
     }catch(e){ if(!cached) $("status").textContent="通信エラーが起きました。電波の良い場所でお試しください。"; $("refresh").classList.add("hidden"); }
   }
 
+  // ★2026-10-06 オーナー報告「パスポートは一瞬／旅の記録は5秒」への直し。
+  //   原因＝この画面は LINEの本人確認（liff.init と getProfile）が終わるまで、
+  //         前回分を出す処理そのものを始めていなかった。
+  //         パスポートは本人確認を待たずに先に出している（passport.html と同じ作りに揃える）。
+  let _started = "";   // すでに読み始めたユーザーID（同じ人で二重に読まない）
+  function startFor(uid){
+    uid = String(uid || "").trim();
+    if (!uid || _started === uid) return;
+    _started = uid;
+    USER_ID = uid;
+    try{ localStorage.setItem("jcj_uid", USER_ID); }catch(e){} // shop.htmlの保存で使う（同一オリジン・URLに載せない）
+    load();
+  }
+
   async function main(){
     wireRecNew();   // ★2026-10-05 記録の入口の飛び先を付ける（読み込みの前に付ける＝どちらの画面でも効く）
     const previewUid = String(params.get("uid")||"").trim();
     const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
-    if(!liffReady){ USER_ID = previewUid; return load(); }
-    await liff.init({ liffId: LIFF_ID });
-    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
-    USER_ID = profile.userId || previewUid;
-    if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
-    try{ if(USER_ID) localStorage.setItem("jcj_uid", USER_ID); }catch(e){} // shop.htmlの保存で使う（同一オリジン・URLに載せない）
-    // 📈 旅の記録を開いた記録（投げっぱなし＝返事を待たない・失敗しても表示は普通に出す／本物のLINEユーザーのみ）
-    try{ if(/^U[0-9a-f]{32}$/i.test(USER_ID)) fetch(GAS_URL+"?action=page_view&page=history&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
-    load();
+    if(!liffReady){ startFor(previewUid); return; }
+
+    // ★前回のユーザーIDが端末にあれば、LINEの本人確認を待たずに
+    //   先に前回の中身を出し、最新の取得も始める（2回目以降がほぼ一瞬になる）。
+    let cachedUid = "";
+    try{ cachedUid = localStorage.getItem("jcj_uid") || ""; }catch(e){}
+    if (cachedUid) startFor(cachedUid);
+
+    // 裏でLINEの本人確認。違う人なら正しいIDで開き直す。
+    try{
+      await liff.init({ liffId: LIFF_ID });
+      if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
+      const profile = await liff.getProfile();
+      const uid = (profile && profile.userId) || previewUid;
+      if(!uid){ if(!_started) $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
+      if (uid !== cachedUid){ _started = ""; startFor(uid); }   // 別人なら正しいIDで出し直す
+      // 📈 コーヒー日記を開いた記録（投げっぱなし＝返事を待たない・失敗しても表示は普通に出す／本物のLINEユーザーのみ）
+      try{ if(/^U[0-9a-f]{32}$/i.test(uid)) fetch(GAS_URL+"?action=page_view&page=history&userId="+encodeURIComponent(uid)+"&_="+Date.now(),{method:"GET",mode:"no-cors",keepalive:true}); }catch(e){}
+    }catch(e){
+      if(!_started) $("status").textContent="ログインの確認中に問題が起きました。アプリを開き直してください。";
+    }
   }
   main().catch(err => $("status").textContent = "エラー: "+(err&&err.message||String(err)));
 </script>
