@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>旅の記録</title>
+<title>コーヒー日記</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
@@ -64,6 +64,10 @@
   .tag.drink{background:var(--paper);color:var(--ink)}
   .tag.ctry{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
   .tag.dist{background:var(--done-tint);color:var(--state-done)}
+  /* ★2026-10-06 オーナー指示：1つの「コーヒー日記」にまとめ、1行ずつどちらかの印を付ける。
+     旅の記録＝お店で飲んだ一杯（お店が決まっているもの）／おうちの記録＝お店が決まっていないもの。 */
+  .tag.kind{background:var(--brand-base);color:#fff}
+  .tag.kind.home{background:var(--paper);color:var(--ink-sub);border:1px solid var(--line)}
   .tag.addrec{background:var(--bg);border:1px solid var(--brand-deep);color:var(--brand-deep);text-decoration:none;cursor:pointer}
   #empty{text-align:center;padding:64px 24px}
   #empty .emo{font-size:40px}
@@ -80,12 +84,12 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>旅の記録</span></div>
+<div class="bar"><span>コーヒー日記</span></div>
 <div id="status"><div class="spin"></div>読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
   <div id="refresh" class="refresh hidden">最新に更新中…</div>
-  <div class="hlead">これまでの一杯と、歩いた道のり。</div>
+  <div class="hlead">これまでの一杯と、歩いた道のり。<br>お店の一杯も、おうちの一杯も、日付の順に並びます。</div>
   <div class="summ">
     <div class="s"><b id="nVisit">0</b><span>訪問した回数</span></div>
     <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
@@ -107,7 +111,7 @@
 <div id="empty" class="wrap hidden">
   <div class="emo">☕️</div>
   <div class="t">最初の一杯は、どこで飲みますか？</div>
-  <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここに旅の記録が並んでいきます。</div>
+  <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここにコーヒー日記が並んでいきます。</div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：★ここを忘れると、家でしか淹れない方は
        1件目がいつまでも書けない（この画面しか出ないため）。 -->
   <a class="recnew" id="recNewBtn2">今日の一杯を残す</a>
@@ -204,7 +208,11 @@
       const logo = r.shopId
         ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(r.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
         : '';
-      let tags="";
+      // ★2026-10-06 オーナー指示：この一杯がどちらかを、行の先頭に出す。
+      //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝おうちの記録。
+      let tags = r.shopId
+        ? '<span class="tag kind">旅の記録</span>'
+        : '<span class="tag kind home">おうちの記録</span>';
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';

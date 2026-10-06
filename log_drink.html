@@ -149,8 +149,8 @@
 <div id="done" class="hidden">
   <div class="emo">☕️</div>
   <div class="t" id="doneT">記録しました</div>
-  <div class="msg">この一杯が、あなたの旅の記録になりました。<br>次のお店でも、ぜひ残してください。</div>
-  <a class="goHist" id="goHist" href="#">旅の記録を見る</a>
+  <div class="msg" id="doneMsg">この一杯が、あなたのコーヒー日記になりました。<br>次のお店でも、ぜひ残してください。</div>
+  <a class="goHist" id="goHist" href="#">コーヒー日記を見る</a>
   <!-- ③ 友だちに紹介（記録できた瞬間に・明確な文言／メリット一言） -->
   <div class="refWrap" id="refWrap">
     <a class="refBtn" id="refBtn" href="#">友だちに紹介する</a>
@@ -368,6 +368,10 @@
       }
       // 書いた結果が返ってくる＝「◯杯目の一杯」（次も書きたくなる）
       $("doneT").textContent = IS_BACK ? "記録しました" : (d.count ? d.count + "杯目を記録しました" : "記録しました");
+      // ★2026-10-06：おうちで淹れた一杯に「次のお店でも」は合わないので、言葉を変える。
+      if (!curShopId){
+        $("doneMsg").innerHTML = "この一杯が、あなたのコーヒー日記になりました。<br>次の一杯も、ぜひ残してください。";
+      }
       $("main").classList.add("hidden");
       $("done").classList.remove("hidden");
     } catch(e){
