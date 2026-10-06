@@ -147,7 +147,13 @@
     const checkins = (d.checkins||[]);
     const drinks = (d.drinks||[]);
     // 記録も来店も無い時だけ「まだありません」。記録だけでも表示する（案A・2026-09-03）。
-    if (!checkins.length && !drinks.length){ $("status").classList.add("hidden"); $("empty").classList.remove("hidden"); return; }
+    if (!checkins.length && !drinks.length){
+      $("status").classList.add("hidden");
+      $("main").classList.add("hidden");       // ★2026-10-07 前に出した一覧が残らないように隠す
+      $("empty").classList.remove("hidden");
+      return;
+    }
+    $("empty").classList.add("hidden");         // ★2026-10-07 一覧を出すときは「まだありません」を隠す
 
     // 記録は「一杯ごと」に全部見せる。来店(チェックイン)には、同じ店・同じ日の記録を1件だけ紐づけ、
     // 残りの記録は独立した行として必ず表示する（同じ店・同じ日に何度記録しても消えない）。
@@ -260,6 +266,7 @@
     });
 
     $("status").classList.add("hidden");
+    $("empty").classList.add("hidden");         // ★2026-10-07 念のためここでも隠す
     $("main").classList.remove("hidden");
   }
 
