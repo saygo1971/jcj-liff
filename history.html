@@ -216,7 +216,9 @@
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
-        // ★2026-10-06 おうちの記録に入れた挽き目・湯温も出す（書いたものが見えないと、次に書く気にならない）
+        // ★2026-10-06 おうちの記録に入れた抽出ツール・挽き目・湯温も出す
+        //   （書いたものが見えないと、次に書く気にならない）。順番は入力と同じ 抽出ツール→挽き目→湯温。
+        if (dr.brew)    tags += '<span class="tag ctry">'+esc(dr.brew)+'</span>';
         if (dr.grind)   tags += '<span class="tag ctry">'+esc(dr.grind)+'</span>';
         if (dr.temp)    tags += '<span class="tag ctry">'+esc(dr.temp)+'℃</span>';
       } else {
