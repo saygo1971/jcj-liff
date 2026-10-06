@@ -92,6 +92,24 @@
     .cupdone .when{font-size:13px;color:#6E655E;margin-top:4px;font-variant-numeric:tabular-nums}
     .cupdone .sub{font-size:12px;color:#8a837c;margin-top:6px;line-height:1.75}
     .cupnote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
+    /* ★2026-10-06 受付の帯（★受付の紙のQRから開いたときだけ出ます）。
+       ★ここに お名前とパスポート番号を出します＝受付の人が「どなたに渡すか」を目で確かめるため。 */
+    .recsec{margin-top:16px;background:#2F6B4F;border-radius:12px;padding:12px 13px;color:#fff;text-align:center}
+    .recsec .lbl{font-size:12px;letter-spacing:.08em;opacity:.85}
+    .recsec .nm{font-size:19px;font-weight:800;margin-top:3px}
+    .recsec .no{font-size:12.5px;margin-top:4px;opacity:.9;font-variant-numeric:tabular-nums}
+    /* ★2026-10-06 無料の1杯（★押すのは お客さまご自身です。受付の人は触りません）。 */
+    .freesec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    .freehd{font-size:14px;color:#444;font-weight:700}
+    .freebox{margin-top:10px;background:#F1F7F3;border:1px solid #BFD9CA;border-radius:12px;padding:14px 13px;text-align:center}
+    .freebox .big{font-size:20px;font-weight:800;color:var(--ink)}
+    .freebox .sub{font-size:12.5px;color:#2F6B4F;margin-top:6px;line-height:1.75}
+    .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2F6B4F}
+    .freebtn:disabled{opacity:.5}
+    .freedone{margin-top:10px;background:#F2F1EF;border:1px solid var(--line);border-radius:12px;padding:14px 13px;text-align:center}
+    .freedone .big{font-size:18px;font-weight:800;color:#6E655E}
+    .freedone .sub{font-size:12px;color:#8a837c;margin-top:6px;line-height:1.75}
+    .freenote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -340,6 +358,10 @@
       areaHtml +
       beansProgHtml +
       ticketHtml +
+      // ★2026-10-06：受付の帯と「無料の1杯」の置き場所を足しました。
+      //   ★中身は下の1回の問い合わせ（cup_state）で、カップと一緒に埋めます＝通信は1回のままです。
+      '<div id="recsec"></div>' +
+      '<div id="freesec"></div>' +
       // ☕ カップ（2026-09-26）。★最初は空の入れ物だけ。★あとから別の小さな問い合わせで埋めます。
       //   ★理由＝受付の画面を重くしないため。★カップが無い方には、何も出ません。
       '<div id="cupsec"></div>' +
@@ -412,9 +434,10 @@
   // ★受付の紙のQRにだけ入っている合言葉。★この画面は中身を判断しません。そのまま渡すだけです。
   function cupRk_(){ return params.get("rk") || ""; }
 
+  let freeBusy = false;
+
   async function loadCupSection_(){
-    const el = $("cupsec");
-    if (!el) return;
+    if (!$("cupsec")) return;
     let s = null;
     try {
       const rk = cupRk_();
@@ -422,8 +445,100 @@
     } catch (e) {
       return;   // ★取れなければ、何も出しません（★受付の画面を壊さない）
     }
-    if (!s || s.ok !== true || !s.cup) return;
-    renderCupSection_(s);
+    if (!s || s.ok !== true) return;
+    // ★2026-10-06：受付の帯と「無料の1杯」も、この1回の返事から描きます。
+    renderReceptionBand_(s);
+    renderFreeSection_(s);
+    if (s.cup) renderCupSection_(s);
+  }
+
+  /* ========================================================================
+     ★2026-10-06 受付の帯（お名前とパスポート番号）
+     ・🔴★受付の紙のQRから開いたときだけ出します（出すかどうかはサーバーが決めます）。
+     ・★受付の人は、ここを見て「どなたに渡すか」を目で確かめます。
+     ======================================================================== */
+  function renderReceptionBand_(s){
+    const el = $("recsec");
+    if (!el) return;
+    if (s.reception !== true){ el.innerHTML = ""; return; }
+    const w = s.who || {};
+    const nm = String(w.name || "").trim();
+    const no = String(w.no || "").trim();
+    el.innerHTML =
+      '<div class="recsec">' +
+        '<div class="lbl">会場の受付</div>' +
+        '<div class="nm">' + (nm ? esc(nm) + ' さま' : 'お名前が取れませんでした') + '</div>' +
+        (no ? '<div class="no">パスポート番号 ' + esc(no) + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ========================================================================
+     ★2026-10-06 無料の1杯（登録付与の券を1枚）
+     ・★押すのは【お客さまご自身】です。★受付の人は触りません。
+     ・🔴★ボタンは「受付の紙のQRから開いた・まだ受け取っていない・付与期間内」の
+       3つがそろったときだけ出ます。★そろっているかを決めるのはサーバー側です。
+     ・★すでに受け取った方には「受け取り済み」と出します（★色だけに頼らず文字で出します）。
+     ======================================================================== */
+  function renderFreeSection_(s){
+    const el = $("freesec");
+    if (!el) return;
+    const f = s.free || {};
+    // ★読めなかったときは、何も出しません（★間違ったことを出すより、出さない方が安全です）。
+    if (f.readable !== true){ el.innerHTML = ""; return; }
+
+    if (f.has === true){
+      el.innerHTML =
+        '<div class="freesec">' +
+          '<div class="freehd">無料の1杯</div>' +
+          '<div class="freedone">' +
+            '<div class="big">受け取り済み</div>' +
+            '<div class="sub">ロースターのブースでお使いください（おひとり1枚）</div>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    // ★まだ受け取っていない。★受付から開いていなければ、枠ごと出しません。
+    if (f.grantable !== true){ el.innerHTML = ""; return; }
+
+    el.innerHTML =
+      '<div class="freesec">' +
+        '<div class="freehd">無料の1杯</div>' +
+        '<div class="freebox">' +
+          '<div class="big">1杯ぶんの券</div>' +
+          '<div class="sub">ロースターのブースで、お好きな一杯と交換できます</div>' +
+          '<button id="freeBtn" class="freebtn">1杯ぶんの券を受け取る</button>' +
+        '</div>' +
+        '<div class="freenote">※ このボタンは、お客さまご自身が押します</div>' +
+      '</div>';
+    const b = $("freeBtn");
+    if (b) b.onclick = doFreeGrant_;
+  }
+
+  async function doFreeGrant_(){
+    if (freeBusy) return;
+    freeBusy = true;
+    const b = $("freeBtn");
+    if (b){ b.disabled = true; b.textContent = "受け取っています…"; }
+    let r = null;
+    try {
+      r = await api("fs_free_grant", {});
+    } catch (e) {
+      freeBusy = false;
+      if (b){ b.disabled = false; b.textContent = "1杯ぶんの券を受け取る"; }
+      showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
+      return;
+    }
+    freeBusy = false;
+    if (!r || r.ok !== true){
+      if (b){ b.disabled = false; b.textContent = "1杯ぶんの券を受け取る"; }
+      showMsgInline((r && r.message) ? r.message : "いま券をお渡しできませんでした。", false);
+      // ★「もう受け取り済み」と言われたときは、画面を最新にし直します。
+      if (r && r.reason === "already") loadCupSection_();
+      return;
+    }
+    // ★入ったあと、★もう一度 読み直してから出します（★画面の数字を自分で作らない）。
+    loadCupSection_();
   }
 
   function renderCupSection_(s){
