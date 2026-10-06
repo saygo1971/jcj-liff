@@ -61,7 +61,14 @@
   .tempbox input{width:112px;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:15px;
     font-family:inherit;background:var(--bg);color:var(--ink)}
   .tempunit{font-size:14px;font-weight:800;color:var(--ink-sub)}
-  .brewnote{font-size:11.5px;color:var(--ink-sub);margin-top:7px;line-height:1.6}
+  .brewnote{font-size:11.5px;color:var(--ink-sub);margin:-4px 0 10px 94px;line-height:1.6}
+  /* ★2026-10-06 選ぶ所は全部プルダウン。1項目1行・左に項目名。 */
+  .row{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+  .row .lb{width:84px;flex:none;font-size:13px;font-weight:800;color:var(--ink)}
+  .row select{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:11px 10px;
+    font-size:15px;font-family:inherit;background:var(--bg);color:var(--ink)}
+  .row input[type=number]{width:96px;border:1px solid var(--line);border-radius:10px;padding:11px 10px;
+    font-size:15px;font-family:inherit;background:var(--bg);color:var(--ink)}
   textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
     font-family:inherit;resize:vertical;min-height:64px;background:var(--bg);color:var(--ink)}
   .btn{background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
@@ -122,41 +129,23 @@
   <div class="q" id="qHead">今日の一杯は？</div>
   <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
 
-  <div class="sec">飲みもの</div>
-  <div class="chips" id="drinkChips"></div>
+  <!-- ★2026-10-06 オーナー指摘「ボタンだらけで何を押せばいいか分からない」。
+       ⇒ 選ぶ所は【全部プルダウン】に揃えた。1項目1行・左に項目名・どれも任意。
+       ★おうちのときは 抽出ツール→挽き目→湯温 の3行が増える（順番はオーナー指定）。
+       ★精製方法は折りたたみから出した＝プルダウン1行なら場所を取らないため。 -->
+  <div class="row"><span class="lb">飲みもの</span><select id="selDrink"></select></div>
+  <div class="row"><span class="lb">生産国</span><select id="selCountry"></select></div>
+  <div class="row"><span class="lb">精製方法</span><select id="selProcess"></select></div>
 
-  <div class="sec">生産国</div>
-  <div class="chips" id="countryChips"></div>
-
-  <!-- ★2026-10-06 精製方法は「動かせるかたまり」。お店のときは「詳しく記録する」の中、
-       おうちのときは表（この場所）に移す＝おうちの方は むしろ書きたい項目のため。 -->
-  <div id="processHere"></div>
-  <div id="processBlock">
-    <div class="sec">精製方法</div>
-    <div class="chips" id="processChips"></div>
-  </div>
-
-  <!-- ★2026-10-06 オーナー指示：おうちで淹れたときだけ出す。お店で記録するときは出さない。
-       ★順番は 豆（生産国・精製方法）→ 抽出ツール → 挽き目 → 湯温（オーナー指定）。
-       ★抽出ツールを先に置く理由＝挽き目は器具によって意味がまるで違うため。
-       ★「詳しく記録する」の中には入れない＝折りたたみの中は ほとんど埋まらないため（審査会 2026-10-04）。 -->
   <div class="homeonly hidden" id="homeOnly">
-    <div class="sec">抽出ツール</div>
-    <div class="chips" id="brewChips"></div>
+    <div class="row"><span class="lb">抽出ツール</span><select id="selBrew"></select></div>
     <div class="brewnote" id="brewNote"></div>
-    <div class="sec">挽き目</div>
-    <div class="chips" id="grindChips"></div>
-    <div class="sec">湯温</div>
-    <div class="tempbox">
-      <input type="number" id="temp" inputmode="numeric" min="1" max="100" step="1" placeholder="92">
-      <span class="tempunit">℃</span>
-    </div>
+    <div class="row"><span class="lb">挽き目</span><select id="selGrind"></select></div>
+    <div class="row"><span class="lb">湯温</span><input type="number" id="temp" inputmode="numeric" min="1" max="100" step="1" placeholder="92"><span class="tempunit">℃</span></div>
   </div>
 
-  <div class="more" id="moreToggle"><span>詳しく記録する</span><span class="chev" id="moreChev">＋ ひらく ▾</span></div>
+  <div class="more" id="moreToggle"><span>ひとことメモを書く</span><span class="chev" id="moreChev">＋ ひらく ▾</span></div>
   <div class="detail hidden" id="detail">
-    <div id="processThere"></div>
-    <div class="sec">ひとことメモ</div>
     <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
   </div>
 
@@ -232,25 +221,27 @@
   function loadLastBrew(){ try { return localStorage.getItem(BREW_KEY) || ""; } catch(e){ return ""; } }
   function saveLastBrew(v){ try { localStorage.setItem(BREW_KEY, v || ""); } catch(e){} }
 
-  // ★2026-10-06：場所を変えるたびに並べ直すので、いったん空にしてから作る。
+  // ★2026-10-06 オーナー指摘を受けて、ボタンの列をやめてプルダウンにした。
+  //   場所（お店／うち）を変えるたびに中身を並べ直す。
   //   いま選ばれているものが新しい並びに無ければ、選ばれていない状態に戻す。
-  function buildChips(box, items, key){
+  //   一番上は いつも「えらぶ」＝選ばなくてよい（どれも任意）。
+  function buildSelect(box, items, key){
     const el = $(box);
-    el.innerHTML = "";
     if (sel[key] && items.indexOf(sel[key]) < 0) sel[key] = "";
+    el.innerHTML = "";
+    const blank = document.createElement("option");
+    blank.value = ""; blank.textContent = "えらぶ";
+    el.appendChild(blank);
     items.forEach(function(it){
-      const c = document.createElement("span");
-      c.className = "chip"; c.textContent = it;
-      c.onclick = function(){
-        if (sel[key] === it){ sel[key] = ""; c.classList.remove("sel"); return; }
-        sel[key] = it;
-        [...el.children].forEach(x => x.classList.remove("sel"));
-        c.classList.add("sel");
-        if (key === "brew") saveLastBrew(it);   // ★2026-10-06 次に開いたとき最初から選ばれているように
-      };
-      if (sel[key] === it) c.classList.add("sel");   // ★2026-10-06 並べ直しても選ばれた状態を保つ
-      el.appendChild(c);
+      const o = document.createElement("option");
+      o.value = it; o.textContent = it;
+      el.appendChild(o);
     });
+    el.value = sel[key] || "";
+    el.onchange = function(){
+      sel[key] = el.value || "";
+      if (key === "brew") saveLastBrew(sel[key]);   // ★次に開いたとき最初から入っているように
+    };
   }
 
   function showStatus(msg){ $("status").textContent = msg; $("status").classList.remove("hidden"); }
@@ -324,15 +315,10 @@
     const isHome = !curShopId;
 
     // 飲みもの＝お店とうちで並びが違う（ドリップバッグはうちだけ）
-    buildChips("drinkChips", isHome ? DRINKS_HOME : DRINKS_SHOP, "drink");
+    buildSelect("selDrink", isHome ? DRINKS_HOME : DRINKS_SHOP, "drink");
     // 生産国・精製方法＝「わからない」はお店のときだけ出す
-    buildChips("countryChips", isHome ? COUNTRIES_BASE : COUNTRIES_BASE.concat(["わからない"]), "country");
-    buildChips("processChips", isHome ? PROCESSES_BASE : PROCESSES_BASE.concat(["わからない"]), "process");
-
-    // 精製方法のかたまりを、うちなら表へ・お店なら「詳しく記録する」の中へ移す
-    const block = $("processBlock");
-    const target = isHome ? $("processHere") : $("processThere");
-    if (block && target && block.parentNode !== target) target.appendChild(block);
+    buildSelect("selCountry", isHome ? COUNTRIES_BASE : COUNTRIES_BASE.concat(["わからない"]), "country");
+    buildSelect("selProcess", isHome ? PROCESSES_BASE : PROCESSES_BASE.concat(["わからない"]), "process");
 
     // 抽出ツール・挽き目・湯温＝うちのときだけ
     $("homeOnly").classList.toggle("hidden", !isHome);
@@ -342,8 +328,8 @@
         const last = loadLastBrew();
         if (BREWS.indexOf(last) >= 0) sel.brew = last;
       }
-      buildChips("brewChips", BREWS, "brew");
-      buildChips("grindChips", GRINDS, "grind");
+      buildSelect("selBrew", BREWS, "brew");
+      buildSelect("selGrind", GRINDS, "grind");
       $("brewNote").textContent = sel.brew ? "前に選んだ器具です。変えた日だけ選び直してください。" : "";
     } else {
       sel.brew = ""; sel.grind = "";
