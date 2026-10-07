@@ -306,7 +306,11 @@
 
     // 🎁 豆クーポン進捗バー：マイル合計に対し「あと△マイルで豆クーポン」を可視化。
     //    値は全てサーバ(apiCheckinDo)が config から読んで渡す＝ここに数値を書かない。couponMile=0 なら非表示。
-    const beansProgHtml = beansProgressHtml(r);
+    /*★2026-10-07 オーナー指示：豆割の「あと◇マイルで豆割」を出しません。
+     *  ★理由＝豆割は 2026-09-30 で終わっています（有効なクーポンは全部 失効済み）。
+     *  ★上の beansProgressHtml は残してあります★戻すときはこの1行を
+     *    const beansProgHtml = beansProgressHtml(r); に戻すだけです。 */
+    const beansProgHtml = "";
 
     let ticketHtml = "";
     if (r.ticketEnabled && Number(r.ticketBalance) > 0){
@@ -326,13 +330,12 @@
         '</div>';
     }
 
-    // 紹介コーナー：チェックインした今この瞬間に友だちへお店を紹介（友だち初来店で紹介者に+100マイル）。
-    const refHtml =
-      '<div class="refcard"><div class="refbox">' +
-        '<div class="reftitle">友だちを誘って ＋100マイル</div>' +
-        '<div class="refdesc">今この場でお店をシェア。友だちが初めて来店すると、あなたに100マイル入ります。</div>' +
-        '<button id="refBtn" class="refbtn">このお店を友だちに教える</button>' +
-      '</div></div>';
+    /*★2026-10-07 オーナー指示：紹介のコーナーを出しません（「＋100マイル」の表記を消すため）。
+     * 🔴★消えるのは【この画面からの紹介の入口】です。
+     *   ★＋100を渡す仕組みそのものは、いまも生きています（コード.js 8643行から）。
+     *   ★LINEのトークに出るチェックインのカードには、紹介のボタンが残っています。
+     *   ★戻すときは、下の refHtml を元の文字列に戻すだけです。 */
+    const refHtml = "";
 
     // 頭＝ロゴ（左）＋右に店名・マイル縦積み。ロゴ＝①自社 shop/<ID>/logo.png → ②外観写真 → ③頭文字。
     const extUrl = CHECKIN_CARD_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/exterior.jpg";
