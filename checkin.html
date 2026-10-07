@@ -8,7 +8,9 @@
   <meta http-equiv="Expires" content="0" />
   <title>JCJ チェックイン</title>
   <style>
-    :root{ --brand:#0F6E56; --coral:#C04A55; --green:#2F7A57; --ink:#221C1A; --paper:#F4EADD; --brand2:#DCE7D8; --amber:#BA7517; --line:#DDD6CE; --muted:#6E655E; --hint:#999; }
+    :root{ --brand:#0F6E56; --coral:#C04A55; --green:#2F7A57; --ink:#221C1A; --paper:#F4EADD; --brand2:#DCE7D8; --amber:#BA7517; --line:#DDD6CE; --muted:#6E655E; --hint:#999;
+      /* ★2026-10-07 緑1色トンマナ（docs/2026-09-28_確定_緑1色トンマナ仕様.md）。★色はここだけで決めます。 */
+      --green2:#2B5D4F; --panel2:#EFECE6; --line2:#DDD6CE; --ink2:#1A1A1A; --sub2:#6E6E6E; }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
     .wrap{max-width:480px;margin:0 auto;padding:14px}
@@ -28,7 +30,7 @@
     .holdmsg b{color:var(--amber)}
     .done{padding:18px;text-align:center;color:#fff}
     .done.ci{background:var(--green)}
-    .done.today{background:var(--amber)}
+    .done.today{background:var(--green2)}   /* ★2026-10-07 トンマナ：橙→決まった緑 #2B5D4F */
     .done.hold{background:var(--amber)}
     .done .ic{font-size:30px;line-height:1}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
@@ -80,35 +82,35 @@
     .hidden{display:none}
     /* ☕ カップのお渡し（2026-09-26）。★受付でカップを渡すのは、この枠だけを見ます。 */
     .cupsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
-    .cuphd{font-size:14px;color:#444;font-weight:700}
-    .cupbox{margin-top:10px;background:#FFF6EC;border:1px solid #F0D9A8;border-radius:12px;padding:14px 13px;text-align:center}
-    .cupbox .big{font-size:20px;font-weight:800;color:var(--ink)}
-    .cupbox .sub{font-size:12.5px;color:#6b4c12;margin-top:6px;line-height:1.75}
-    .cupbtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--coral)}
+    .cuphd{font-size:14px;color:var(--ink2);font-weight:700}
+    .cupbox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
+    .cupbox .big{font-size:20px;font-weight:800;color:var(--ink2)}
+    .cupbox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
+    .cupbtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--green2)}
     .cupbtn:disabled{opacity:.5}
     /* ★色だけに頼らない＝「お渡し済み」の文字と時刻を必ず添える（会場が暗いことがあるため） */
-    .cupdone{margin-top:10px;background:#F2F1EF;border:1px solid var(--line);border-radius:12px;padding:14px 13px;text-align:center}
-    .cupdone .big{font-size:18px;font-weight:800;color:#6E655E}
-    .cupdone .when{font-size:13px;color:#6E655E;margin-top:4px;font-variant-numeric:tabular-nums}
-    .cupdone .sub{font-size:12px;color:#8a837c;margin-top:6px;line-height:1.75}
+    .cupdone{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
+    .cupdone .big{font-size:18px;font-weight:800;color:var(--ink2)}
+    .cupdone .when{font-size:13px;color:var(--sub2);margin-top:4px;font-variant-numeric:tabular-nums}
+    .cupdone .sub{font-size:12px;color:var(--sub2);margin-top:6px;line-height:1.75}
     .cupnote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
     /* ★2026-10-06 受付の帯（★受付の紙のQRから開いたときだけ出ます）。
        ★ここに お名前とパスポート番号を出します＝受付の人が「どなたに渡すか」を目で確かめるため。 */
-    .recsec{margin-top:16px;background:#2F6B4F;border-radius:12px;padding:12px 13px;color:#fff;text-align:center}
+    .recsec{margin-top:16px;background:var(--green2);border-radius:12px;padding:12px 13px;color:#fff;text-align:center}
     .recsec .lbl{font-size:12px;letter-spacing:.08em;opacity:.85}
     .recsec .nm{font-size:19px;font-weight:800;margin-top:3px}
     .recsec .no{font-size:12.5px;margin-top:4px;opacity:.9;font-variant-numeric:tabular-nums}
     /* ★2026-10-06 無料の1杯（★押すのは お客さまご自身です。受付の人は触りません）。 */
     .freesec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
-    .freehd{font-size:14px;color:#444;font-weight:700}
-    .freebox{margin-top:10px;background:#F1F7F3;border:1px solid #BFD9CA;border-radius:12px;padding:14px 13px;text-align:center}
-    .freebox .big{font-size:20px;font-weight:800;color:var(--ink)}
-    .freebox .sub{font-size:12.5px;color:#2F6B4F;margin-top:6px;line-height:1.75}
-    .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2F6B4F}
+    .freehd{font-size:14px;color:var(--ink2);font-weight:700}
+    .freebox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
+    .freebox .big{font-size:20px;font-weight:800;color:var(--ink2)}
+    .freebox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
+    .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--green2)}
     .freebtn:disabled{opacity:.5}
-    .freedone{margin-top:10px;background:#F2F1EF;border:1px solid var(--line);border-radius:12px;padding:14px 13px;text-align:center}
-    .freedone .big{font-size:18px;font-weight:800;color:#6E655E}
-    .freedone .sub{font-size:12px;color:#8a837c;margin-top:6px;line-height:1.75}
+    .freedone{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
+    .freedone .big{font-size:18px;font-weight:800;color:var(--ink2)}
+    .freedone .sub{font-size:12px;color:var(--sub2);margin-top:6px;line-height:1.75}
     .freenote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -282,7 +284,8 @@
     // 画像が無い店は onerror で従来の緑帯にフォールバック（画面が崩れない保険）。
     let banner;
     if (r.alreadyToday) {
-      banner = '<div class="done today"><div class="ic">🕒</div><div class="t">本日チェックイン済み</div></div>';
+      // ★2026-10-07 オーナー指示：時計の絵は出しません。
+      banner = '<div class="done today"><div class="t">本日チェックイン済み</div></div>';
     } else {
       const shopId = st.shopId || SPOT || "";
       const cardUrl = CHECKIN_CARD_BASE + encodeURIComponent(shopId) + "/checkin.jpg";
