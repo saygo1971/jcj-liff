@@ -100,6 +100,12 @@
     .recsec .lbl{font-size:12px;letter-spacing:.08em;opacity:.85}
     .recsec .nm{font-size:19px;font-weight:800;margin-top:3px}
     .recsec .no{font-size:12.5px;margin-top:4px;opacity:.9;font-variant-numeric:tabular-nums}
+    /* ★2026-10-07 持っている券（買った券＋無料の1杯）。★見せるだけ・押す所はありません。 */
+    .tksec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    .tkhd{font-size:14px;color:var(--ink2);font-weight:700}
+    .tkbox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
+    .tkbox .big{font-size:20px;font-weight:800;color:var(--ink2)}
+    .tkbox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
     /* ★2026-10-06 無料の1杯（★押すのは お客さまご自身です。受付の人は触りません）。 */
     .freesec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
     .freehd{font-size:14px;color:var(--ink2);font-weight:700}
@@ -385,6 +391,7 @@
       //   ★中身は下の1回の問い合わせ（cup_state）で、カップと一緒に埋めます＝通信は1回のままです。
       '<div id="recsec"></div>' +
       '<div id="freesec"></div>' +
+      '<div id="tksec"></div>' +
       // ☕ カップ（2026-09-26）。★最初は空の入れ物だけ。★あとから別の小さな問い合わせで埋めます。
       //   ★理由＝受付の画面を重くしないため。★カップが無い方には、何も出ません。
       '<div id="cupsec"></div>' +
@@ -472,6 +479,7 @@
     // ★2026-10-06：受付の帯と「無料の1杯」も、この1回の返事から描きます。
     renderReceptionBand_(s);
     renderFreeSection_(s);
+    renderTicketSection_(s);
     if (s.cup) renderCupSection_(s);
   }
 
@@ -492,6 +500,28 @@
         '<div class="lbl">会場の受付</div>' +
         '<div class="nm">' + (nm ? esc(nm) + ' さま' : 'お名前が取れませんでした') + '</div>' +
         (no ? '<div class="no">パスポート番号 ' + esc(no) + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ========================================================================
+     ★2026-10-07 持っている券（買った券＋無料の1杯）
+     ・★受付の画面でだけ出します。★見せるだけで、ここでは使いません。
+     ・★0枚の方には、枠ごと出しません。
+     ・🔴★この枚数には【無料の1杯】も入っています（数え方はサーバー側の1か所）。
+       ★だから「無料の1杯を含みます」と、画面にそのまま書きます。
+     ======================================================================== */
+  function renderTicketSection_(s){
+    const el = $("tksec");
+    if (!el) return;
+    const n = Number(s.tickets) || 0;
+    if (s.reception !== true || n <= 0){ el.innerHTML = ""; return; }
+    el.innerHTML =
+      '<div class="tksec">' +
+        '<div class="tkhd">持っている券</div>' +
+        '<div class="tkbox">' +
+          '<div class="big">' + n + '枚</div>' +
+          '<div class="sub">ロースターのブースで、一杯と交換できます<br>（無料の1杯を含みます）</div>' +
+        '</div>' +
       '</div>';
   }
 
