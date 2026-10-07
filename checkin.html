@@ -630,7 +630,10 @@
         '<div class="cupdone">' +
           '<div class="big">お渡し済み</div>' +
           (cup.lastHandedTime ? '<div class="when">' + esc(cup.lastHandedTime) + '</div>' : '') +
-          '<div class="sub">受け取りは、おひとり1つです</div>' +
+          // ★2026-10-07 直し：前は「おひとり1つです」と書いていました。
+          //   🔴★買った数だけお渡しします（★先行パックを3つ買えばカップは3つ）。
+          //   ★実際に5つ お持ちの方がいて、文と食い違っていました。
+          '<div class="sub">お買い上げのぶんは、すべてお渡しずみです</div>' +
         '</div>' +
       '</div>';
   }
