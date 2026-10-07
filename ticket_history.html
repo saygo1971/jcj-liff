@@ -3,53 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>試飲チケット 履歴</title>
+  <!-- ★2026-10-06 オーナー決定：「試飲チケット 履歴」→「購入履歴」。
+       ★理由＝カップも買えるようになり、これから券以外の商品も売っていくためです。
+       ★あわせて、買ったものの一覧（カップを含む）を出すようにしました。 -->
+  <title>購入履歴</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
-    .wrap { max-width: 420px; margin: 0 auto; }
-    #status { text-align: center; color: #8c6e50; font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #E0D2B8; border-top-color: #8a6d4b; border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
+    /* ★★2026-10-06：色を「緑1色トンマナ 確定仕様」（2026-09-28 オーナー決定）に入れ替えました。
+       ★この画面は【記録の面】です（人が「振り返る」画面）。
+         ★だから地は うっすらした板 #EFECE6、いちばん上の帯は緑です（2026-10-06 オーナー決定）。
+       ★終わったことには色を使いません。緑の ✓ を1つ付けます。 */
+    :root {
+      --green:   #2B5D4F;  /* 押せるもの・上の帯 */
+      --bg:      #FFFFFF;  /* カードの地 */
+      --panel:   #EFECE6;  /* うっすらした板＝この画面の地 */
+      --ink:     #1A1A1A;  /* 本文・数字・見出し */
+      --ink-sub: #6E6E6E;  /* 補助・単位 */
+      --line:    #DDD6CE;  /* 枠線・区切り線 */
+      --error:   #C0392B;  /* 注意と失敗（★文字とアイコンだけ） */
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: var(--panel); margin: 0; padding: 0 0 40px; color: var(--ink); }
+    /* ★いちばん上の帯＝ブランドの面。★緑＋白文字 */
+    .hd { background: var(--green); color: #fff; padding: 16px; text-align: center; }
+    .hd h1 { font-size: 18px; font-weight: 700; margin: 0; color: #fff; letter-spacing: .04em; }
+    .wrap { max-width: 420px; margin: 0 auto; padding: 18px 16px 0; }
+    #status { text-align: center; color: var(--ink-sub); font-size: 14px; margin: 18px 0 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--line); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 14px; }
     .tiles { display: flex; gap: 8px; margin-bottom: 18px; }
-    .tile { flex: 1; background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; padding: 10px; text-align: center; }
-    .tile .lbl { font-size: 11px; color: #8c6e50; }
-    .tile .num { font-size: 22px; font-weight: 700; }
-    .tile .num span { font-size: 12px; }
-    .sec-title { font-size: 13px; font-weight: 700; margin: 0 0 6px; }
-    .list { background: #fff; border: 1px solid #E0D2B8; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
-    .row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; border-bottom: 1px solid #F0E7D6; }
+    .tile { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
+    .tile .lbl { font-size: 11px; color: var(--ink-sub); }
+    .tile .num { font-size: 22px; font-weight: 700; color: var(--ink); }
+    .tile .num span { font-size: 12px; color: var(--ink-sub); }
+    .sec-title { font-size: 13px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+    .list { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 11px 13px; border-bottom: 1px solid var(--line); }
     .row:last-child { border-bottom: none; }
-    .row .main { font-size: 14px; color: #5a4632; font-weight: 600; }
-    .row .sub { font-size: 11px; color: #a08a6d; margin-top: 2px; }
-    .row .meta { font-size: 12px; color: #8c6e50; text-align: right; }
-    .row .meta.soon { color: #df7461; font-weight: 600; }
-    .emptyline { padding: 11px 13px; color: #a08a6d; font-size: 13px; }
-    .notice { background: #fff; border: 1px solid #E0D2B8; border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; }
+    .row .main { font-size: 14px; color: var(--ink); font-weight: 700; }
+    .row .sub { font-size: 11px; color: var(--ink-sub); margin-top: 2px; }
+    .row .meta { font-size: 12px; color: var(--ink-sub); text-align: right; }
+    /* ★期限が近い＝色でなく【文言と位置】で伝えます。★赤は文字だけに使います */
+    .row .meta.soon { color: var(--error); font-weight: 700; }
+    .emptyline { padding: 11px 13px; color: var(--ink-sub); font-size: 13px; }
+    .notice { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; color: var(--ink); }
+    /* ★2026-10-06 追加：買ったものの囲みの下に出す案内。★板の色を使います */
+    .cupnote { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px; margin: 8px 0 18px; color: var(--ink); font-size: 12px; line-height: 1.8; }
+    /* ★終わったこと＝緑の ✓ を1つ（緑1色トンマナ 決まり③）。★面は塗りません */
+    .ok { color: var(--green); font-weight: 700; margin-right: 5px; }
     .hidden { display: none; }
-    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 6px; font-size: 15px; font-weight: 600; text-align: center; border: none; border-radius: 10px; background: #8a6d4b; color: #fff; cursor: pointer; font-family: inherit; }
+    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 6px; font-size: 15px; font-weight: 700; text-align: center; border: 1px solid var(--green); border-radius: 10px; background: var(--green); color: #fff; cursor: pointer; font-family: inherit; }
     .backBtn.hidden { display: none; }
   </style>
 </head>
 <body>
+<div class="hd"><h1>購入履歴</h1></div>
 <div class="wrap">
   <div id="status"><span class="spinner" id="spinner"></span><span id="status-text">読み込み中...</span></div>
 
   <div id="history" class="hidden">
-    <h1>試飲チケット 履歴</h1>
-    <div class="tiles">
-      <div class="tile"><div class="lbl">使える</div><div class="num" style="color:#34595A;"><span id="c-active">0</span><span>枚</span></div></div>
-      <div class="tile"><div class="lbl">使った</div><div class="num" style="color:#8a6d4b;"><span id="c-used">0</span><span>枚</span></div></div>
+    <!-- ★★2026-10-06 追加：買ったものの一覧（★カップもここに出ます）。
+         ★中身が1つも無いとき、プログラムが古くて項目が来ないときは、この囲みごと出しません。 -->
+    <div id="buy-wrap" class="hidden">
+      <div class="sec-title">買ったもの</div>
+      <div class="list" id="sec-purchases"></div>
+      <div class="cupnote hidden" id="cup-note">カップと地図は、当日 会場の受付でお渡しします</div>
     </div>
 
-    <div class="sec-title" style="color:#34595A;">使える</div>
+    <div class="sec-title">試飲チケット</div>
+    <div class="tiles">
+      <div class="tile"><div class="lbl">使える</div><div class="num"><span id="c-active">0</span><span>枚</span></div></div>
+      <div class="tile"><div class="lbl">使った</div><div class="num"><span id="c-used">0</span><span>枚</span></div></div>
+    </div>
+
+    <div class="sec-title">使える枚数</div>
     <div class="list" id="sec-active"></div>
 
-    <div class="sec-title" style="color:#8a6d4b;">使った</div>
+    <div class="sec-title">使ったお店</div>
     <div class="list" id="sec-used"></div>
 
-    <div class="sec-title" style="color:#a08a6d;">失効</div>
+    <div class="sec-title">失効</div>
     <div class="list" id="sec-expired"></div>
 
     <button type="button" class="backBtn" onclick="backToTalk()">トークに戻る</button>
@@ -59,13 +91,31 @@
 </div>
 
 <script>
+  // ★★これは【本番用】の写しです（2026-10-04 作成）。テスト用は ticket_history.html のほうです。
+  //   ★テスト用には1文字も触っていません。
+  //
+  // ★本番の「パスポートで確認する」のLINEの番号。
+  //   ★2026-10-04 にオーナーが LINE Developers（チャネルID 2010671952）で発行されたものです。
+  //   🔴★`2010671952-hF0BBe5v` を、ここに入れないでください。
+  //     ★それは店舗でお渡しするカードの画面（card.html）の番号です。
+  //     ★お店に置いた68枚のQRコードが、その番号を指しています。入れ替えると、全部 別の画面に飛びます。
+  //   ★空や、形の違う文字が入っているあいだ、この画面は【何も出しません】。下の isUsableLiffId で止めます。
+  //     ★理由＝そのまま liff.init を呼ぶと、お客さまには意味の分からないエラーが出るだけです。
   const LIFF_ID = "2008851980-Ja5SU8nr";
+
+  // 内部：LINEの番号が「本物の形」かを見る。★仮の文字（PUT_… / PLACEHOLDER_… / 空）は、すべて止まります。
+  //   ★GAS側の isUsableLiffId_ と同じ決め方にそろえてあります。
+  function isUsableLiffId(id) {
+    const t = String(id == null ? "" : id).trim();
+    if (!t) return false;
+    return /^\d{10}-[A-Za-z0-9]+$/.test(t);
+  }
   // GAS_URL：履歴窓口(?action=ticket_history)がある配備の住所（買う・使う画面と同じ）。本番化時に差し替え。
   // ★★2026-09-23 訂正：ここに版の番号（@417/@418・@542）を書いていましたが、★これは罠でした。
   //   ★下の住所は【配備の住所】で、★版を出すたびに中身だけが入れ替わります。★住所は変わりません。
   //   ⇒ ★版の番号をここに書くと、★次に版を出した日から、説明文が嘘になります。★だから書きません。
   //   ★覚えておくこと＝古い住所を向いたまま画面だけ直すと、「直したのに変わらない」が必ず起きます。
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";   // ★テスト
 
   const $ = (id) => document.getElementById(id);
   const setStatus = (t, loading = true) => {
@@ -103,13 +153,35 @@
   //   ★理由＝★名前が出ないより、★券の枚数が見えなくなる方が悪いためです。
   function ticketName(t) { return (t && t.label) ? t.label : "試飲チケット"; }
 
+  /** ★2026-10-06 オーナー決定：地図が付く商品。★バラ1枚とカップ単品には付きません。 */
+  const MAP_PRODUCTS = ["presale", "pack", "campaign"];
+
+  /**
+   * ★★2026-10-06 オーナー指摘で直しました。
+   *   ★それまでは【券1枚につき1行】でした。3枚 買うと「試飲チケット」が3行 並び、
+   *     ★何が違うのか分からない形でした。
+   *   ⇒ ★**失効日と発行元が同じ券は、1行にまとめて「◯枚」と出します。**
+   *   ★失効日が違う券は、分けて出します（お客さまが知りたいのは「いつまでに何枚」だからです）。
+   */
+  function groupTickets(list) {
+    const groups = [];
+    const where = {};
+    list.forEach(function (t) {
+      const key = String(t.expiry || "") + "|" + String(t.source || "");
+      if (where[key] == null) { where[key] = groups.length; groups.push({ t: t, n: 0 }); }
+      groups[where[key]].n++;
+    });
+    return groups;
+  }
+
   function renderActive(list) {
     if (!list.length) { $("sec-active").innerHTML = '<div class="emptyline">使えるチケットはありません</div>'; return; }
-    $("sec-active").innerHTML = list.map(function (t) {
+    $("sec-active").innerHTML = groupTickets(list).map(function (g) {
+      const t = g.t;
       const soon = (t.daysLeft != null && t.daysLeft <= 30);
       const metaText = t.expiry + " まで" + (soon ? "（あと" + t.daysLeft + "日）" : "");
       const sub = t.source ? '<div class="sub">' + esc(t.source) + "</div>" : "";
-      return '<div class="row"><div><div class="main">' + esc(ticketName(t)) + '</div>' + sub + '</div>' +
+      return '<div class="row"><div><div class="main">' + esc(ticketName(t)) + "　" + g.n + '枚</div>' + sub + '</div>' +
         '<div class="meta' + (soon ? " soon" : "") + '">' + esc(metaText) + "</div></div>";
     }).join("");
   }
@@ -117,7 +189,8 @@
   function renderUsed(list) {
     if (!list.length) { $("sec-used").innerHTML = '<div class="emptyline">まだ使っていません</div>'; return; }
     $("sec-used").innerHTML = list.map(function (t) {
-      return '<div class="row"><div><div class="main">' + esc(t.shop || "お店") + "</div>" +
+      // ★2026-10-06：終わったこと＝緑の ✓ を1つ（緑1色トンマナ 決まり③）。
+      return '<div class="row"><div><div class="main"><span class="ok">✓</span>' + esc(t.shop || "お店") + "</div>" +
         '<div class="sub">' + esc(ticketName(t)) + '</div></div>' +
         '<div class="meta">' + esc(t.at) + "</div></div>";
     }).join("");
@@ -125,13 +198,56 @@
 
   function renderExpired(list) {
     if (!list.length) { $("sec-expired").innerHTML = '<div class="emptyline">まだありません</div>'; return; }
-    $("sec-expired").innerHTML = list.map(function (t) {
-      return '<div class="row"><div class="main">' + esc(ticketName(t)) + '</div>' +
-        '<div class="meta">' + esc(t.expiry) + " 失効</div></div>";
+    // ★2026-10-06：ここも同じ理由で、同じ日に失効した券は1行にまとめます。
+    $("sec-expired").innerHTML = groupTickets(list).map(function (g) {
+      return '<div class="row"><div class="main">' + esc(ticketName(g.t)) + "　" + g.n + '枚</div>' +
+        '<div class="meta">' + esc(g.t.expiry) + " 失効</div></div>";
     }).join("");
   }
 
+  /**
+   * ★★2026-10-06 追加：買ったものの一覧を出す。
+   *   ★カップは券ではないので、券の台帳には入っていません。
+   *     ★だから、お支払いの記録から取り出したものを、ここに出します。
+   *   ★項目が来ないとき（プログラムがまだ古いとき）は、囲みごと出しません。
+   *     ★＝画面を先に上げても、プログラムを先に押しても、どちらでも壊れません。
+   */
+  function renderPurchases(list) {
+    if (!Array.isArray(list) || list.length === 0) return;   // ★出さない（空の囲みを見せない）
+
+    let anyCup = false;
+    $("sec-purchases").innerHTML = list.map(function (p) {
+      const n = Number(p.count) || 0;
+      const c = Number(p.cup) || 0;
+      if (c > 0) anyCup = true;
+      // 中身の説明（券が何枚／カップが何つ）。★0のものは書きません。
+      const parts = [];
+      if (n > 0) parts.push("試飲チケット " + n + "枚");
+      if (c > 0) parts.push("カップ " + c + "つ");
+      // ★2026-10-06 オーナー決定：地図は【先行パックにも当日パックにも】付きます。
+      //   ★バラ1枚とカップ単品には付きません。
+      //   ★どの商品かは、サーバーが返した product（pack / presale / campaign / bara / cup）で見ます。
+      if (MAP_PRODUCTS.indexOf(String(p.product || "")) >= 0) parts.push("地図");
+      const sub = parts.length ? '<div class="sub">' + esc(parts.join(" ／ ")) + "</div>" : "";
+      const yen = "¥" + (Number(p.amount) || 0).toLocaleString();
+      return '<div class="row"><div><div class="main">' + esc(p.label || "商品") + "</div>" + sub + "</div>" +
+        '<div class="meta">' + esc(yen) + "<br>" + esc(p.at || "") + "</div></div>";
+    }).join("");
+
+    $("buy-wrap").classList.remove("hidden");
+    if (anyCup) $("cup-note").classList.remove("hidden");
+  }
+
   async function main() {
+    // 🔴★2026-10-04 追加の守り。★LINEの番号がまだ入っていないあいだは、ここで止まります。
+    //   ★押しても開かない画面を、お客さまに出さないためです。
+    if (!isUsableLiffId(LIFF_ID)) {
+      setStatus("", false);
+      const box = document.getElementById("empty");
+      box.classList.remove("hidden");
+      box.textContent = "ただいま、この画面のご用意をしています。お手数をおかけしております。もう少しお待ちください。";
+      return;
+    }
     setStatus("LINEを起動しています…", true);
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
@@ -147,6 +263,7 @@
 
     $("c-active").textContent = data.counts.active;
     $("c-used").textContent = data.counts.used;
+    renderPurchases(data.purchases);   // ★2026-10-06 追加（カップもここに出ます）
     renderActive(data.active || []);
     renderUsed(data.used || []);
     renderExpired(data.expired || []);
