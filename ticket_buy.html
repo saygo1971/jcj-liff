@@ -1,127 +1,173 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  <!-- ★2026-10-06：<base target="_top"> を外しました。
+       ★あれは、この画面を Google のプログラムが【枠の中】に出していたときに必要だったものです。
+       ★この画面は japancoffeejourney.com に置き、枠の中ではなくそのまま開きます。 -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>試飲チケット</title>
+  <!-- ★2026-10-06 オーナー決定：売り場の名前を「SHOP」にします。
+       ★理由＝これから券以外の商品も売っていくので、「試飲チケット」という名前だと合わなくなるため。
+       🔴★変えたのは【売り場の名前】だけです。★商品の名前「試飲チケット」はそのままです
+         （そちらは利用規約の本文に13か所、支払い画面に出る商品名に4か所 入っており、
+          ★変えるには規約の作り直しとプログラムを本番へ届ける作業が要ります）。 -->
+  <title>SHOP</title>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    /* ★★2026-09-22：会社の色の決まりに合わせました（00_全社共通/ブランド指針/JCJ_カラー仕様_トンマナ.md・2026-08-31 オーナー決定）。
-       ★使うのは下の10色だけです。★ここに無い色を足さないでください。 */
-    :root{
-      --brand-base:#CB7B68;       /* コーラルピンク：面・ロゴ地。★白文字を載せない（読めません） */
-      --brand-deep:#C04A55;       /* 深ピンク：主役ボタン・押せる文字。★白文字を載せてよいのはこれだけ */
-      --brand-green-deep:#2B5D4F; /* 深緑：旅の面の見出し */
-      --state-done:#2F7A57;       /* 達成グリーン：終わったこと・✓ */
-      --state-error:#C0392B;      /* 赤：エラーの文言とアイコンだけ。面やボタンの地にしない */
-      --paper:#F4EADD;            /* ベージュ：★カードの中のブロックだけ。画面全体に敷かない */
-      --bg:#FFFFFF;               /* 画面全体の背景 */
-      --ink:#221C1A;              /* 本文 */
-      --ink-sub:#6E655E;          /* 補助・単位（枚・円） */
-      --line:#DDD6CE;             /* 枠線・区切り線・無効状態 */
+    /* ★★2026-10-06：色を「緑1色トンマナ 確定仕様」（2026-09-28 オーナー決定）に入れ替えました。
+       ★決まりは3行
+         ① 緑が見えたら、押せる
+         ② 文字は黒。仕切りはうっすらした板
+         ③ 終わったことには色を使わない。緑の ✓ を1つ付ける
+       ★この画面は【機能の面】です（人が「動く」画面）。★だから地は白です。
+       ★決定#7「1か所で変えられるようにする」に合わせて、色は下の :root にまとめました。 */
+    :root {
+      --green:   #2B5D4F;  /* 押せるもの・件数バッジ */
+      --bg:      #FFFFFF;  /* カードの地・機能の画面 */
+      --panel:   #EFECE6;  /* うっすらした板（カードの中のブロック） */
+      --ink:     #1A1A1A;  /* 本文・数字・見出し */
+      --ink-sub: #6E6E6E;  /* 補助・単位 */
+      --line:    #DDD6CE;  /* 枠線・区切り線 */
+      --error:   #C0392B;  /* 注意と失敗（★文字とアイコンだけ。面には塗らない） */
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: var(--bg); margin: 0; padding: 20px 16px 40px; color: var(--ink); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 20px 16px 40px;
+      color: var(--ink);
+    }
     .wrap { max-width: 420px; margin: 0 auto; }
-    #status { text-align: center; color: var(--ink-sub); font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 24px; }
-    .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--line); border-top-color: var(--brand-deep); border-radius: 50%; animation: spin 0.8s linear infinite; flex: none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    h1 { font-size: 20px; font-weight: 600; margin: 4px 0 6px; color: var(--ink); }
-    .lead { font-size: 13px; color: var(--ink-sub); line-height: 1.7; margin: 0 0 18px; }
-    /* ★カード＝白地＋枠線（仕様 3章・2026-08-31 改訂） */
-    .opt { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-    .opt.selected { border: 2px solid var(--brand-deep); }
-    .opt .name { font-size: 15px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
-    .opt .sub { font-size: 12px; color: var(--ink-sub); margin-top: 3px; }
-    /* ★数字は墨で大きく、単位だけ小さく灰色（仕様） */
-    .opt .price { font-size: 18px; font-weight: 600; color: var(--ink); flex: none; }
-    /* ★2026-09-22：商品の絵と、ひとこと説明 */
-    .opt .body { flex: 1 1 auto; min-width: 0; }
-    .opt .thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; margin-right: 12px; flex: none; background: var(--paper); }
-    .opt .note { font-size: 11px; color: var(--ink-sub); margin-top: 5px; line-height: 1.6; }
-    .badge { background: var(--brand-deep); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    #status { text-align: center; color: var(--ink-sub); font-size: 14px; margin-bottom: 12px; white-space: pre-wrap; }
+    h1 { font-size: 20px; font-weight: 700; margin: 4px 0 16px; color: var(--ink); letter-spacing: .04em; }
+    .opt {
+      background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+    }
+    /* ★2026-10-06：上の段＝絵と名前／値段。説明はその下に【横幅いっぱい】で置きます
+       （絵のぶん横がせまくなり、説明が途中で折り返していたためです） */
+    .opt .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    /* ★選んでいるもの＝緑の枠。★太くなる1pxぶんは内側で吸収します（カードが揺れないように） */
+    .opt.selected { border: 2px solid var(--green); padding: 13px 15px; }
+    /* ★2026-10-06：絵を足して横がせまくなったので、商品の名前が途中で折り返さないようにします */
+    .opt .name { font-size: 15px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .opt .nm { white-space: nowrap; }
+    .opt .badge { flex: none; }
+    .opt .sub { font-size: 12px; color: var(--ink-sub); margin-top: 8px; line-height: 1.7; }
+    .opt .sub .cau { color: var(--ink); }
+    .opt .price { font-size: 18px; font-weight: 700; color: var(--ink); flex: none; margin-left: 10px; }
+    /* ★2026-10-06：商品の絵。★左に置きます。★設定が空なら出しません */
+    .opt .l { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+    .thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; border: 1px solid var(--line); background: var(--panel); }
+    .badge { background: var(--green); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
     .strike { text-decoration: line-through; color: var(--ink-sub); }
-    /* 🔴★ここは「会場だけ・お店では使えない・払い戻さない」＝お客さまへの約束ごとです。
-       ★誘いではないので、ベージュで塗らず【白地＋枠線】にしました（本部の指示）。
-       ★仕様そのものには「誘いはベージュ／約束ごとは白地」という決まりは書かれていません＝★本部の判断です。 */
-    .terms { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: var(--ink); font-size: 12px; line-height: 1.9; }
+    .terms { background: var(--panel); border-radius: 10px; padding: 12px 14px; margin: 14px 0 0; color: var(--ink); font-size: 12px; line-height: 1.9; }
     /* ★2026-09-22（㉑規約同意）用 */
     .termsbox { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin: 14px 0 0; overflow: hidden; }
-    .termsbox > summary { padding: 12px 14px; font-size: 13px; font-weight: 600; color: var(--brand-deep); cursor: pointer; list-style: none; }
+    /* ★「開いて読む」は押せるので緑 */
+    .termsbox > summary { padding: 12px 14px; font-size: 13px; font-weight: 700; color: var(--green); cursor: pointer; list-style: none; }
     .termsbox > summary::-webkit-details-marker { display: none; }
-    .termsbox > summary::after { content: "　▼ 開いて読む"; font-weight: 400; font-size: 11px; color: var(--ink-sub); }
+    .termsbox > summary::after { content: "　▼ 開いて読む"; font-weight: 400; font-size: 11px; color: var(--green); }
     .termsbox[open] > summary::after { content: "　▲ 閉じる"; }
-    /* ★規約の全文は「カードの中のブロック」＝ベージュ（仕様 3章） */
-    .termsbody { background: var(--paper); padding: 12px 14px; font-size: 12px; line-height: 1.85; color: var(--ink); max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .termsbody { padding: 0 14px 14px; font-size: 12px; line-height: 1.85; color: var(--ink); max-height: 300px; overflow-y: auto; }
+    .termsbody h3 { font-size: 12px; margin: 14px 0 4px; color: var(--ink); }
+    .termsbody p { margin: 0 0 6px; }
     .agree { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0 0; font-size: 13px; line-height: 1.6; color: var(--ink); }
-    .agree input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--brand-deep); }
+    .agree input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--green); }
     .agree.locked { color: var(--ink-sub); }
     .agreehint { font-size: 11px; color: var(--ink-sub); margin: 6px 0 0; line-height: 1.7; }
-    /* ★主役ボタン＝深ピンク＋白文字／★無効＝枠線の色の地＋白文字（仕様 4章） */
-    button#payBtn { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border: none; border-radius: 10px; background: var(--brand-deep); color: #fff; cursor: pointer; margin-top: 16px; }
-    button#payBtn:disabled { background: var(--line); color: #fff; cursor: default; }
+    button#payBtn {
+      width: 100%; padding: 14px; font-size: 15px; font-weight: 700; border: 1px solid var(--green);
+      border-radius: 10px; background: var(--green); color: #fff; cursor: pointer; margin-top: 16px;
+      font-family: inherit;
+    }
+    /* ★いまは押せない＝白地＋点線の枠＋落とした文字（★灰色に塗らない。押せないように見えるため） */
+    button#payBtn:disabled { background: var(--bg); color: var(--ink-sub); border: 1px dashed var(--line); cursor: default; }
     .foot { text-align: center; color: var(--ink-sub); font-size: 11px; margin-top: 10px; line-height: 1.7; }
     .notice { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; text-align: center; font-size: 14px; line-height: 1.8; color: var(--ink); }
+    /* ★2026-10-06：まだ売っていないときのお知らせ */
+    .soon-ttl { font-size: 17px; font-weight: 700; line-height: 1.7; color: var(--ink); }
+    .soon-item { background: var(--panel); border-radius: 10px; padding: 14px; margin: 16px 0 0; font-size: 13px; line-height: 1.8; color: var(--ink); }
+    .soon-price { font-size: 24px; font-weight: 700; margin-top: 6px; color: var(--ink); }
+    .soon-small { font-size: 11px; color: var(--ink-sub); margin-top: 4px; }
+    .soon-note { font-size: 12px; color: var(--ink-sub); margin-top: 12px; line-height: 1.8; }
     .hidden { display: none; }
-    /* ★受け取れた＝終わったこと ⇒ 達成グリーン（仕様 4章「押した後の完了表示だけグリーン」） */
-    .done-num { font-size: 28px; font-weight: 600; color: var(--state-done); }
-    /* ★副ボタン＝白地＋深ピンクの文字＋深ピンク1px枠（仕様 4章） */
-    .backBtn { display: block; width: 100%; box-sizing: border-box; padding: 13px; margin-top: 18px; font-size: 15px; font-weight: 600; text-align: center; text-decoration: none; border: 1px solid var(--brand-deep); border-radius: 10px; background: var(--bg); color: var(--brand-deep); cursor: pointer; font-family: inherit; }
+    /* ★終わったこと＝緑で塗らない。★緑の ✓ を1つだけ付け、数字は墨で大きく */
+    .done-check { color: var(--green); font-size: 26px; font-weight: 700; line-height: 1; }
+    .done-num { font-size: 28px; font-weight: 700; color: var(--ink); }
   </style>
 </head>
+
 <body>
 <div class="wrap">
-  <div id="status"><span class="spinner" id="spinner"></span><span id="status-text">読み込み中...</span></div>
+  <div id="status">読み込み中...</div>
 
+  <!-- 購入（選択）画面 -->
   <div id="buy" class="hidden">
-    <h1>試飲チケット</h1>
-    <p class="lead">全国の加盟ロースターで、試飲の一杯に。旅の途中でどうぞ。</p>
+    <h1>SHOP</h1>
+    <!-- 🔴🔴★2026-10-06 オーナー指摘で削除。
+         ★ここには「全国の加盟ロースターで、試飲の一杯に。旅の途中でどうぞ。」と書かれていました。
+         ★★この画面の注意の囲みには「お店ではお使いいただけません」と出ます。
+           ★同じ画面に、正反対のことが並んでいました。
+         ★利用規約v2 第3条3項も「Japan Coffee Journey に参加しているコーヒーロースターの店舗では、
+           使用できません」と決めています。
+         ★お客さまが、お店で使えると思って買ってしまう形だったので、消しました。
+         ★代わりの文を置くかどうかは、オーナーのご判断を待っています。 -->
 
-    <!-- ★2026-09-22：先行パック（地図＋3杯＋カップ・100セット限定）。★設定で出すと決めたときだけ出ます -->
-    <div class="opt selected hidden" id="opt-presale" data-key="presale">
-      <img class="thumb hidden" id="img-presale" alt="">
-      <div class="body">
-        <div class="name">先行パック <span class="badge">カップ付き</span></div>
-        <div class="sub" id="presale-sub">地図＋3杯＋カップ</div>
-        <div class="note">東海地区のロースターの地図付き／無料の試飲1杯付き</div>
+    <!-- 🔴★2026-10-06 追加：先行パック。
+         ★それまで、この画面には【基本パックとバラの2つしかありませんでした】。
+           先行パックとカップ単品は、受け取る側（サーバー）は用意ができているのに、
+           ★お客さまが選ぶところが1つも無い状態でした（2026-10-06 に数えて確認）。
+         ★出すかどうかはサーバーが決めます（presale.on）。この画面は決めません。 -->
+    <div class="opt hidden" id="opt-presale" data-key="presale">
+      <div class="top">
+        <div class="l">
+          <img class="thumb hidden" id="presale-img" alt="">
+          <div class="name"><span class="nm">先行パック</span> <span class="badge">カップ付き</span></div>
+        </div>
+        <div class="price" id="presale-price">¥1,500</div>
       </div>
-      <div class="price" id="presale-price">¥1,500</div>
+      <div class="sub" id="presale-sub">3枚セット＋地図＋JCJカップ 1つ<br>カップは100ml・プラスチック製。会場で持ち歩いて、各ブースで注いでもらえます</div>
     </div>
 
-    <!-- ★2026-09-22：ここに書いてある値段と枚数は【仮の表示】です。
-         ★サーバーが設定から読んだ値で、画面が出る前に必ず置き換わります。
-         ★仮の値は 2026-09-19 オーナー決定に合わせてあります（当日パック＝地図＋3杯 1,500円）。 -->
-    <div class="opt" id="opt-pack" data-key="pack">
-      <img class="thumb hidden" id="img-pack" alt="">
-      <div class="body">
-        <div class="name">当日パック <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
-        <div class="sub" id="pack-sub">地図＋3杯</div>
-        <div class="note">東海地区のロースターの地図付き／無料の試飲1杯付き</div>
+    <div class="opt hidden" id="opt-pack" data-key="pack">
+      <div class="top">
+        <div class="l">
+          <img class="thumb hidden" id="pack-img" alt="">
+          <div class="name"><span class="nm">基本パック</span> <span id="pack-badge" class="badge hidden">今だけ +1杯</span></div>
+        </div>
+        <div class="price" id="pack-price">¥1,500</div>
       </div>
-      <div class="price" id="pack-price">¥1,500</div>
-    </div>
-
-    <!-- ★2026-09-22：カップ単品。🔴★券は付きません（★カップは券ではありません）
-         ★★2026-09-22 訂正（オーナー指摘）：以前ここに「試飲の券と無料の1杯は付きません」と
-         ★書いていました。★誤りです。★**無料の1杯は、商品に付いてくるものではありません。**
-         ★会場の受付で、どなたでも受け取れます。★カップだけ買った方も受け取れます。 -->
-    <div class="opt hidden" id="opt-cup" data-key="cup">
-      <img class="thumb hidden" id="img-cup" alt="">
-      <div class="body">
-        <div class="name">JCJカップ</div>
-        <div class="sub">カップだけ</div>
-        <div class="note">試飲の券は付きません。無料の1杯は、会場の受付でどなたでも受け取れます</div>
-      </div>
-      <div class="price" id="cup-price">¥600</div>
+      <div class="sub" id="pack-sub">3枚セット＋地図</div>
     </div>
 
     <!-- ★2026-09-22（㉓）バラ売り。★既定は出しません。設定 ticket_bara_on が TRUE のときだけ出ます -->
     <div class="opt hidden" id="opt-bara" data-key="bara">
-      <div>
-        <div class="name">バラ</div>
-        <div class="sub">1枚</div>
+      <div class="top">
+        <div class="l">
+          <div class="name"><span class="nm">バラ</span></div>
+        </div>
+        <div class="price" id="bara-price">¥350</div>
       </div>
-      <div class="price" id="bara-price">¥500</div>
+      <div class="sub">1枚</div>
     </div>
+
+    <!-- 🔴★2026-10-06 追加：カップ単品。★券は付きません（カップだけです）。 -->
+    <div class="opt hidden" id="opt-cup" data-key="cup">
+      <div class="top">
+        <div class="l">
+          <img class="thumb hidden" id="cup-img" alt="">
+          <div class="name"><span class="nm">JCJカップ</span></div>
+        </div>
+        <div class="price" id="cup-price">¥600</div>
+      </div>
+      <div class="sub">会場で持ち歩いて、各ブースで注いでもらうカップです<br>100ml・プラスチック製・75×55mm<br><span class="cau">試飲チケットは付きません（カップだけです）</span></div>
+    </div>
+
+    <!-- ★2026-10-06 追加：先行パックが売り切れたときに出す文。 -->
+    <div class="terms hidden" id="soldout-box">先行パックは完売しました。</div>
 
     <!-- ★★2026-09-22：規約v2の申し送り「購入画面に必ず表示する3つ」。
          ★文はサーバーが作ります（画面に文章を置きません＝直す場所を1か所に保つ）。
@@ -129,13 +175,15 @@
     <div class="terms" id="notice-box">
       <div id="notice-lines"></div>
       <div>1枚で試飲 1杯 と交換</div>
-      <!-- ★★2026-09-22 訂正：以前は「カップと無料の1杯は、当日 受付でお渡しします」でした。
-           ★2つの誤りがありました。
-           ★1つめ＝無料の1杯は「渡す」ものではありません（★受付のQRを読むと、その場でアプリに入ります）。
-           ★2つめ＝無料の1杯を、カップと同じ列に書いたため、★買った方だけのものに見えていました。
-           ⇒ ★**渡すもの（カップ）と、どなたでも受け取れるもの（無料の1杯）を、行ごと分けます。** -->
-      <div id="handover-note">カップは、当日 受付でお渡しします</div>
-      <div id="free-note">無料の1杯は、どの商品をお選びでも、会場の受付で受け取れます</div>
+      <!-- ★★2026-10-06 オーナー決定（案C・置き場所は「乙＝画面側」）。
+           ★上の3行はサーバーが作ります。この2行は【この画面が持ちます】。
+           ★本来この種の文はサーバー側（billing.js の fsTicketNoticeLines_）に置く決めごとですが、
+             ★そちらに足すとプログラムを本番へ届ける作業が要り、10月14日に間に合わない恐れがあるため、
+             ★オーナーのご判断で、いったん画面側に置きます。
+           🔴★10月14日が終わったら、サーバー側へ移してください（置き場所を1か所に戻すため）。
+           ★すぐ上の「1枚で試飲 1杯 と交換」も、もともと画面側に置かれていた文です。 -->
+      <div>試飲チケットはLINEの中でお使いいただきます</div>
+      <div>地図とカップは、当日 会場の受付でお渡しします</div>
     </div>
 
     <!-- ★2026-09-22（㉑規約同意）★文面はサーバーから受け取ります（画面に文章を持ちません＝1か所） -->
@@ -154,47 +202,43 @@
     <div class="foot">Stripeで安全に決済します<br><span id="test-note">テスト環境：実際の請求は発生しません</span></div>
   </div>
 
+  <!-- 停止中の画面。
+       ★2026-10-06：止まっている理由は2つあります。
+         ① 売るスイッチが切ってある（＝これから売る。お知らせを出します）
+         ② 規約が未承認など（＝今までどおりの文を出します）
+       ★下の文は②のときのものです。①のときは JavaScript が書き換えます。 -->
   <div id="closed" class="notice hidden">
     ただいま試飲チケットの購入を停止しています。<br>時間をおいて、もう一度お試しください。
   </div>
 
+  <!-- 決済後（戻り）画面 -->
   <div id="result" class="notice hidden"></div>
 </div>
 
 <script>
-  // ★このLIFFの設定★
-  const LIFF_ID = "2008851980-trDQgLA1";
-  // GAS_URL：買う窓口(?action=buy_*)がある配備（テスト専用・誰でも可）。本番化時に差し替え。
-  // ★★2026-09-23 訂正：ここに版の番号（@413・@429・@542）を書いていましたが、★これは罠でした。
-  //   ★下の住所は【配備の住所】で、★版を出すたびに中身だけが入れ替わります。★住所は変わりません。
-  //   ⇒ ★版の番号をここに書くと、★次に版を出した日から、説明文が嘘になります。★だから書きません。
-  //   ★覚えておくこと＝古い住所を向いたまま画面だけ直すと、「直したのに変わらない」が必ず起きます。
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
-  // 「パスポートに戻る」＝この買う画面(LIFF)を閉じて元のトーク(パスポートのカードがある場所)へ戻す。
-  // パスポートはWebページでなくトーク内のFlexカードのため、URL遷移ではなく liff.closeWindow() を使う。
-  const backBtnHtml = '<button type="button" class="backBtn" onclick="backToPassport()">トークに戻る</button>';
-  // ★2026-09-22：券を買った方に出すボタン。★行き先は設定から来ます（★本番では別のIDになるため）。
-  //   ★設定が空なら、★いままでどおり「トークに戻る」を出します（★行き先の無いボタンを出さない）。
-  let historyUrl = "";
-  function passportBtnHtml() {
-    if (!historyUrl) return backBtnHtml;
-    // ★2026-09-22 直し：★ボタンの文字を、飛び先に合わせました。
-    //   ★飛び先は「試飲チケットの履歴」の画面です。★「パスポート」と書くと、言葉と中身が違います。
-    return '<button type="button" class="backBtn" onclick="goHistory()">試飲チケットを見る</button>';
+  // ★★2026-10-06：この画面は japancoffeejourney.com に置きます。
+  //   ★以前は Google のプログラムが、この2行に値を差し込んで出していました。
+  //   ★置き場所が変わったので、値をここに直接 書きます。
+  //   🔴★この2つは【本番の値】です。練習用の環境に、このまま置かないでください。
+  // 🔴🔴★販売を始める日の【画面に出る文字】です。
+  //   ★スプレッドシートの CONFIG 99行目 `ticket_presale_start` と【同じ日付】にしてください。
+  //   ★設定の日付を変えたときは、★ここも変えないと、お客さまに違う日付が出ます。
+  //   ★値段と枚数は、設定から毎回 読むので直す必要はありません（ここだけが手で合わせる所です）。
+  const PRESALE_START_TEXT = "10月14日 0時";
+
+  const LIFF_ID = "2008851980-trDQgLA1";          // ★テストの「買う画面」（★本番の最終版を土台に、番号だけテストへ差し替え 2026-10-08）
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";   // ★テストの配信
+
+  // 🔴★2026-10-06 追加の守り（ticket_history.html と同じもの）。
+  //   ★LINEの番号が本物の形でないあいだは、画面を出しません。
+  //   ★本物の形＝「10けたの数字」＋「-」＋「英数字」。
+  function isUsableLiffId(v) {
+    return /^\d{10}-[0-9A-Za-z]+$/.test(String(v || "").trim());
   }
-  // ★別の画面へ飛ぶ書き方は、この事業部で既に動いている形に合わせました
-  //   （checkin.html / board.html と同じ liff.openWindow）。
-  function goHistory() {
-    try {
-      if (liff && liff.isInClient && liff.isInClient()) { liff.openWindow({ url: historyUrl, external: false }); return; }
-    } catch (e) { /* 飛べないときは、下の書き方で開きます */ }
-    location.href = historyUrl;
-  }
-  window.goHistory = goHistory;
 
   let currentUserId = "";
   let currentUserName = "";
-  let selectedKey = "pack";   // ★2026-09-22：出し分けの結果で、読み込み時に選び直します
+  let selectedKey = "pack";
   let campaignActive = false;
   // ★2026-09-22（㉑）：サーバーから受け取った「オーナーが承認した規約の版」。購入のときにそのまま送り返します。
   //   ★画面がこの版を作ることはありません（＝画面が勝手に「同意済み」を作れない）。
@@ -202,90 +246,284 @@
   let termsOpened = false;
 
   const $ = (id) => document.getElementById(id);
-  // loading=true のときだけ くるくる を出す（エラー文言では出さない）
-  const setStatus = (t, loading = true) => {
-    $("status-text").textContent = t || "";
-    $("spinner").classList.toggle("hidden", !(loading && t));
-    // #status はID指定(display:flex)が.hiddenより強く勝つため、確実に効くインライン指定で出し入れする
-    $("status").style.display = t ? "flex" : "none";
-  };
-  const hideStatus = () => { $("status").style.display = "none"; };
+  const setStatus = (t) => { $("status").textContent = t; };
   const yen = (n) => "¥" + Number(n).toLocaleString();
-  const getParam = (name) => new URLSearchParams(window.location.search).get(name) || "";
+  // ★2026-10-06 追加：文字をそのまま文章として入れるための部品（この画面には在りませんでした）。
+  //   ★お知らせの文で、設定から来たイベント名を出すのに使います。
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  async function fetchJson(query) {
-    // 15秒で時間切れ（無限にくるくる回り続けるのを防ぐ）
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 40000);
-    try {
-      const res = await fetch(GAS_URL + query, { method: "GET", signal: ctrl.signal });
-      return await res.json();
-    } finally {
-      clearTimeout(timer);
+  // 🔴🔴★2026-10-06 直し。★お支払いのあと、お客さまは
+  //     https://liff.line.me/2008851980-trDQgLA1?stage=confirm&session_id=… へ戻ってきます。
+  //   ★ところがLINEは、この「?stage=…」を、そのままの形で渡さないことがあります。
+  //     実際には「?liff.state=%3Fstage%3Dconfirm%26session_id%3D…」という形に包んで渡します。
+  //   ★これは 2026-10-03 に、お店で配るカードの画面（card.html）で実際に起きた止まり方です。
+  //   ⇒ ★だから【3つの形を全部】見ます。
+  //        ① ふつうの ?stage=…        （そのまま届いた形）
+  //        ② ?liff.state=%3F…         （LINEが包んだ形）
+  //        ③ #stage=…                 （まれにこの形で届きます）
+  //   ★もし①で見つからないのに②を見ていないと、お支払いを済ませたお客さまに
+  //     「買う画面」がもう一度 出てしまい、受け取った券が見えません。
+  function getParam(name) {
+    // ① ふつうのクエリ
+    var v = new URLSearchParams(window.location.search).get(name);
+    if (v) return v;
+
+    // ② LINEが包んだ形（liff.state の中に、もう1つクエリが入っています）
+    var st = new URLSearchParams(window.location.search).get("liff.state");
+    if (st) {
+      var inner = st.charAt(0) === "?" ? st.slice(1) : st;
+      var v2 = new URLSearchParams(inner).get(name);
+      if (v2) return v2;
     }
+
+    // ③ # のうしろ
+    var h = String(window.location.hash || "");
+    if (h.charAt(0) === "#") {
+      var v3 = new URLSearchParams(h.slice(1)).get(name);
+      if (v3) return v3;
+    }
+    return "";
   }
 
-  // 「パスポートに戻る」：トークへ「パスポートを見る」を送る(可能なら)→この画面を閉じて元のトークへ戻す。
-  // 何が起きても最後に必ず closeWindow を試みる頑丈な作り（送信不可でも閉じるだけは実行）。
-  async function backToPassport() {
-    try { await liff.init({ liffId: LIFF_ID }); } catch (e) {}
+  // GASのdoGet窓口(?action=...)を叩いてJSONを返す（roaster_regist と同じ枯れた方法）
+  async function fetchJson(query) {
+    const res = await fetch(WEB_APP_URL + query);
+    return await res.json();
+  }
+
+  // 🔴🔴★2026-10-04 訂正（本部の件名48・4）。★ここには「画面側の進行/エラーをサーバ(log_debug)へ
+  //   飛ばす」と書かれていました。★**いまは、受け取る所がありません。**
+  //   ★`?action=buy_clientlog` を受け取る処理は、テストにも本番にも【1つもありません】（全数 0件で確認）。
+  //   ⇒ ★**log_debug に1行も残りません。**
+  //   ★害はありません＝userId も spot も付いていないので、doGet の最後まで落ちて "Ready" を返すだけで、
+  //     何も書きません。ただし1回 画面を開くごとに【4回】ぶん、GASを呼びます。
+  //   🔴★**当日に画面の不調を調べる人へ：log_debug を見ても何も出ません。**
+  //     ★「画面が1度も開かれていない」と読み違えないでください。
+  //   ★受け取る処理を作るか、この trace を外すかは、10月14日のあとに決めます（本部の件名48・4）。
+  function trace(stage, msg) {
     try {
-      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
-        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
-      }
-    } catch (e) {}
-    try { liff.closeWindow(); } catch (e) {}
-  }
-  window.backToPassport = backToPassport;
-
-  function runCancelStage() {
-    hideStatus();
-    $("result").classList.remove("hidden");
-    $("result").innerHTML = 'お支払いは行われませんでした。<br>もう一度お試しになる場合は「試飲チケットを買う」からどうぞ。' + backBtnHtml;
+      const q = "?action=buy_clientlog&stage=" + encodeURIComponent(stage) +
+        "&msg=" + encodeURIComponent(String(msg || "").slice(0, 300));
+      fetch(WEB_APP_URL + q).catch(function () {});
+    } catch (e) { /* noop */ }
   }
 
+  // 決済から戻ってきた確認画面（LIFF不要・session_idだけで確定）
   async function runConfirmStage(sessionId) {
-    setStatus("お支払いを確認しています…", true);
+    $("status").classList.add("hidden");
     try {
-      // ★2026-09-22：確認の画面は loadState を通らないので、★行き先だけ先に受け取ります。
-      try {
-        const st = await fetchJson("?action=buy_state&userId=");
-        if (st && st.ok) historyUrl = String(st.historyUrl || "").trim();
-      } catch (e) { /* 取れなければ、いままでどおり「トークに戻る」 */ }
       const data = await fetchJson("?action=buy_confirm&session_id=" + encodeURIComponent(sessionId));
-      hideStatus();
       const box = $("result");
       box.classList.remove("hidden");
-      // ★★2026-09-22 直し：★成功かどうかは「支払いが通ったか」で決めます。
-      //   🔴★以前は「券が1枚以上 出たか」で決めていました。
-      //   ★カップ単品は★券0枚が正しいので、★買えているのに必ず「確認できませんでした」と出ていました
-      //   （2026-09-22 に現に起きました）。★券0枚でもカップが1つあれば、成功です。
-      const gotTickets = Number(data.issued || 0);
-      const gotCups = Number(data.cup || 0);
-      if (data.ok && (gotTickets > 0 || gotCups > 0)) {
-        if (gotTickets > 0) {
-          // ★券を買った方＝パスポートに残ります。★そこへ行けるボタンを出します。
-          box.innerHTML = '<div class="done-num">' + gotTickets + '枚</div>試飲チケットを受け取りました。<br>下のボタンから、いつでもご確認いただけます。' +
-            (gotCups > 0 ? '<br>JCJカップは、当日 受付でお渡しします。' : '') + passportBtnHtml();
-        } else {
-          // 🔴★カップだけの方＝★パスポートには出ません。★「確認できます」と書くと嘘になります。
-          //   ★だからここは文言を変えず、★パスポートへのボタンも出しません。
-          // ★2026-09-22 訂正（オーナー指摘）：★カップだけ買った方にも無料の1杯があります。
-          //   ★ここで書かないと、★受付で受け取れることに気づかないまま帰られます。
-          box.innerHTML = 'JCJカップのお申し込みを承りました。<br>当日 受付でお渡しします。' +
-            '<br>無料の1杯も、会場の受付で受け取れます。' + backBtnHtml;
-        }
+      // ★2026-10-04 直し（3点）
+      //   ①カップだけ買った方は券が0枚です。枚数だけを見ていたので「確認できませんでした」と出ていました。
+      //     サーバーは cup の数も返しているので、両方を見ます。
+      //   ②お支払いが済んでいない（reason="not_paid"）ときと、
+      //     お支払いは済んでいるのに券がまだ用意できていないときを、分けて伝えます。
+      //     まとめて「確認できませんでした」と出すと、払った方は「お金だけ取られた」と受け取ります。
+      //   ③次に何をすればよいかを書きます。★この画面をもう一度 開くと、用意ができていれば受け取れます
+      //     （開き直すと、サーバーがもう一度 用意を試みる作りになっています）。
+      const got = Number(data.issued || 0);
+      const gotCup = Number(data.cup || 0);
+      if (data.ok && (got > 0 || gotCup > 0)) {
+        // 大きく出す数字と、文の中の数字が重ならないようにします。
+        const num  = (got > 0) ? (got + '枚') : '1つ';
+        const what = (got > 0 && gotCup > 0) ? '試飲チケットと、カップ1つ'
+                   : (got > 0)              ? '試飲チケット'
+                                            : 'カップ';
+        // ★2026-10-06 直し：「パスポートでいつでも確認できます」と書いてありましたが、
+        //   ★パスポートの画面には券が1つも出ません（2026-10-06 に実際に開いて確かめました）。
+        //   ★行き先は「購入履歴」の画面です。★下でボタンも出します。
+        // ★2026-10-06：終わったことは、面を緑で塗らず【緑の ✓ を1つ】＋墨の文字で表します
+        //   （緑1色トンマナ 確定仕様・決定#3）。
+        box.innerHTML = '<div class="done-check">✓</div><div class="done-num">' + num + '</div>' + what + 'を受け取りました。<br>購入履歴からいつでもご確認いただけます。';
       } else if (data.ok && data.already) {
-        box.innerHTML = 'このお支払いのチケットは、すでに受け取り済みです。' + backBtnHtml;
+        box.innerHTML = 'このお支払いのぶんは、すでに受け取り済みです。<br>購入履歴からご確認いただけます。';
+      } else if (data.ok && data.reason === 'not_paid') {
+        box.innerHTML = 'お支払いが完了していません。<br>もう一度お試しになる場合は、この画面を閉じて「試飲チケットを買う」からどうぞ。';
+      } else if (data.ok) {
+        box.innerHTML = 'お支払いを受け付けました。<br>ただいま、券のご用意に少しお時間をいただいています。<br><br>'
+                      + '数分おいてから、<b>この画面をもう一度 開いてください。</b>ご用意ができていれば、枚数が出ます。<br>'
+                      + '15分ほど待っても出ないときは、お手数ですがお知らせください。';
       } else {
-        // 🔴★ここは残します。★本当に失敗したときに、成功と出てはいけません。
-        box.innerHTML = 'お支払いの確認ができませんでした。<br>チケットが増えていない場合は、お手数ですがお問い合わせください。' + backBtnHtml;
+        box.innerHTML = 'ただいま確認ができませんでした。<br>数分おいてから、この画面をもう一度 開いてください。<br>'
+                      + 'それでも出ないときは、お手数ですがお知らせください。';
       }
+      // ★★2026-10-06 追加：「購入履歴を見る」ボタン。
+      //   ★それまで、この画面には【行き先が1つもありませんでした】。
+      //     ★「確認できます」と書いてあるのに、どこにも行けない状態でした。
+      //   ★行き先は設定（102行目 ticket_history_url）から読みます。
+      //     ★設定が空なら、ボタンを出しません（＝押しても開かないボタンを作らない）。
+      await addHistoryButton();
     } catch (err) {
-      hideStatus();
       $("result").classList.remove("hidden");
-      $("result").innerHTML = "確認中にエラーが発生しました。時間をおいてお試しください。" + backBtnHtml;
+      $("result").textContent = "確認中にエラーが発生しました。時間をおいてお試しください。";
     }
+  }
+
+  /**
+   * ★2026-10-06 追加：買ったあとの画面に「購入履歴を見る」ボタンを足す。
+   * ★行き先はサーバーの設定から読みます（★画面は住所を持ちません＝直す場所を1か所に保つ）。
+   * ★読めなかったときは、何も足しません（★画面は止めません）。
+   */
+  async function addHistoryButton() {
+    try {
+      const st = await fetchJson("?action=buy_state");
+      const url = String((st && st.historyUrl) || "").trim();
+      if (!url) return;                       // ★設定が空＝ボタンを出さない
+      const a = document.createElement("a");
+      a.href = url;
+      a.textContent = "購入履歴を見る";
+      // ★2026-10-06：副ボタン＝白地＋緑の枠と文字（緑1色トンマナ 確定仕様）。
+      //   ★この画面の主ボタンは「購入する」なので、ここは副ボタンにします
+      //     （1画面に主ボタンは1つだけ）。
+      a.style.cssText = "display:block;width:100%;box-sizing:border-box;padding:12px;margin-top:16px;" +
+        "font-size:15px;font-weight:700;text-align:center;border-radius:10px;" +
+        "background:var(--bg);color:var(--green);border:1px solid var(--green);text-decoration:none;";
+      $("result").appendChild(a);
+    } catch (e) { /* ★ボタンが出せなくても、受け取りの知らせは出し続けます */ }
+  }
+
+  // キャンセルで戻ってきた画面
+  function runCancelStage() {
+    $("status").classList.add("hidden");
+    $("result").classList.remove("hidden");
+    $("result").innerHTML = 'お支払いは行われませんでした。<br>もう一度お試しになる場合は、この画面を閉じて「試飲チケットを買う」からどうぞ。';
+  }
+
+  // 購入（選択）画面の初期化
+  async function startBuyPage() {
+    trace("start", "page loaded; liff sdk=" + (typeof liff));
+    // 🔴★2026-10-06 追加の守り。★LINEの番号が本物の形でないあいだは、ここで止まります。
+    //   ★押しても開かない画面を、お客さまに出さないためです。
+    if (!isUsableLiffId(LIFF_ID)) {
+      setStatus("ただいま、この画面のご用意をしています。\nお手数をおかけしております。もう少しお待ちください。");
+      return;
+    }
+    try {
+      trace("init_start", "location=" + window.location.href);
+      // 🔴🔴★2026-10-06 直し。★ここには「8秒たったらあきらめる」が入っていました。
+      //   ★2026-10-06、オーナーが実際に開いて【8秒経過】で失敗しました。
+      //   ★原因は、この画面が Google のプログラムから出ていたことです（枠の中に出るため、
+      //     LINEの準備が終わりませんでした）。★置き場所を japancoffeejourney.com に変えたので、
+      //     本来は終わるようになります。
+      //   ★そのうえで、あきらめる仕掛けを外します。★理由＝本番で実際に動いている画面
+      //     （チェックイン・パスポート・ticket_history）は、どれも あきらめずに待つ作りで、
+      //     ★あきらめる作りのものは、1つも動いた実績がありませんでした（2026-10-06 に22個 全数 確認）。
+      await liff.init({ liffId: LIFF_ID });
+      trace("init_ok", "isLoggedIn=" + liff.isLoggedIn() + " inClient=" + (liff.isInClient && liff.isInClient()));
+      // ★2026-10-06 追加：LINEの外（パソコンのブラウザ等）で開かれたときは、買えません。
+      //   ★ticket_history.html と同じ止め方にそろえます。
+      if (liff.isInClient && !liff.isInClient()) {
+        setStatus("LINEアプリの中で開いてください。");
+        return;
+      }
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+
+      let profile;
+      try {
+        profile = await liff.getProfile();
+      } catch (e) {
+        trace("profile_err", e.message || e);
+        setStatus("プロフィール取得に失敗しました。\n" + String(e.message || e));
+        return;
+      }
+      trace("profile_ok", "uid=" + (profile.userId || "").slice(0, 8));
+      currentUserId = profile.userId;
+      currentUserName = profile.displayName || "";
+
+      setStatus("商品を読み込んでいます...");
+      let data;
+      try {
+        data = await fetchJson("?action=buy_state&userId=" + encodeURIComponent(currentUserId));
+      } catch (e) {
+        setStatus("商品の取得に失敗しました（通信）。\n" + String(e.message || e));
+        return;
+      }
+
+      if (!data || !data.ok) {
+        setStatus("商品の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。");
+        return;
+      }
+
+      if (!data.triggerOn) {
+        // ★2026-10-06：売るスイッチが切ってあるとき＝「これから売る」ので、お知らせを出します。
+        //   ★「ただいま停止しています」だけだと、押した方は何も分からないまま閉じます。
+        //   ★値段と枚数は、いまの設定から読んだものをそのまま出します（古くなりません）。
+        $("closed").innerHTML = presaleNoticeHtml(data);
+        $("status").classList.add("hidden");
+        $("closed").classList.remove("hidden");
+        return;
+      }
+
+      // ★★2026-09-22（㉑）★**この歯止めは、オーナーが承認していない利用規約で券を売ることを禁止します。**
+      //   ★承認された版と全文がサーバーから来ていなければ、購入の画面そのものを出しません。
+      //   ★ここで止めても、もう1段 奥（apiTicketBuyCheckout）でも断ります＝画面だけの歯止めにしません。
+      // ★2026-09-22 追加：必ず出す3つが揃っていなければ、購入画面を出しません。
+      //   ★理由＝「ご来場いただけなかった場合も、払い戻しはいたしません」が欠けたまま売ると、
+      //   ★払い戻さないと決めた意味がなくなります（2026-09-22 オーナー決定）。
+      if (!data.termsVersion || !data.termsText || (data.noticeLines || []).length < 3) {
+        trace("terms_not_ready", "version=" + (data.termsVersion || "(空)") +
+          " textLen=" + String(data.termsText || "").length +
+          " notice=" + (data.noticeLines || []).length);
+        $("status").classList.add("hidden");
+        $("closed").classList.remove("hidden");
+        return;
+      }
+
+      // 🔴★2026-10-06 追加：売っているものが1つも無いときは、買う画面を出しません。
+      //   ★理由＝商品が1つも無い買う画面は、お客さまには「壊れている」としか見えません。
+      //   ★停止中の画面（「ただいま購入を停止しています」）を出します。
+      if (!renderPrices(data)) {
+        trace("nothing_on_sale", "presale/pack/bara/cup が全部オフ");
+        $("status").classList.add("hidden");
+        $("closed").classList.remove("hidden");
+        return;
+      }
+      $("status").classList.add("hidden");
+      $("buy").classList.remove("hidden");
+    } catch (err) {
+      console.error(err);
+      trace("init_err", err.message || err);
+      setStatus("LINEの初期化に失敗しました。\n" + String(err.message || err));
+    }
+  }
+
+  /**
+   * ★2026-10-06：まだ売っていないときに出すお知らせ。
+   *   ★日付だけは手で合わせます（PRESALE_START_TEXT）。
+   *   ★値段・枚数・イベント名は、サーバーから来たものをそのまま出します。
+   *   ★数が分からないものは書きません（「100セット」は設定から読めないので「数に限りがあります」とだけ）。
+   */
+  function presaleNoticeHtml(data) {
+    const p = (data && data.presale) || {};
+    const cnt = Number(p.count) || 0;
+    const price = Number(p.price) || 0;
+    const ev = String((data && data.eventName) || "").trim();
+    let h = '<div class="soon-ttl">' + PRESALE_START_TEXT + 'から<br>先行パックの販売を始めます</div>';
+    if (cnt > 0 && price > 0) {
+      h += '<div class="soon-item">地図　＋　試飲チケット ' + cnt + '枚　＋　JCJカップ' +
+           '<div class="soon-price">' + yen(price) + '</div>' +
+           '<div class="soon-small">数に限りがあります</div></div>';
+    }
+    if (ev) h += '<div class="soon-note">' + esc(ev) + ' の会場でお使いいただけます</div>';
+    return h;
+  }
+
+  /**
+   * ★2026-10-06：商品の絵を1つ差し込む。
+   *   ★住所はサーバーの設定から来ます（ticket_img_presale / ticket_img_pack / ticket_img_cup）。
+   *   ★設定が空なら、絵を出しません（＝いままでと同じ見た目）。
+   *   ★住所が間違っていて絵が出ないときも、★その絵だけ隠します（画面は壊しません）。
+   */
+  function setThumb(id, url) {
+    const el = $(id);
+    if (!el) return;
+    const u = String(url || "").trim();
+    if (!u) { el.classList.add("hidden"); return; }
+    el.onerror = function () { el.classList.add("hidden"); };
+    el.src = u;
+    el.classList.remove("hidden");
   }
 
   function renderPrices(data) {
@@ -298,65 +536,80 @@
       d.textContent = t;          // ★文章として入れる（組み立てない＝取り違えが起きない）
       box.appendChild(d);
     });
+    // ★値段は、全部サーバーから来たものを出します（画面は1円も決めません）。
+    $("pack-price").textContent = yen(data.pack.price);
+    $("bara-price").textContent = yen(data.bara.price);
+    $("presale-price").textContent = yen((data.presale && data.presale.price) || 0);
+    $("cup-price").textContent = yen((data.cup && data.cup.price) || 0);
+    // ★2026-10-06 オーナー決定：地図は【当日パックにも先行パックにも】付けます。
+    // ★2026-10-06：商品の絵（設定が空なら出ません）
+    const img = (data && data.images) || {};
+    setThumb("presale-img", img.presale);
+    setThumb("pack-img",    img.pack);
+    setThumb("cup-img",     img.cup);
+
+    // ★2026-10-06 オーナー決定（案A）：先行パックにも、カップの大きさと使い方を書きます。
+    //   ★理由＝カップ単品を売らない設定にすると、カップの説明が画面から丸ごと消えるためです
+    //     （「別の行に書いてあるから大丈夫」は、その行が消えると崩れます）。
+    //   ★textContent だと改行が入らないので innerHTML にしています。
+    //     ★入れている文字は、この画面が持っている決まった文だけです（外から来た文字は混ぜていません）。
+    $("presale-sub").innerHTML =
+      ((data.presale && data.presale.count) || 0) + "枚セット＋地図＋JCJカップ 1つ<br>カップは100ml・プラスチック製。会場で持ち歩いて、各ブースで注いでもらえます";
+
+    // 🔴★2026-10-06：出す・出さないは【全部サーバーが決めます】。★この画面は決めません。
+    //   ★理由＝決める所が2か所にあると、必ず片方が古くなります。
+    //   ★当日パックと先行パックが同時に出ることはありません
+    //     （サーバーが「先行が売れる間は当日を出さない」と決めています）。
+    const showPresale = !!(data.presale && data.presale.on === true);
+    const showPack    = data.packOn === true;
+    const showBara    = data.baraOn === true;
+    const showCup     = !!(data.cup && data.cup.on === true);
+    toggleOpt("opt-presale", showPresale);
+    toggleOpt("opt-pack",    showPack);
+    toggleOpt("opt-bara",    showBara);
+    toggleOpt("opt-cup",     showCup);
+
+    // ★完売の知らせ。★先行パックが完売していて、まだ先行の期間中のときだけ出します。
+    toggleOpt("soldout-box", data.soldOut === true && !showPresale);
+
     // ★2026-09-22（㉑）規約の全文を差し込む（文章はサーバーから来たものだけ）。
     termsVersion = String(data.termsVersion || "");
     $("terms-body").textContent = String(data.termsText || "");
-    // ★2026-09-22（㉓）バラ売りは、設定で出すと決めたときだけ出します。
-    //   ★出さないときは、選ぶこともできません（選ばれていたらパックに戻します）。
-    // ★2026-09-22：出す／出さないは、全部サーバーの返事で決めます（★画面が勝手に決めません）。
-    const show = function (key, on) {
-      const el = $("opt-" + key);
-      if (!el) return;
-      if (on) { el.classList.remove("hidden"); }
-      else { el.classList.add("hidden"); }   // ★選び直しは、このあとでまとめて行います（★当日パックが出ていないことがあるため）
-    };
-    show("bara", data.baraOn === true);
-    // ★★2026-09-22：★先行と当日の出し分けは、★サーバーが決めた答えをそのまま使います。
-    //   ★期間・完売・人の停止を全部 見たうえでの答えです（★画面が判断しません）。
-    //   ★先行が買えるあいだは、当日パックを出しません（★同じ値段で先行にはカップが付くため）。
-    //   ★先行が完売するか、終わりの時刻を過ぎると、★その場で当日パックに切り替わります。
-    show("presale", !!(data.presale && data.presale.on));
-    show("pack", data.packOn === true);
-    show("cup", !!(data.cup && data.cup.on));
-    // ★出ているものが1つも選ばれていなければ、★出ているものの先頭を選びます。
-    //   ★理由＝先行の期間中は当日パックが出ないので、★既定のままだと「出ていないもの」を選んだ状態になります。
-    const shownKeys = ["presale", "pack", "cup", "bara"].filter(function (k) {
-      const el = $("opt-" + k); return el && !el.classList.contains("hidden");
-    });
-    if (shownKeys.length && shownKeys.indexOf(selectedKey) < 0) selectOpt(shownKeys[0]);
-    historyUrl = String(data.historyUrl || "").trim();
-    if (data.presale && data.presale.price) {
-      $("presale-price").textContent = yen(data.presale.price);
-      $("presale-sub").textContent = "地図＋" + data.presale.count + "杯＋カップ";
-    }
-    if (data.cup && data.cup.price) $("cup-price").textContent = yen(data.cup.price);
-    // ★2026-09-22：商品の絵。★設定が空なら、何も出しません（★壊れた絵の印を出さないため）。
-    //   ★絵の住所はサーバーから来たものだけ。★画面にファイル名を書きません。
-    const imgs = data.images || {};
-    ["pack", "presale", "cup"].forEach(function (k) {
-      const el = $("img-" + k);
-      if (!el) return;
-      const url = String(imgs[k] || "").trim();
-      if (url) { el.src = url; el.classList.remove("hidden"); }
-      else { el.removeAttribute("src"); el.classList.add("hidden"); }
-    });
-    $("pack-price").textContent = yen(data.pack.price);
-    $("bara-price").textContent = yen(data.bara.price);
     if (!data.testMode) $("test-note").textContent = "";
+    // ★2026-10-06 オーナー決定：当日パックにも地図が付きます。
     if (campaignActive) {
       $("pack-badge").classList.remove("hidden");
-      $("pack-sub").innerHTML = '<span class="strike">' + data.pack.baseCount + '枚</span> → ' + data.pack.count + '枚セット';
+      $("pack-sub").innerHTML = '<span class="strike">' + data.pack.baseCount + '枚</span> → ' + data.pack.count + '枚セット＋地図';
     } else {
-      $("pack-sub").textContent = data.pack.count + "枚セット";
+      $("pack-sub").textContent = data.pack.count + "枚セット＋地図";
     }
+
+    // ★はじめに選んでおくもの。★上から順に、出ているものの1つめを選びます。
+    //   ★1つも出ていなければ false を返します（＝買う画面を出しません）。
+    const order = ["presale", "pack", "bara", "cup"];
+    const shown = { presale: showPresale, pack: showPack, bara: showBara, cup: showCup };
+    let first = "";
+    for (let i = 0; i < order.length; i++) {
+      if (shown[order[i]]) { first = order[i]; break; }
+    }
+    if (!first) return false;
+    selectOpt(first);
+    return true;
+  }
+
+  /** ★2026-10-06：出す／隠すを1か所にまとめます（書き方がばらつくと、片方だけ直し忘れます）。 */
+  function toggleOpt(id, show) {
+    if (show) $(id).classList.remove("hidden");
+    else $(id).classList.add("hidden");
   }
 
   function selectOpt(key) {
     selectedKey = key;
-    ["pack", "bara", "presale", "cup"].forEach(function (k) {
-      const el = $("opt-" + k);
-      if (el) el.classList.toggle("selected", key === k);
-    });
+    // ★2026-10-06：4つに増えました（先行パック・基本パック・バラ・カップ）。
+    $("opt-presale").classList.toggle("selected", key === "presale");
+    $("opt-pack").classList.toggle("selected", key === "pack");
+    $("opt-bara").classList.toggle("selected", key === "bara");
+    $("opt-cup").classList.toggle("selected", key === "cup");
   }
 
   // ★2026-09-22（㉑）：規約を「開いて読んだ」あとに、はじめて同意のチェックが押せるようになります。
@@ -380,11 +633,11 @@
   async function goCheckout() {
     // ★念のため、画面側でも同意が無ければ送りません（サーバーでも断ります）。
     if ($("agree-check").checked !== true) {
-      setStatus("利用規約に同意のチェックを入れてください。", false);
+      setStatus("利用規約に同意のチェックを入れてください。");
       return;
     }
     $("payBtn").disabled = true;
-    setStatus("決済ページを開いています…", true);
+    setStatus("");
     try {
       const data = await fetchJson(
         "?action=buy_checkout" +
@@ -393,108 +646,67 @@
         "&terms=" + encodeURIComponent(termsVersion) +
         "&product=" + encodeURIComponent(selectedKey));
       if (data && data.ok && data.url) {
-        window.location.href = data.url;
+        window.location.href = data.url;   // Stripeの決済ページへ
       } else {
         // ★2026-09-22（㉑）：規約まわりで断られたときは、何をすればよいかを書きます。
         //   ★「決済ページを開けませんでした」だけでは、お客さまが同じ操作を繰り返します。
         const err = (data && data.error) || "";
         if (err === "terms_version_mismatch") {
-          setStatus("利用規約が新しくなりました。\nこの画面を閉じて、もう一度お開きください。", false);
+          // ★お客さまが画面を開いたあとに、規約が新しくなった場合。
+          setStatus("利用規約が新しくなりました。\nこの画面を閉じて、もう一度お開きください。");
           return;   // ★同じ版で押し直しても通らないので、ボタンは戻しません
         }
         if (err === "terms_not_agreed" || err === "terms_not_approved") {
-          setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
+          setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。");
           return;
         }
-        if (err === "sold_out") {
-          setStatus("おかげさまで完売しました。\nたくさんのお申し込み、ありがとうございました。", false);
-          return;   // ★もう買えないので、ボタンは戻しません
-        }
-        if (err === "campaign_config_ng") {
-          setStatus("ただいま購入の受け付けを停止しています。\nお手数ですが、時間をおいてお試しください。", false);
-          return;
-        }
-        if (err === "pack_off") {
-          setStatus("いまは先行パックのお取り扱いです。\nカップ付きでお得ですので、そちらをお選びください。", false);
-          return;   // ★同じものを押し直しても通らないので、ボタンは戻しません
-        }
-        if (err === "presale_off" || err === "cup_off") {
-          setStatus("こちらはいま取り扱っておりません。\nお手数ですが、この画面を閉じて、もう一度お開きください。", false);
-          return;
-        }
-        if (err === "bara_off") {
-          setStatus("バラ売りはいま取り扱っておりません。\nセットをお選びください。", false);
-          selectOpt("pack");
-          $("payBtn").disabled = false;
+        // 🔴★2026-10-06 追加：「その商品は、いま売っていません」とサーバーが断ったときの文。
+        //   ★起きるのは、画面を開いたあとに、売っているものが変わったときです。
+        //     例＝先行パックが完売した／先行の期間が終わって当日パックに切り替わった。
+        //   ★以前は、このうち bara_off だけを見ていて、ほかの4つは
+        //     「決済ページを開けませんでした」とだけ出ていました。
+        //     ★それだと、お客さまは同じ操作を何度も繰り返します。
+        //   ★押し直しても通らないので、ボタンは戻しません。開き直していただきます。
+        const soldOutMsg = {
+          sold_out:    "先行パックは完売しました。",
+          presale_off: "先行パックの販売は終了しました。",
+          pack_off:    "いまは先行パックをお求めいただけます。",
+          cup_off:     "カップ単品は、いま取り扱っておりません。",
+          bara_off:    "バラ売りは、いま取り扱っておりません。",
+        };
+        if (soldOutMsg[err]) {
+          setStatus(soldOutMsg[err] + "\nこの画面を閉じて、もう一度お開きください。");
           return;
         }
         $("payBtn").disabled = false;
-        setStatus("決済ページを開けませんでした。時間をおいてお試しください。", false);
+        setStatus("決済ページを開けませんでした。時間をおいてお試しください。");
       }
     } catch (err) {
       $("payBtn").disabled = false;
-      setStatus("通信に失敗しました。時間をおいてお試しください。", false);
+      setStatus("通信に失敗しました。時間をおいてお試しください。");
     }
   }
 
-  async function loadState() {
-    setStatus("価格を読み込んでいます…", true);
-    const data = await fetchJson("?action=buy_state&userId=" + encodeURIComponent(currentUserId));
-    if (!data || !data.ok) { setStatus("価格の取得に失敗しました（" + ((data && data.error) || "応答なし") + "）。", false); return; }
-    if (!data.triggerOn) {
-      hideStatus();
-      $("closed").classList.remove("hidden");
-      return;
-    }
-    // ★★2026-09-22（㉑）★**この歯止めは、オーナーが承認していない利用規約で券を売ることを禁止します。**
-    //   ★承認された版と全文、そして必ず出す3つの文がサーバーから来ていなければ、購入の画面そのものを出しません。
-    //   ★「ご来場いただけなかった場合も、払い戻しはいたしません」が欠けたまま売ると、
-    //   ★2026-09-22 のオーナー決定（払い戻さないと先に書いておく）の意味がなくなります。
-    //   ★ここで止めても、もう1段 奥（apiTicketBuyCheckout）でも断ります＝画面だけの歯止めにしません。
-    // ★★2026-09-22（100セット限定）★完売したら、購入に進めない形にします。
-    //   ★2026-09-17 の資料「100セット限定・完売しても追加しない」＝お客さまへの約束です。
-    if (!data.termsVersion || !data.termsText || (data.noticeLines || []).length < 3) {
-      hideStatus();
-      $("closed").classList.remove("hidden");
-      return;
-    }
-    renderPrices(data);
-    hideStatus();
-    $("buy").classList.remove("hidden");
-  }
-
-  async function main() {
-    // 決済からの戻り（LIFF不要・session_idだけで確定）
-    const stage = getParam("stage");
-    if (stage === "confirm") { return runConfirmStage(getParam("session_id")); }
-    if (stage === "cancel")  { return runCancelStage(); }
-
-    // 購入（選択）画面：動作中の exchange.html と同じ初期化フロー
-    setStatus("LINEを起動しています…", true);
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
-    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
-
-    const profile = await liff.getProfile();
-    currentUserId = profile.userId || "";
-    currentUserName = profile.displayName || "";
-    if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
-
-    ["pack", "bara", "presale", "cup"].forEach(function (k) {
-      const el = $("opt-" + k);
-      if (el) el.addEventListener("click", function () { selectOpt(k); });
-    });
+  // --- 入口の振り分け ---
+  const stage = getParam("stage");
+  if (stage === "confirm") {
+    runConfirmStage(getParam("session_id"));
+  } else if (stage === "cancel") {
+    runCancelStage();
+  } else {
+    // ★2026-10-06：押せるようにするのも4つぶん。★ここを足し忘れると、画面に出ていても選べません。
+    $("opt-presale").addEventListener("click", () => selectOpt("presale"));
+    $("opt-pack").addEventListener("click", () => selectOpt("pack"));
+    $("opt-bara").addEventListener("click", () => selectOpt("bara"));
+    $("opt-cup").addEventListener("click", () => selectOpt("cup"));
     $("payBtn").addEventListener("click", goCheckout);
     // ★2026-09-22（㉑）：規約を開いたら同意できるようになる／同意でボタンが押せるようになる
     $("termsbox").addEventListener("toggle", function () {
       if ($("termsbox").open) onTermsOpened();
     });
     $("agree-check").addEventListener("change", onAgreeChanged);
-
-    await loadState();
+    startBuyPage();
   }
-
-  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err)), false); });
 </script>
 </body>
 </html>
