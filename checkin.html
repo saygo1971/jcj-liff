@@ -289,12 +289,16 @@
       banner = '<img id="donecard" class="donecard" alt="チェックイン完了" src="' + esc(cardUrl) + '">';
     }
     // ★2026-10-07：足される数が0のときは、数字そのものを出しません。
-    //   ★「＋0マイル」と出すと、お客さまに「損をした」と読まれます。
+    //   ★「＋0km」と出すと、お客さまに「損をした」と読まれます。
     //   ★0になるのは【イベントのブース】だけです（ふつうのお店は最低10なので0になりません）。
+    // ★2026-10-07 オーナー指示：単位は「マイル」ではなく【km】。
+    // 🔴★「合計」は出しません。★理由＝合計の数字は【マイルの合計】で、
+    //   ★距離の合計ではありません（紹介などの距離でないものが混ざっています）。
+    //   ★それを「合計 ◯km」と書くと、画面が嘘をつきます。
     const mileHtml = r.alreadyToday
-      ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
+      ? '<div class="total">同じ日の重複は二重に付けません</div>'
       : ((Number(r.earnedMile)||0) > 0
-          ? '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>'
+          ? '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'km</div>'
           : '');
 
     // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
@@ -335,10 +339,11 @@
     const logoUrl = CHECKIN_CARD_BASE + encodeURIComponent(st.shopId || SPOT || "") + "/logo.png";
     const initial = esc(String(r.shopName || "?").trim().slice(0,1) || "?");
     // ★2026-10-07：0 のときは出しません（上の mileHtml と同じ理由・同じ条件）。
+    //   ★単位は km。★「合計」は出しません（上と同じ理由）。
     const cimile = r.alreadyToday
-      ? '<div class="citotal">同じ日の重複はマイルを二重に付けません</div>'
+      ? '<div class="citotal">同じ日の重複は二重に付けません</div>'
       : ((Number(r.earnedMile)||0) > 0
-          ? '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> マイル</span><span class="citotal">合計 ' + (Number(r.newTotal)||0) + '</span></div>'
+          ? '<div class="cimile"><span class="pl">＋</span><span class="n">' + (Number(r.earnedMile)||0) + '</span><span class="u"> km</span></div>'
           : '');
     const headerHtml =
       '<div class="cihead">' +
@@ -353,7 +358,11 @@
     const recUrl = LOG_DRINK_LIFF_ID
       ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || ""))
       : "";
-    const recordHtml =
+    // ★2026-10-07 オーナー指示：JCJの受付ではコーヒーをお出ししないので、
+    //   ★受付のときだけ「この一杯を記録する」を出しません。
+    //   ★ブース（イベント）とふつうのお店では、いままでどおり出ます。
+    const isReception = String(r.visitType || "") === "イベント受付";
+    const recordHtml = isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
       '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>';
