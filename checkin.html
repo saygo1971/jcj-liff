@@ -701,7 +701,11 @@
         busy = false;
         if(!d || !d.ok){
           render();
-          const msg = d && d.error === "insufficient" ? "残り枚数が足りません。" : (d && d.error === "not_enabled" ? "この店は試飲チケット対応ではありません。" : "チケットの使用に失敗しました。");
+          // ★2026-10-08：「会場でしか使えない券」のときは、そう書きます（前は「足りません」と出ていました）。
+          const msg = (d && d.error === "event_only") ? "このチケットは、イベント会場のブースでのみお使いいただけます。"
+            : (d && d.error === "insufficient") ? "残り枚数が足りません。"
+            : (d && d.error === "not_enabled") ? "この店は試飲チケット対応ではありません。"
+            : "チケットの使用に失敗しました。";
           $("tmsg").className = "msg ng"; $("tmsg").textContent = msg; return;
         }
         renderTicketUsed(d);
