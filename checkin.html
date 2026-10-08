@@ -517,9 +517,10 @@
     if (s.reception !== true || n <= 0){ el.innerHTML = ""; return; }
     el.innerHTML =
       '<div class="tksec">' +
-        '<div class="tkhd">チケット</div>' +   // ★2026-10-08 オーナー指示：「持っている券」→「チケット」
+        // ★2026-10-08 オーナー指示：「チケット3枚」と、ひとつづきで出します。
+        //   ★小さい見出しはやめました（カップが「カップ／カップ3つ」と二重に出ていたため）。
         '<div class="tkbox">' +
-          '<div class="big">' + n + '枚</div>' +
+          '<div class="big">チケット ' + n + '枚</div>' +
           '<div class="sub">ロースターのブースで、一杯と交換できます<br>（無料の1杯を含みます）</div>' +
         '</div>' +
       '</div>';
@@ -542,9 +543,8 @@
     if (f.has === true){
       el.innerHTML =
         '<div class="freesec">' +
-          '<div class="freehd">無料の1杯</div>' +
           '<div class="freedone">' +
-            '<div class="big">受け取り済み</div>' +
+            '<div class="big">無料の1杯 受け取り済み</div>' +
             '<div class="sub">ロースターのブースでお使いください（おひとり1枚）</div>' +
           '</div>' +
         '</div>';
@@ -556,9 +556,8 @@
 
     el.innerHTML =
       '<div class="freesec">' +
-        '<div class="freehd">無料の1杯</div>' +
         '<div class="freebox">' +
-          '<div class="big">1杯ぶんの券</div>' +
+          '<div class="big">無料の1杯</div>' +
           '<div class="sub">ロースターのブースで、お好きな一杯と交換できます</div>' +
           '<button id="freeBtn" class="freebtn">1杯ぶんの券を受け取る</button>' +
         '</div>' +
@@ -608,7 +607,7 @@
       const canDo = (s.canHandover === true);
       el.innerHTML =
         '<div class="cupsec">' +
-          '<div class="cuphd">カップ</div>' +
+          // ★2026-10-08：小さい見出し「カップ」はやめました（下と二重になるため）。
           '<div class="cupbox">' +
             '<div class="big">カップ ' + remain + 'つ</div>' +
             '<div class="sub">' + (canDo ? '受付でお受け取りください'
@@ -626,9 +625,8 @@
     // ★渡し終わったあと。★色だけでなく「お渡し済み」の文字と時刻を必ず出します。
     el.innerHTML =
       '<div class="cupsec">' +
-        '<div class="cuphd">カップ</div>' +
         '<div class="cupdone">' +
-          '<div class="big">お渡し済み</div>' +
+          '<div class="big">カップ お渡し済み</div>' +
           (cup.lastHandedTime ? '<div class="when">' + esc(cup.lastHandedTime) + '</div>' : '') +
           // ★2026-10-07 直し：前は「おひとり1つです」と書いていました。
           //   🔴★買った数だけお渡しします（★先行パックを3つ買えばカップは3つ）。
