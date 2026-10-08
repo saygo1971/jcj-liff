@@ -182,15 +182,22 @@
   // ① 開いた画面：店名＋お願い文＋「現在地を確認して進む」（位置確認あり）
   function renderPrompt(){
     hideStatus();
-    $("hero").src = st.shopImage || "";
-    $("hero").classList.toggle("hidden", !st.shopImage);
+    /*★★2026-10-08 オーナー指示：会場（イベントIDが付いたQR）のときは、
+     *  ★お店の写真を出しません（★実際にそのお店へ行ったわけではないため）。
+     *  ★「着いたら、チェックイン」「許可を押すと…」の案内も出しません（★ふつうの来店の文なので）。
+     *  ★会場では、お店の名前とボタンだけにします。
+     *  ★ふつうのお店（イベントIDが無いQR）は、1文字も変わりません。 */
+    const atVenue = !!EV;
+    $("hero").src = atVenue ? "" : (st.shopImage || "");
+    $("hero").classList.toggle("hidden", atVenue || !st.shopImage);
     $("body").classList.remove("hidden");
     $("body").innerHTML =
       '<div class="brand">JCJパスポート</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
-      '<div class="pref">' + esc(st.pref) + '</div>' +
-      '<div class="ask"><b>着いたら、チェックイン。</b><br>' +
-      '<span class="asknote">「許可」を押すと、いまいる場所で記録できます。押さなくてもチェックインはできます。</span></div>' +
+      (atVenue ? '' : '<div class="pref">' + esc(st.pref) + '</div>') +
+      (atVenue ? ''
+               : '<div class="ask"><b>着いたら、チェックイン。</b><br>' +
+                 '<span class="asknote">「許可」を押すと、いまいる場所で記録できます。押さなくてもチェックインはできます。</span></div>') +
       '<button id="go" class="go">チェックインする</button>';
     $("go").onclick = doCheckin;
   }
@@ -215,10 +222,18 @@
 
   async function doCheckin(){
     if (busy) return; busy = true;
-    const b = $("go"); b.disabled = true; b.textContent = "位置を確認しています…";
-    // ① 現在地を取りに行く（OS標準の許可ポップアップはここで出る）
-    const geo = await getPosition_();
-    b.textContent = "記録しています…";
+    const b = $("go"); b.disabled = true;
+    /*★2026-10-08：会場（イベントIDが付いたQR）のときは、現在地を取りに行きません。
+     *  ★理由＝会場では位置を見ていません。★許可を聞くだけ無駄で、2.5秒 待たせます。 */
+    let geo = null;
+    if (EV) {
+      b.textContent = "記録しています…";
+    } else {
+      b.textContent = "位置を確認しています…";
+      // ① 現在地を取りに行く（OS標準の許可ポップアップはここで出る）
+      geo = await getPosition_();
+      b.textContent = "記録しています…";
+    }
     try{
       const extra = { spot: SPOT };
       if (EV) extra.ev = EV;                        // ★2026-09-26：どのイベントかを一緒に送る
@@ -678,8 +693,11 @@
       try{
         // ★★2026-09-26：opId（合言葉）・seenBalance（いま出している残り）・shopName（店名）を足しました。
         //   ★いままでの受け方（その場で減らす）では、この3つは使われません＝何も変わりません。
+        // ★2026-10-08：会場のQRから使ったときは、どの催事かを一緒に送ります。
+        //   ★これが無いと「ロースターのお店で使った」として記録され、消費区分が「イベント外」になります。
         const d = await api("use_do", { spotId: st.shopId, count: count,
-          opId: useOpIdCk, seenBalance: bal, shopName: (st && st.shopName) || "" });
+          opId: useOpIdCk, seenBalance: bal, shopName: (st && st.shopName) || "",
+          ev: EV || "" });
         busy = false;
         if(!d || !d.ok){
           render();
