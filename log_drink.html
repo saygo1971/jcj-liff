@@ -21,8 +21,11 @@
   .wrap{max-width:460px;margin:0 auto;padding:16px 16px 40px}
   .hidden{display:none!important}
   #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
-  .chk{background:var(--done-tint);color:var(--state-done);font-size:12.5px;font-weight:700;border-radius:10px;
-    padding:9px 11px;display:flex;gap:6px;align-items:center;margin-bottom:14px}
+  /* ★2026-10-10 場所の値（飲んだ場所の行）。★お店のときだけ先頭に緑の ✓ を出す */
+  .row .placeval{flex:1;min-width:0;font-size:15px;font-weight:800;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .placeval .ok{color:var(--state-done);font-weight:900;margin-right:4px}
+  .row .placeval.empty{color:var(--ink-sub);font-weight:600}
   /* ★2026-10-05 コーヒー日記（審査会A-1）：飲んだ場所を自分で選ぶ所 */
   .chkedit{margin-left:auto;background:#fff;border:1px solid var(--state-done);color:var(--state-done);
     font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit}
@@ -110,24 +113,31 @@
 <div id="main" class="wrap hidden">
   <!-- ★2026-10-05 コーヒー日記（審査会A-1・条件1）：飲んだ場所を自分で選べるようにした。
        チェックインのあと・旅の記録から来たときは、いままでと同じ見た目（お店が決まっている）。
-       「かえる」を押したときだけ下の選ぶ所がひらき、お店の一覧も押したときだけ読む。 -->
-  <div class="chk" id="chkLine">✓ <span id="chkStore">お店</span> に来ました<button type="button" class="chkedit hidden" id="chkEdit">かえる</button></div>
+       「選び直す」を押したときだけ下の選ぶ所がひらき、お店の一覧も押したときだけ読む。 -->
+  <div class="q" id="qHead">今日の一杯は？</div>
+  <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
+
+  <!-- ★2026-10-10 オーナー決定：「飲んだ場所」を飲みものより【上】に置く。
+       ★前は 画面の一番上の帯（✓ 〈店名〉 に来ました）と、下の「どこで飲みましたか？」で
+         場所が2回 出ていた。★1つにまとめた。
+       ★ボタンの言葉も「かえる」→「選び直す」（オーナー指定）。 -->
+  <div class="row">
+    <span class="lb">飲んだ場所</span>
+    <span class="placeval" id="chkLine">えらんでください</span>
+    <button type="button" class="chkedit hidden" id="chkEdit">選び直す</button>
+  </div>
 
   <div class="picker hidden" id="picker">
-    <div class="sec">どこで飲みましたか？</div>
-    <button type="button" class="pick" id="pickHome">家で淹れた</button>
-    <button type="button" class="pick" id="pickVisited">行ったことのあるお店からえらぶ</button>
-    <button type="button" class="pick" id="pickOther">その他（お店の名前を書く）</button>
+    <button type="button" class="pick" id="pickHome">家</button>
+    <button type="button" class="pick" id="pickVisited">行ったことのあるお店</button>
+    <button type="button" class="pick" id="pickOther">その他（場所の名前を書く）</button>
     <div class="picklist hidden" id="pickList"></div>
     <div class="pickother hidden" id="pickOtherBox">
-      <input type="text" id="otherName" maxlength="40" placeholder="お店の名前">
+      <input type="text" id="otherName" maxlength="40" placeholder="場所の名前">
       <button type="button" class="pickok" id="otherOk">これにする</button>
     </div>
     <div class="pickmsg" id="pickMsg"></div>
   </div>
-
-  <div class="q" id="qHead">今日の一杯は？</div>
-  <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
 
   <!-- ★2026-10-06 オーナー指摘「ボタンだらけで何を押せばいいか分からない」。
        ⇒ 選ぶ所は【全部プルダウン】に揃えた。1項目1行・左に項目名・どれも任意。
@@ -285,21 +295,25 @@
 
   // ★2026-10-05 コーヒー日記（審査会A-1）：ここから下4つが「飲んだ場所を自分で選ぶ」の動き。
   // 一番上の行の見た目を、いま選ばれている場所に合わせる。
+  // ★2026-10-10：場所の行の【値だけ】を入れ替える。ボタンは画面に固定で置いてあるので触らない。
+  //   ★お店のとき＝緑の ✓ ＋ 店名（「に来ました」は、見出しが「飲んだ場所」なので重ねない）
+  //   ★家・手入力＝その名前だけ／まだのとき＝うすい字で「えらんでください」
   function paintPlace(){
     if (IS_BACK) return;                      // 過去の来店に足すときは、その日のその店で固定
+    const el = $("chkLine");
+    el.innerHTML = "";
+    el.classList.remove("empty");
     if (curShopId){
-      $("chkLine").innerHTML = '✓ <span id="chkStore"></span> に来ました';
-      $("chkStore").textContent = curShopName || "お店";
+      const m = document.createElement("span");
+      m.className = "ok"; m.textContent = "✓";
+      el.appendChild(m);
+      el.appendChild(document.createTextNode(curShopName || "お店"));
     } else if (curShopName){
-      $("chkLine").innerHTML = '☕ <span id="chkStore"></span>';
-      $("chkStore").textContent = curShopName;
+      el.textContent = curShopName;
     } else {
-      $("chkLine").innerHTML = '☕ <span id="chkStore">どこで飲んだかをえらんでください</span>';
+      el.textContent = "えらんでください";
+      el.classList.add("empty");
     }
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "chkedit"; b.id = "chkEdit"; b.textContent = "かえる";
-    b.onclick = openPicker;
-    $("chkLine").appendChild(b);
     wireRef();
   }
 
@@ -376,7 +390,7 @@
       });
       const list = Object.keys(map).map(k => map[k]).sort((a, b) => b.ms - a.ms);
       if (!list.length){
-        $("pickMsg").textContent = "まだ行ったお店の記録がありません。「その他（お店の名前を書く）」からどうぞ。";
+        $("pickMsg").textContent = "まだ行ったお店の記録がありません。「その他（場所の名前を書く）」からどうぞ。";
         $("pickList").classList.add("hidden");
         visitedLoaded = true;
         return;
@@ -394,7 +408,7 @@
       $("pickMsg").textContent = list.length + " 軒";
       visitedLoaded = true;
     } catch(e){
-      $("pickMsg").textContent = "行ったお店を読めませんでした。「その他（お店の名前を書く）」からどうぞ。";
+      $("pickMsg").textContent = "行ったお店を読めませんでした。「その他（場所の名前を書く）」からどうぞ。";
       $("pickList").classList.add("hidden");
     }
   }
@@ -406,7 +420,7 @@
     const tempVal = (!curShopId && $("temp")) ? String($("temp").value || "").trim() : "";
     // ★2026-10-05：どこで飲んだかが決まっていない記録は送らない（受け口も断る作りになっている）
     if (!curShopId && !curShopName){
-      $("err").textContent = "どこで飲んだかを、上からえらんでください。";
+      $("err").textContent = "飲んだ場所を、上からえらんでください。";
       openPicker();
       return;
     }
@@ -464,12 +478,13 @@
   function closeApp(){ try{ if(liff && liff.isInClient && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){} history.length>1?history.back():window.close(); }
 
   function wire(){
-    $("chkStore").textContent = SHOP_NAME || "お店";
+    // ★2026-10-10：場所の値は paintPlace() が入れる（下で paintFields→paintPlace の順に走る）。
+    //   ここで入れていた chkStore は、場所の行を作り直したときに無くなった。
     // 過去の来店に足すモード（旅の記録の「記録を追加する」）＝文言を過去向けに
     if (IS_BACK){
       var dt = new Date(Number(REC_DATE));
       var ymd = isNaN(dt.getTime()) ? "" : (dt.getFullYear()+"/"+(dt.getMonth()+1)+"/"+dt.getDate());
-      $("chkLine").textContent = "🗓 " + (SHOP_NAME||"お店") + (ymd ? "（"+ymd+"）" : "") + " の記録";
+      $("chkLine").textContent = "🗓 " + (SHOP_NAME||"お店") + (ymd ? "（"+ymd+"）" : "");
       $("qHead").textContent = "この日は何を飲みましたか？";
       $("subLine").textContent = "あとから思い出して残せます。";
       $("submitBtn").textContent = "この一杯を記録する";
@@ -488,9 +503,10 @@
     // ★2026-10-05 コーヒー日記（審査会A-1・条件1）：飲んだ場所を自分で選ぶ。
     //   過去の来店に足すとき（旅の記録から）は、その日のその店の記録なので選び直させない。
     if (!IS_BACK){
+      paintPlace();   // ★2026-10-10 開いた時点の場所を、行に入れる（お店つきで来たときもここを通る）
       $("chkEdit").classList.remove("hidden");
       $("chkEdit").onclick = openPicker;
-      $("pickHome").onclick    = function(){ setPlace("", "家で淹れた"); };
+      $("pickHome").onclick    = function(){ setPlace("", "家"); };
       $("pickVisited").onclick = function(){ loadVisited(); };
       $("pickOther").onclick   = function(){
         $("pickOtherBox").classList.remove("hidden");
@@ -500,11 +516,11 @@
       };
       $("otherOk").onclick = function(){
         const v = $("otherName").value.trim();
-        if (!v){ $("pickMsg").textContent = "お店の名前を書いてください。"; return; }
+        if (!v){ $("pickMsg").textContent = "場所の名前を書いてください。"; return; }
         setPlace("", v);
       };
       // お店が決まっていないで開いたとき（＝家で淹れた一杯を書きに来たとき）は、選ぶ所を先にひらく
-      if (!curShopId && !curShopName){ paintPlace(); openPicker(); }
+      if (!curShopId && !curShopName){ openPicker(); }   // ★場所が決まっていないときは、選ぶ所を先にひらく
     }
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
