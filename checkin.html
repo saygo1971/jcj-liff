@@ -683,13 +683,24 @@
     //   ★券を使う画面（ticket_use.html）には前から在りましたが、★この画面には在りませんでした。
     //   ★合言葉が無いと、当日の「預かる」受け方で断られます（＝スタッフを呼ぶしかなくなります）。
     let useOpIdCk = "";
+    let opCount = 0;
     const render = ()=>{ $("cnt").textContent = count; $("minus").disabled = busy || count<=1; $("plus").disabled = busy || count>=Math.min(bal,10); $("use").textContent = busy ? "処理中…" : (count+"枚を使う"); };
     $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
     $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
     $("use").onclick = async ()=>{
       if(busy) return; busy = true; render();
-      // ★この一押しの合言葉を作ります（★同じ押下の送り直しでは同じ値を使うので、二重には減りません）。
-      useOpIdCk = "use_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      /*★★2026-10-10 直し。★ここは【押すたびに作り直して】いました。
+       *  🔴★通信が切れて押し直すと別の値になり、★2枚 減りました。
+       *    ★説明文には「同じ押下の送り直しでは同じ値を使う」と書いてありましたが、嘘でした。
+       *  ★作り直すのは「別の使用になったとき」だけです。
+       *    ・通信が切れて押し直したとき → ★同じ値を送ります（＝2枚 減りません）
+       *    ・枚数を変えたとき           → 別の使用なので作り直します
+       *    ・はっきり断られたとき       → その使用は成立していないので作り直します
+       *  ★本番の checkin/index.html 288-293行と同じ形にしました（★新しいやり方は作っていません）。*/
+      if(!useOpIdCk || opCount !== count){
+        useOpIdCk = "use_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+        opCount = count;
+      }
       try{
         // ★★2026-09-26：opId（合言葉）・seenBalance（いま出している残り）・shopName（店名）を足しました。
         //   ★いままでの受け方（その場で減らす）では、この3つは使われません＝何も変わりません。
@@ -706,10 +717,16 @@
             : (d && d.error === "insufficient") ? "残り枚数が足りません。"
             : (d && d.error === "not_enabled") ? "この店は試飲チケット対応ではありません。"
             : "チケットの使用に失敗しました。";
+          // ★2026-10-10：はっきり断られた＝その使用は成立していないので、合言葉を捨てます。
+          //   ★本番の checkin/index.html 314行と同じです。
+          if(d && d.error) useOpIdCk = "";
           $("tmsg").className = "msg ng"; $("tmsg").textContent = msg; return;
         }
         renderTicketUsed(d);
-      }catch(e){ busy=false; render(); $("tmsg").className="msg ng"; $("tmsg").textContent="通信に失敗しました。もう一度お試しください。"; }
+      }catch(e){
+        /*★★通信が切れたとき＝★成立したかどうか分かりません。
+         *  ⇒ ★合言葉は捨てません。押し直しで同じ値を送り、2枚 減らないようにします。*/
+        busy=false; render(); $("tmsg").className="msg ng"; $("tmsg").textContent="通信に失敗しました。もう一度お試しください。"; }
     };
     render();
   }
