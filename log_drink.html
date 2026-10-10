@@ -144,10 +144,11 @@
     <div class="row"><span class="lb">湯温</span><input type="number" id="temp" inputmode="numeric" min="1" max="100" step="1" placeholder="92"><span class="tempunit">℃</span></div>
   </div>
 
-  <div class="more" id="moreToggle"><span>ひとことメモを書く</span><span class="chev" id="moreChev">＋ ひらく ▾</span></div>
-  <div class="detail hidden" id="detail">
-    <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
-  </div>
+  <!-- ★2026-10-10 オーナー指示（案C）：折りたたみ（＋ひらく）をやめて、ひとことメモを表に出した。
+       ★中身も並び順も変えていない。出しただけ。
+       ★審査会（2026-10-04）の「折りたたみの中は7〜10%しか埋まらない」とも向きが合う。 -->
+  <div class="sec">ひとことメモ</div>
+  <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
 
   <!-- 写真を追加（任意）＝③体験。撮る/選ぶ→端末側で縮小→プレビュー。保存先(Drive等)はアカウント確定後に結線。 -->
   <div class="photobox" id="photoBox">
@@ -469,10 +470,6 @@
       $("submitBtn").textContent = "この一杯を記録する";
     }
     paintFields();   // ★2026-10-06 開いた時点の場所に合わせて、選ぶ項目を並べる
-    $("moreToggle").onclick = function(){
-      const dt = $("detail"); const open = dt.classList.toggle("hidden") === false;
-      $("moreChev").textContent = open ? "－ とじる ▴" : "＋ ひらく ▾";
-    };
     $("submitBtn").addEventListener("click", submit);
     setupPhoto();
     $("laterLink").onclick = function(ev){ ev.preventDefault(); closeApp(); };
