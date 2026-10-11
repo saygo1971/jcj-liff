@@ -204,6 +204,14 @@
         "&shopName=" + encodeURIComponent(shopName || ""));
       if (data && data.ok) {
         renderUsed(data);
+      } else if (data && data.error === "event_only") {
+        /*★★2026-10-11 追加。★これが無いと、下の「処理に失敗しました。もう一度『使う』を
+         *  押してください」が出ていました。
+         *  🔴★やり直しても直らないのに、★やり直せと言う文です。★お客さまは何度も押します。
+         *  ★2026-10-11 時点で、★本番でも この文が出ます（★当日より前の話です）。
+         *  ★判定は足していません（★仕組みの側に すでに在ります）。★お客さまに出る文だけ足しました。
+         *  ★文は、当日のチェックイン画面と1文字も同じにしています。*/
+        showEmpty("このチケットは、イベント会場のブースでのみお使いいただけます。");
       } else if (data && data.error === "insufficient") {
         showEmpty("チケットが足りませんでした。残り枚数をご確認ください。");
       } else if (data && data.error === "not_enabled") {
