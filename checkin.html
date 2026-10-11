@@ -167,6 +167,12 @@
   let st = null;      // checkin_state の結果
   let count = 1;
   let busy = false;
+  /*★★2026-10-11 追加：チェックイン完了のときに作った「今日の一杯は？」の中身を、ここに覚えます。
+   *  🔴★なぜ要るか＝券を使うと renderTicketUsed が画面の中身を【丸ごと置き換える】ので、
+   *    ★記録ボタンが消えていました（2026-10-11 オーナー指摘「今日の一杯は？のボタンがない」）。
+   *  ⇒ ★★当日、ブースで試飲した方が【コーヒー日記に1件も残せません】。
+   *  ★受付のときは空のままです（★2026-10-07 オーナー指示＝受付では出さない）。*/
+  let RECORD_HTML = "";
 
   function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; }
   function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
@@ -393,6 +399,7 @@
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
       '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>';
+    RECORD_HTML = recordHtml;   // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
@@ -436,12 +443,8 @@
     if (dc) dc.onerror = function(){ dc.outerHTML = '<div class="done ci"><div class="ic">✓</div><div class="t">チェックイン完了！</div></div>'; };
 
     // 記録ボタン：今日の一杯（記録ページ）を開く（LINE内はアプリ内ウィンドウ＝下の紹介ボタンと同じ作法）。
-    const rec = document.getElementById("recordBtn");
-    if (rec) rec.onclick = function(ev){
-      const url = rec.getAttribute("href");
-      if (!url) { ev.preventDefault(); return; }
-      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
-    };
+    //   ★★2026-10-11：配線を wireRecordBtn_ にまとめました（★券を使ったあとにも、もう一度 配線するため）。
+    wireRecordBtn_();
 
     // 豆割リンク：LINE内はアプリ内ウィンドウで開く（記録ボタン・紹介ボタンと同じ作法）。
     const bl = document.getElementById("beansLink");
@@ -732,6 +735,18 @@
   }
 
   // ③ チケット使用後
+  /*★★2026-10-11 追加：記録ボタンの配線。★中身は元のまま（1文字も変えていません）。
+   *  ★呼ぶ所＝①チェックイン完了のとき ②券を使ったあと（renderTicketUsed）の2か所。
+   *  ★HTMLを置き直したら、必ずここを呼ぶこと（★押しても開かない形になります）。*/
+  function wireRecordBtn_(){
+    const rec = document.getElementById("recordBtn");
+    if (rec) rec.onclick = function(ev){
+      const url = rec.getAttribute("href");
+      if (!url) { ev.preventDefault(); return; }
+      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+    };
+  }
+
   function renderTicketUsed(d){
     const card = document.querySelector(".card");
     const oldB = card.querySelector(".done, #donecard"); if(oldB) oldB.remove();
@@ -740,7 +755,12 @@
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
       '<div class="total" style="margin-top:6px">残り ' + (Number(d.balanceAfter)||0) + '枚</div>' +
-      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>';
+      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>' +
+      /*★★2026-10-11：記録ボタンを、ここに戻します。
+       *  ★順番＝【お店の人に見せる → 記録する】（★本部指示 2026-10-11）。
+       *  ★受付のときは RECORD_HTML が空なので、何も出ません（★2026-10-07 オーナー指示を守ります）。*/
+      RECORD_HTML;
+    wireRecordBtn_();   // ★置き直したので、押したときの仕掛けを もう一度 付けます
     sendReceiptToTalk(d);  // ★使用直後に「控えカード（レシート）」をトークへ1枚置く（入口B=ticket_use.html と同じ・配信枠を使わない無料の送信）
   }
 
