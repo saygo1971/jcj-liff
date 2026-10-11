@@ -52,10 +52,9 @@
 <div id="status"><div class="spin"></div>読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
+  <!-- ★2026-10-11 オーナー指示で、この文に差し替え（一字一句） -->
   <div class="lead">
-    お店のページには、そのお店で書かれた一杯が並びます。<br>
-    <b>ここでお名前を決めると、あなたの一杯にそのお名前が出ます。</b><br>
-    決めなければ、お名前は出ません。
+    ここで決めたお名前（ニックネーム）は、公開されたあなたの一杯に表示されます。
   </div>
 
   <div class="now hidden" id="nowBox">いまのお名前：<b id="nowName"></b></div>
@@ -64,10 +63,10 @@
     <label for="nick">お名前（ニックネーム）</label>
     <input id="nick" type="text" maxlength="12" placeholder="例：まめ太郎" autocomplete="off">
     <div class="count"><span id="cnt">0</span>／12文字</div>
+    <!-- ★2026-10-11 オーナー指示で2つ削除（LINEのお名前の行／出すのをやめられる旨） -->
     <div class="note">
-      ★LINEのお名前は使いません。ここで決めたお名前だけが出ます。<br>
       ★本名やご連絡先は入れないでください。<br>
-      ★あとで いつでも変えられます。出すのをやめることもできます。
+      ★あとで いつでも変えられます。
     </div>
     <div class="msg" id="msg"></div>
     <button id="saveBtn" class="btn primary" disabled>このお名前にする</button>
@@ -118,13 +117,10 @@
         $("saveBtn").disabled = ($("nick").value.trim() === "");
         return;
       }
+      // ★2026-10-11 オーナー指示：決まったら画面を出さずに、パスポートへ戻る。
       CUR = String(d.nickname || "");
-      $("nick").value = CUR;
-      $("cnt").textContent = String(CUR.length);
-      paintNow();
       say(okMsg, "ok");
-      $("clearBtn").disabled = false;
-      $("saveBtn").disabled = true;
+      location.href = "passport.html";
     }catch(e){
       say("通信エラーが起きました。電波の良い場所でお試しください。", "ng");
       $("clearBtn").disabled = false;

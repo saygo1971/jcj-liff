@@ -32,8 +32,11 @@
   .card{background:var(--kinari);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   /* 番号帯（深緑・白文字） */
   .topline{display:flex;justify-content:space-between;align-items:center;padding:17px 16px;background:var(--green)}
-  .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px}
+  /* ★2026-10-11 オーナー指示：PASSPORT No. の下に番号を置く（2行） */
+  .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px;line-height:1.55}
   .resi{font-size:11px;color:rgba(255,255,255,.9)}
+  /* ★2026-10-11 オーナー指示：地域とニックネームは太字。まだ決めていないときの誘い文は細いまま。 */
+  .resi.val{font-weight:800;color:#fff}
   /* ★2026-10-11 番号帯の右側＝お住まいと お名前（ニックネーム）を縦に2行。 */
   .rightcol{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;max-width:60%}
   /* ★2026-10-05 お住まいの行は押せる（お住まいの郵便番号の画面へ） */
@@ -187,7 +190,7 @@
 <div id="main" class="wrap hidden">
   <div class="card">
     <div class="topline">
-      <span class="pno ocrb" id="pno">PASSPORT No. JC-000000</span>
+      <span class="pno ocrb" id="pno">PASSPORT No.<br>JC-000000</span>
       <!-- ★2026-10-11 右側を縦2行にして、お住まいの下に お名前（ニックネーム）を置いた。
            ★オーナー指示：お店のページに出すお名前を、ご自分で決められるようにする。
            ★LINEのお名前は使わない。決めなければ お名前は出ない。
@@ -255,7 +258,7 @@
 <!-- ☕ 2026-09-26「買ったもの」。★同じページの中で切り替えます（★新しいLIFFの番号は作りません）。 -->
 <div id="boughtView" class="wrap hidden">
   <div class="card">
-    <div class="topline"><span class="pno ocrb" id="bvPno">PASSPORT No. JC-000000</span><span class="resi" id="bvResi"></span></div>
+    <div class="topline"><span class="pno ocrb" id="bvPno">PASSPORT No.<br>JC-000000</span><span class="resi" id="bvResi"></span></div>
     <div class="subhd"><span class="bk" id="bvBack">‹ もどる</span><span class="ti">買ったもの</span></div>
     <div class="see" style="padding-top:2px"><div id="bvBody"></div></div>
     <div class="footline">JAPAN COFFEE JOURNEY</div>
@@ -367,12 +370,21 @@
   }
 
   function render(d){
-    $("pno").textContent  = "PASSPORT No. " + (d.no || "JC-000000");
+    // ★2026-10-11 オーナー指示：PASSPORT No. の下の行に番号を出す
+    $("pno").innerHTML    = "PASSPORT No.<br>" + esc(d.no || "JC-000000");
     // ★2026-10-05 お住まいの行（審査会 A-3 条件1：すでに設定済みの方にも、ここから入れる）
     //   設定済み＝「東京都 目黒区 上目黒」／未設定＝「東京都」。どちらでも押せる。
     _resiRaw = [d.residence || "", d.homeCity || ""].filter(Boolean).join(" ");
     $("resi").textContent = _resiRaw ? (_resiRaw + " ›") : "お住まいを入れる ›";
     $("resi").classList.add("tap");
+    $("resi").classList.toggle("val", !!_resiRaw);   // ★決まっているときだけ太字
+    // ★2026-10-11 オーナー指示：決めたお名前（ニックネーム）をパスポートにも出す。
+    //   決めていなければ「ニックネーム ›」のまま（押すと決める画面へ）。
+    const _nick = String(d.nickname || "").trim();
+    if ($("nickLine")){
+      $("nickLine").textContent = _nick ? (_nick + " ›") : "ニックネーム ›";
+      $("nickLine").classList.toggle("val", !!_nick);
+    }
     // ロゴ帳の丸（取得ロゴ＋空丸。合計は最低16マスまで空丸で満たす＝並びが崩れない）
     const got = Number(d.logoGot)||0, total = Number(d.logoTotal)||0;
     $("logoGot").textContent   = got;
@@ -474,7 +486,7 @@
 
   function showBought_(){
     const body = $("bvBody");
-    $("bvPno").textContent  = $("pno").textContent;
+    $("bvPno").innerHTML  = $("pno").innerHTML;   // ★2行のまま写す
     $("bvResi").textContent = _resiRaw;
     const rows = BOUGHT_ ? boughtRowsHtml_(BOUGHT_) : [];
     body.innerHTML = rows.length
