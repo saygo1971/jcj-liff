@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>今日の一杯</title>
+<title>コーヒー日記</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
@@ -106,7 +106,7 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>今日の一杯</span></div>
+<div class="bar"><span id="barTitle">コーヒー日記</span></div>
 
 <div id="status">読み込んでいます…</div>
 
@@ -170,7 +170,7 @@
     <div class="photonote">写真を撮る前に、お店の方にご確認ください。</div>
   </div>
 
-  <button class="btn" id="submitBtn">今日の一杯を残す</button>
+  <button class="btn" id="submitBtn">この一杯を記録する</button>
   <a class="later" id="laterLink" href="#">あとで</a>
   <div class="err" id="err"></div>
   <div class="tiny">任意です</div>
@@ -212,6 +212,12 @@
   let curShopName = SHOP_NAME;
   const REC_DATE  = String(params.get("date") || "").trim(); // 過去の来店に足す時のみ（epoch ms）
   const IS_BACK   = REC_DATE !== "";
+  // ★2026-10-11 オーナー決定：入口（タイミング）で出し分ける。
+  //   お店を渡されて開いた ＝ チェックインした直後／旅の記録から ⇒ そのお店だけ（場所は選び直せない）
+  //   お店を渡されずに開いた ＝ コーヒー日記から ⇒ 場所を選べる（家／行ったことのあるお店／その他）
+  const CAME_WITH_SHOP = (SHOP_ID !== "" || SHOP_NAME !== "");
+  // ★送るボタンの言葉。失敗したときも同じ言葉へ戻すので、1か所にまとめる。
+  const SUBMIT_LABEL = CAME_WITH_SHOP ? "この一杯を記録する" : "コーヒー日記に残す";
 
   // ★2026-10-06 オーナー指示：お店かうちかを選んだ時点で、選ぶ項目そのものを出し分ける。
   //   ★ドリップバッグ＝おうちだけ（お店では出てこないため）
@@ -231,7 +237,7 @@
 
   const sel = { drink:"", country:"", process:"", grind:"", brew:"" };
 
-  // ★2026-10-11 オーナー決定：おうちの記録は、前に書いた内容を【全部】覚えておく。
+  // ★2026-10-11 オーナー決定：暮らしの記録（家で淹れた一杯）は、前に書いた内容を【全部】覚えておく。
   //   ★理由（オーナーの言葉）＝毎日 違う淹れ方で違う豆を飲む方は少ない。
   //     前回のものが入っていた方がやりやすいし、淹れ方を変えようと思った時に前回の情報が参考になる。
   //   ★覚えるのは【おうちのときの内容だけ】。お店のときは いままで通り。
@@ -355,8 +361,11 @@
   function paintFields(){
     const isHome = !curShopId;
     curIsHome = isHome;
-    // ★2026-10-11 おうちのときは、前に書いた内容を全部 差し込む（まだ何も選んでいない欄だけ）
-    const last = isHome ? loadLastHome() : {};
+    // ★2026-10-11 オーナー決定：場所を まだ えらんでいないうちは
+    //   「抽出ツール・挽き目・湯温」を出さないし、前に書いた内容も差し込まない。
+    const placeChosen = !!(curShopId || curShopName);
+    // ★2026-10-11 暮らしの記録（家で淹れた一杯）は、前に書いた内容を全部 差し込む（まだ何も選んでいない欄だけ）
+    const last = (isHome && placeChosen) ? loadLastHome() : {};
     let filled = 0;
     function pick(key, items){
       if (!isHome) return "";
@@ -374,8 +383,8 @@
     buildSelect("selProcess", PROCESS_ITEMS, "process", pick("process", PROCESS_ITEMS));
 
     // 抽出ツール・挽き目・湯温＝うちのときだけ
-    $("homeOnly").classList.toggle("hidden", !isHome);
-    if (isHome){
+    $("homeOnly").classList.toggle("hidden", !(isHome && placeChosen));
+    if (isHome && placeChosen){
       buildSelect("selBrew", BREWS, "brew", pick("brew", BREWS));
       buildSelect("selGrind", GRINDS, "grind", pick("grind", GRINDS));
       // ★湯温は数字なので、選ぶ所とは別に差し込む
@@ -488,7 +497,7 @@
         d = await res.json();
       }
       if (!d || !d.ok){
-        $("submitBtn").disabled = false; $("submitBtn").textContent = "今日の一杯を残す";
+        $("submitBtn").disabled = false; $("submitBtn").textContent = SUBMIT_LABEL;
         $("err").textContent = "記録に失敗しました。もう一度お試しください。";
         return;
       }
@@ -501,7 +510,7 @@
       $("main").classList.add("hidden");
       $("done").classList.remove("hidden");
     } catch(e){
-      $("submitBtn").disabled = false; $("submitBtn").textContent = "今日の一杯を残す";
+      $("submitBtn").disabled = false; $("submitBtn").textContent = SUBMIT_LABEL;
       $("err").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
     }
   }
@@ -520,6 +529,17 @@
       $("subLine").textContent = "あとから思い出して残せます。";
       $("submitBtn").textContent = "この一杯を記録する";
     }
+    // ★2026-10-11 オーナー決定：コーヒー日記から来たとき（お店を渡されていない）は、見出しを変える。
+    // ★2026-10-11 オーナー決定：いちばん上の帯も、入口（タイミング）で分ける。
+    //   チェックインした直後／旅の記録から ＝ 中分類の「旅の記録」
+    //   コーヒー日記から ＝ 大分類の「コーヒー日記」（ここで家にも お店にもなるため）
+    $("barTitle").textContent = CAME_WITH_SHOP ? "旅の記録" : "コーヒー日記";
+    document.title = $("barTitle").textContent;
+    if (!IS_BACK && !CAME_WITH_SHOP){
+      $("qHead").textContent = "コーヒー日記に書く";
+      $("subLine").innerHTML = "どこで飲んだ一杯でも残せます。<br>あとで見返すと、自分の好みが見えてきます。";
+    }
+    $("submitBtn").textContent = SUBMIT_LABEL;
     paintFields();   // ★2026-10-06 開いた時点の場所に合わせて、選ぶ項目を並べる
     $("submitBtn").addEventListener("click", submit);
     setupPhoto();
@@ -535,8 +555,11 @@
     //   過去の来店に足すとき（旅の記録から）は、その日のその店の記録なので選び直させない。
     if (!IS_BACK){
       paintPlace();   // ★2026-10-10 開いた時点の場所を、行に入れる（お店つきで来たときもここを通る）
-      $("chkEdit").classList.remove("hidden");
-      $("chkEdit").onclick = openPicker;
+      // ★2026-10-11 オーナー決定：チェックインした直後は そのお店だけ。場所を選び直せない。
+      if (!CAME_WITH_SHOP){
+        $("chkEdit").classList.remove("hidden");
+        $("chkEdit").onclick = openPicker;
+      }
       $("pickHome").onclick    = function(){ setPlace("", "家"); };
       $("pickVisited").onclick = function(){ loadVisited(); };
       $("pickOther").onclick   = function(){

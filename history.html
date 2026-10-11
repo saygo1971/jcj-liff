@@ -65,9 +65,13 @@
   .tag.ctry{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
   .tag.dist{background:var(--done-tint);color:var(--state-done)}
   /* ★2026-10-06 オーナー指示：1つの「コーヒー日記」にまとめ、1行ずつどちらかの印を付ける。
-     旅の記録＝お店で飲んだ一杯（お店が決まっているもの）／おうちの記録＝お店が決まっていないもの。 */
-  .tag.kind{background:var(--brand-base);color:#fff}
-  .tag.kind.home{background:var(--paper);color:var(--ink-sub);border:1px solid var(--line)}
+     旅の記録＝お店で飲んだ一杯（お店が決まっているもの）／暮らしの記録＝お店以外で飲んだ一杯（家・出かけた先など）。
+     ★2026-10-11 オーナー決定：自宅だけでなく職場や出かけた先も入るので「おうちの記録」から名前を変えた。 */
+  .tag.kind{background:var(--brand-base);color:#fff;padding:3px 11px;letter-spacing:.02em}
+  /* ★2026-10-11 オーナー指摘「差がわかりにくい」。2つの印を どちらも塗りにして、色で分けた。
+     旅の記録＝テラコッタ／暮らしの記録＝緑。ほかの印（飲みもの・生産国など）は塗らないので、
+     どれが中分類の印かが ひと目で分かる。★距離の印は旅の記録の行にしか出ないので ぶつからない。 */
+  .tag.kind.home{background:var(--state-done);color:#fff;border:0}
   .tag.addrec{background:var(--bg);border:1px solid var(--brand-deep);color:var(--brand-deep);text-decoration:none;cursor:pointer}
   #empty{text-align:center;padding:64px 24px}
   #empty .emo{font-size:40px}
@@ -89,7 +93,7 @@
 
 <div id="main" class="wrap hidden">
   <div id="refresh" class="refresh hidden">最新に更新中…</div>
-  <div class="hlead">これまでの一杯と、歩いた道のり。<br>お店の一杯も、おうちの一杯も、日付の順に並びます。</div>
+  <div class="hlead">これまでの一杯と、歩いた道のり。<br>旅の記録も、暮らしの記録も、日付の順に並びます。</div>
   <div class="summ">
     <div class="s"><b id="nVisit">0</b><span>訪問した回数</span></div>
     <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
@@ -97,8 +101,8 @@
   </div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：お店が決まっていない記録の入口。
        お店を渡さずに記録の画面を開く＝向こうで「どこで飲みましたか？」から選べる。 -->
-  <a class="recnew" id="recNewBtn">今日の一杯を残す</a>
-  <div class="recnew-s">お店でも、家でも。</div>
+  <a class="recnew" id="recNewBtn">コーヒー日記に書く</a>
+  <div class="recnew-s">家でも、出かけた先でも、お店でも。</div>
   <div id="list"></div>
   <!-- ロースター紹介の入口（旅の記録の最後）＝推薦フォーム(テスト)へ -->
   <div class="jointo" id="jointo">
@@ -111,11 +115,11 @@
 <div id="empty" class="wrap hidden">
   <div class="emo">☕️</div>
   <div class="t">最初の一杯は、どこで飲みますか？</div>
-  <div class="m">ロースターでチェックインして「今日の一杯」を残すと、<br>ここにコーヒー日記が並んでいきます。</div>
+  <div class="m">ロースターでチェックインして残した一杯は「旅の記録」、<br>家や出かけた先で残した一杯は「暮らしの記録」として、<br>ここに並んでいきます。</div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：★ここを忘れると、家でしか淹れない方は
        1件目がいつまでも書けない（この画面しか出ないため）。 -->
-  <a class="recnew" id="recNewBtn2">今日の一杯を残す</a>
-  <div class="recnew-s">お店でも、家でも。</div>
+  <a class="recnew" id="recNewBtn2">コーヒー日記に書く</a>
+  <div class="recnew-s">家でも、出かけた先でも、お店でも。</div>
 </div>
 
 <!-- 写真の拡大（タップで開く／背景か×で閉じる） -->
@@ -215,14 +219,14 @@
         ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(r.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
         : '';
       // ★2026-10-06 オーナー指示：この一杯がどちらかを、行の先頭に出す。
-      //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝おうちの記録。
+      //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝暮らしの記録。
       let tags = r.shopId
         ? '<span class="tag kind">旅の記録</span>'
-        : '<span class="tag kind home">おうちの記録</span>';
+        : '<span class="tag kind home">暮らしの記録</span>';
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
-        // ★2026-10-06 おうちの記録に入れた抽出ツール・挽き目・湯温も出す
+        // ★2026-10-06 暮らしの記録に入れた抽出ツール・挽き目・湯温も出す
         //   （書いたものが見えないと、次に書く気にならない）。順番は入力と同じ 抽出ツール→挽き目→湯温。
         if (dr.brew)    tags += '<span class="tag ctry">'+esc(dr.brew)+'</span>';
         if (dr.grind)   tags += '<span class="tag ctry">'+esc(dr.grind)+'</span>';
