@@ -61,6 +61,22 @@
   .btnO{display:block;text-align:center;background:var(--bg);color:var(--brand-deep);border:1.5px solid var(--brand-deep);
     font-weight:800;font-size:14.5px;border-radius:12px;padding:12px;text-decoration:none;margin-bottom:8px;cursor:pointer}
   .sublink{display:block;text-align:center;color:var(--ink-sub);font-size:13.5px;font-weight:600;text-decoration:underline;padding:6px;cursor:pointer}
+  /* ☕ ★2026-10-11 オーナー指示「旅の記録を各店舗にぶら下げて公開できるようにしたい」。
+     このお店で書かれた一杯を、新しい順に出す。★誰が書いたかは出さない（名前もIDも受け取っていない）。 */
+  .sdBox{margin:16px 0 10px}
+  .sdH{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 2px}
+  .sdS{font-size:11.5px;color:var(--ink-sub);margin:0 0 10px}
+  .sdRow{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+  .sdTop{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .sdDate{font-size:11px;color:var(--ink-sub);flex:0 0 auto}
+  .sdTags{display:flex;gap:6px;flex-wrap:wrap}
+  .sdTag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700;background:var(--paper);color:var(--ink)}
+  .sdTag.sub{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
+  .sdMemo{font-size:12.5px;color:var(--ink);line-height:1.75;background:var(--paper);
+    border-radius:10px;padding:9px 11px;margin-top:8px}
+  .sdPhoto{width:100%;border-radius:10px;margin-top:8px;display:block}
+  .sdMore{font-size:11.5px;color:var(--ink-sub);text-align:center;padding:4px 0 2px}
+
   /* 📷 お店の外観写真をお客さまから集める（2026-09-25・設計4章の文をそのまま出す） */
   .spBox{margin:16px 0 10px;background:var(--paper);border-radius:12px;padding:14px}
   .spBox h3{margin:0 0 8px;font-size:14.5px;font-weight:900;line-height:1.55;color:var(--ink)}
@@ -93,6 +109,13 @@
     <button class="btnP" id="saveBtn">行きたいに保存する</button>
     <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>と、あなたにもマイルがたまります。</div>
     <div class="links" id="links"></div>
+    <!-- ☕ ★2026-10-11 このお店で書かれた一杯。1件も無いお店では、まるごと出しません。 -->
+    <div class="sdBox hidden" id="sdBox">
+      <div class="sdH">このお店で、こんな一杯が。</div>
+      <div class="sdS">お立ち寄りになった方が残した記録です。</div>
+      <div id="sdList"></div>
+      <div class="sdMore hidden" id="sdMore"></div>
+    </div>
     <!-- 📷 お店の写真を送っていただく（★設計4章の文をそのまま。★用途の1行を外さない） -->
     <div class="spBox hidden" id="spBox">
       <h3>このお店の写真を撮って送っていただけませんか。</h3>
@@ -311,8 +334,46 @@
     };
   }
 
+  // ☕ ★2026-10-11 オーナー指示：旅の記録を各店舗にぶら下げる。
+  //   受け口＝GASの shop_diary。★返ってくるのは 日付・飲みもの・生産国・精製方法・メモ・写真 だけ。
+  //   ★誰が書いたかは受け取っていません（お名前もユーザーIDも返していない）。
+  //   ★1件も無いお店では、見出しごと出しません（空の見出しは「壊れている」ように見えるため）。
+  //   ★読めなくても、このページの他の所は普通に出ます（返事を待たずに差し込む）。
+  // 保存された写真のURLを、LINE内ブラウザで映りやすい形に直す（旅の記録の画面と同じ作り）。
+  function sdThumb(u){
+    if(!u) return u;
+    var m = u.match(/lh3\.googleusercontent\.com\/d\/([^=?/]+)/) || u.match(/[?&]id=([^&]+)/) || u.match(/\/d\/([^/?]+)/);
+    if(m && m[1]) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1200";
+    return u;
+  }
+  async function loadShopDiary(){
+    if (!SHOP_ID) return;
+    try{
+      const res = await fetch(GAS_URL+"?action=shop_diary&shop="+encodeURIComponent(SHOP_ID)+"&limit=20&_="+Date.now());
+      const d = await res.json();
+      if (!d || !d.ok || !d.entries || !d.entries.length) return;   // 1件も無ければ 何も出さない
+      $("sdList").innerHTML = d.entries.map(function(x){
+        var tags = "";
+        if (x.drink)   tags += '<span class="sdTag">'+esc(x.drink)+'</span>';
+        if (x.country) tags += '<span class="sdTag sub">'+esc(x.country)+'</span>';
+        if (x.process) tags += '<span class="sdTag sub">'+esc(x.process)+'</span>';
+        var memo  = x.memo  ? '<div class="sdMemo">'+esc(x.memo)+'</div>' : '';
+        var photo = x.photo ? '<img class="sdPhoto" loading="lazy" alt="" src="'+esc(sdThumb(x.photo))+'" '+
+                              'onerror="this.remove()">' : '';
+        return '<div class="sdRow"><div class="sdTop"><span class="sdDate">'+esc(x.date||"")+'</span>'+
+               '<span class="sdTags">'+tags+'</span></div>'+memo+photo+'</div>';
+      }).join("");
+      if (d.total > d.entries.length){
+        $("sdMore").textContent = "ほかに "+(d.total - d.entries.length)+"件 あります";
+        $("sdMore").classList.remove("hidden");
+      }
+      $("sdBox").classList.remove("hidden");
+    }catch(e){ /* 読めなくても このページは普通に出す */ }
+  }
+
   function render(s){
     buildSwipe(s);
+    loadShopDiary();   // ☕ ★2026-10-11 このお店で書かれた一杯（返事を待たずに、あとから差し込む）
 
     $("copy").textContent = s.copy || "";
     $("copy").style.display = s.copy ? "" : "none";
