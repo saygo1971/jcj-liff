@@ -69,6 +69,8 @@
   .sdRow{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px}
   .sdTop{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
   .sdDate{font-size:11px;color:var(--ink-sub);flex:0 0 auto}
+  /* ★2026-10-11 お名前（ニックネーム）を決めた方だけ出す。決めていない方は 何も出ない。 */
+  .sdName{font-size:12px;font-weight:800;color:var(--ink);flex:0 0 auto}
   .sdTags{display:flex;gap:6px;flex-wrap:wrap}
   .sdTag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700;background:var(--paper);color:var(--ink)}
   .sdTag.sub{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
@@ -360,8 +362,10 @@
         var memo  = x.memo  ? '<div class="sdMemo">'+esc(x.memo)+'</div>' : '';
         var photo = x.photo ? '<img class="sdPhoto" loading="lazy" alt="" src="'+esc(sdThumb(x.photo))+'" '+
                               'onerror="this.remove()">' : '';
+        // ★お名前は、ご本人が決めた方だけ出る（決めていなければ x.name は空）
+        var who = x.name ? '<span class="sdName">'+esc(x.name)+'</span>' : '';
         return '<div class="sdRow"><div class="sdTop"><span class="sdDate">'+esc(x.date||"")+'</span>'+
-               '<span class="sdTags">'+tags+'</span></div>'+memo+photo+'</div>';
+               who+'<span class="sdTags">'+tags+'</span></div>'+memo+photo+'</div>';
       }).join("");
       if (d.total > d.entries.length){
         $("sdMore").textContent = "ほかに "+(d.total - d.entries.length)+"件 あります";

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>お名前（ニックネーム）</title>
+<script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
+<!--
+  🏷️ お名前（ニックネーム）＝お店のページに出すお名前を、ご自分で決める画面
+  ・★2026-10-11 オーナー指示「LINEの名前を出すのは危険。ニックネームを作れる場所が必要。
+    都道府県を編集するような感じかな」を受けて作成。
+  ・★LINEのお名前は どこにも出しません。出すのは ここで決めたお名前だけです。
+  ・★決めなければ お名前は出ません（何もしなければ、いままでと同じ）。
+  ・★この画面には専用のLINEの番号を作っていません。
+    saved.html と同じやり方＝パスポートから相対で開き、パスポートが置いた jcj_uid を引き継ぎます。
+    ★本番注意（リリース番へ）：passport.html と nickname.html を必ず"同じ階層"に置くこと。
+  ・受け口＝GAS の nickname_get / nickname_set。
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{--paper:#F4EADD;--sub:#6E655E;--brown-d:#221C1A;--accent:#C04A55;--line:#DDD6CE;--green:#2B5D4F}
+  html,body{margin:0;background:#fff;color:var(--brown-d);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--green);color:#fff;padding:13px 16px;font-size:17px;font-weight:800;position:sticky;top:0;z-index:5}
+  #status{text-align:center;padding:80px 20px;color:var(--sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:16px 16px 44px}
+  .lead{font-size:13px;color:var(--brown-d);line-height:1.85;margin:2px 2px 16px}
+  .card{background:var(--paper);border-radius:14px;padding:16px 15px}
+  label{display:block;font-size:12.5px;font-weight:800;color:var(--brown-d);margin:0 2px 7px}
+  input[type=text]{width:100%;font-family:inherit;font-size:16px;padding:12px;border-radius:10px;
+    border:1.5px solid var(--line);background:#fff;color:var(--brown-d)}
+  .count{font-size:11px;color:var(--sub);text-align:right;margin:5px 2px 0}
+  .note{font-size:11.5px;color:var(--sub);line-height:1.8;margin:12px 2px 0}
+  .msg{font-size:12.5px;line-height:1.75;margin:12px 2px 0;min-height:1em}
+  .msg.ng{color:var(--accent);font-weight:700}
+  .msg.ok{color:var(--green);font-weight:700}
+  .btn{width:100%;font-family:inherit;font-size:15px;font-weight:800;padding:14px;border-radius:12px;
+    border:0;margin-top:14px;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.primary:disabled{background:#D9CFC6;color:#fff}
+  .btn.ghost{background:#fff;border:1.5px solid var(--line);color:var(--sub)}
+  .now{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 14px;
+    font-size:12.5px;color:var(--brown-d)}
+  .now b{font-size:14px}
+</style>
+</head>
+<body>
+<div class="bar">お名前（ニックネーム）</div>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <div class="lead">
+    お店のページには、そのお店で書かれた一杯が並びます。<br>
+    <b>ここでお名前を決めると、あなたの一杯にそのお名前が出ます。</b><br>
+    決めなければ、お名前は出ません。
+  </div>
+
+  <div class="now hidden" id="nowBox">いまのお名前：<b id="nowName"></b></div>
+
+  <div class="card">
+    <label for="nick">お名前（ニックネーム）</label>
+    <input id="nick" type="text" maxlength="12" placeholder="例：まめ太郎" autocomplete="off">
+    <div class="count"><span id="cnt">0</span>／12文字</div>
+    <div class="note">
+      ★LINEのお名前は使いません。ここで決めたお名前だけが出ます。<br>
+      ★本名やご連絡先は入れないでください。<br>
+      ★あとで いつでも変えられます。出すのをやめることもできます。
+    </div>
+    <div class="msg" id="msg"></div>
+    <button id="saveBtn" class="btn primary" disabled>このお名前にする</button>
+    <button id="clearBtn" class="btn ghost hidden">お名前を出すのをやめる</button>
+  </div>
+</div>
+
+<script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const $ = id => document.getElementById(id);
+  let UID = "";
+  let CUR = "";
+
+  function say(t, kind){ const m=$("msg"); m.textContent=t||""; m.className = "msg" + (kind?(" "+kind):""); }
+
+  function paintNow(){
+    if (CUR){
+      $("nowName").textContent = CUR;
+      $("nowBox").classList.remove("hidden");
+      $("clearBtn").classList.remove("hidden");
+    } else {
+      $("nowBox").classList.add("hidden");
+      $("clearBtn").classList.add("hidden");
+    }
+  }
+
+  function wire(){
+    $("nick").addEventListener("input", function(){
+      const v = $("nick").value;
+      $("cnt").textContent = String(v.length);
+      $("saveBtn").disabled = (v.trim() === "" || v.trim() === CUR);
+      say("");
+    });
+    $("saveBtn").onclick = function(){ send($("nick").value.trim(), "このお名前にしました。"); };
+    $("clearBtn").onclick = function(){ send("", "お名前を出すのをやめました。"); };
+  }
+
+  async function send(value, okMsg){
+    $("saveBtn").disabled = true; $("clearBtn").disabled = true;
+    say("送っています…");
+    try{
+      const q = new URLSearchParams({ action:"nickname_set", userId:UID, nickname:value, _:Date.now() });
+      const res = await fetch(GAS_URL + "?" + q.toString());
+      const d = await res.json();
+      if (!d || !d.ok){
+        say((d && d.msg) ? d.msg : "うまくいきませんでした。もう一度お試しください。", "ng");
+        $("clearBtn").disabled = false;
+        $("saveBtn").disabled = ($("nick").value.trim() === "");
+        return;
+      }
+      CUR = String(d.nickname || "");
+      $("nick").value = CUR;
+      $("cnt").textContent = String(CUR.length);
+      paintNow();
+      say(okMsg, "ok");
+      $("clearBtn").disabled = false;
+      $("saveBtn").disabled = true;
+    }catch(e){
+      say("通信エラーが起きました。電波の良い場所でお試しください。", "ng");
+      $("clearBtn").disabled = false;
+      $("saveBtn").disabled = ($("nick").value.trim() === "");
+    }
+  }
+
+  async function start(uid){
+    UID = uid;
+    try{
+      const res = await fetch(GAS_URL + "?action=nickname_get&userId=" + encodeURIComponent(uid) + "&_=" + Date.now());
+      const d = await res.json();
+      if (d && d.ok){
+        CUR = String(d.nickname || "");
+        $("nick").value = CUR;
+        $("cnt").textContent = String(CUR.length);
+        paintNow();
+        // 台帳にその方の行が無い＝まだご登録が終わっていない。黙って失敗させず、はっきり書く。
+        if (d.hasRow === false){
+          say("まだご登録が終わっていないようです。先にご登録をお願いします。", "ng");
+          $("saveBtn").disabled = true;
+        }
+      }
+    }catch(e){ /* 読めなくても画面は出す（入れて送れば保存されます） */ }
+    wire();
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  function main(){
+    // ★この画面は専用のLINEの番号を持ちません（saved.html と同じやり方）。
+    //   パスポートが localStorage に置いた jcj_uid を引き継ぎます。
+    const q = new URLSearchParams(location.search).get("userId");
+    if (q && q.trim()){ start(q.trim()); return; }
+    let cached = ""; try{ cached = localStorage.getItem("jcj_uid") || ""; }catch(e){}
+    if (cached){ start(cached); return; }
+    $("status").textContent = "この画面は、パスポートの中から開いてください。";
+  }
+  main();
+</script>
+</body>
+</html>

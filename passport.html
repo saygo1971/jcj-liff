@@ -34,6 +34,8 @@
   .topline{display:flex;justify-content:space-between;align-items:center;padding:17px 16px;background:var(--green)}
   .pno{font-size:13px;font-weight:600;color:#fff;letter-spacing:2.5px}
   .resi{font-size:11px;color:rgba(255,255,255,.9)}
+  /* ★2026-10-11 番号帯の右側＝お住まいと お名前（ニックネーム）を縦に2行。 */
+  .rightcol{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;max-width:60%}
   /* ★2026-10-05 お住まいの行は押せる（お住まいの郵便番号の画面へ） */
   .resi.tap{text-decoration:underline;text-underline-offset:2px;cursor:pointer}
   /* 最下部の帯（緑・白文字・ブランド名＋右にフラミンゴ） */
@@ -186,7 +188,15 @@
   <div class="card">
     <div class="topline">
       <span class="pno ocrb" id="pno">PASSPORT No. JC-000000</span>
-      <span class="resi" id="resi"></span>
+      <!-- ★2026-10-11 右側を縦2行にして、お住まいの下に お名前（ニックネーム）を置いた。
+           ★オーナー指示：お店のページに出すお名前を、ご自分で決められるようにする。
+           ★LINEのお名前は使わない。決めなければ お名前は出ない。
+           ★専用のLINEの番号は作っていない＝saved.html と同じく相対で開く。
+           ★本番注意（リリース番へ）：passport.html と nickname.html を必ず"同じ階層"に置くこと。 -->
+      <span class="rightcol">
+        <span class="resi" id="resi"></span>
+        <span class="resi tap" id="nickLine">ニックネーム ›</span>
+      </span>
     </div>
 
     <div class="see">
@@ -404,6 +414,8 @@
     // ☕ 2026-09-26：「買ったもの」。★この画面を出しきってから、あとで中身を読みに行きます。
     //   ★理由＝パスポートは今でも数秒かかります。★これ以上 遅くしません。
     $("resi").onclick     = () => open("homecity");  // ★お住まいの行 → お住まいの郵便番号の画面
+    // ★2026-10-11 お名前の行 → お名前を決める画面（同じ置き場の相対遷移）
+    if ($("nickLine")) $("nickLine").onclick = () => { location.href = "nickname.html"; };
     $("navBought").onclick = showBought_;
     $("bvBack").onclick    = hideBought_;
   }
