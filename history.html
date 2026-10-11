@@ -72,6 +72,18 @@
      旅の記録＝テラコッタ／暮らしの記録＝緑。ほかの印（飲みもの・生産国など）は塗らないので、
      どれが中分類の印かが ひと目で分かる。★距離の印は旅の記録の行にしか出ないので ぶつからない。 */
   .tag.kind.home{background:var(--state-done);color:#fff;border:0}
+  /* ★2026-10-11 オーナー指示「ひとめではわかりづらい／帯をつけた方がわかりやすい」。
+     印（小さな札）をやめて、行のいちばん上に 色のついた帯を置いた。
+     旅の記録＝テラコッタ／暮らしの記録＝緑。帯は行の幅いっぱいに出す。 */
+  .kindband{margin:-12px -12px 10px;padding:6px 12px;border-radius:11px 11px 0 0;
+    font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--brand-base)}
+  .kindband.home{background:var(--state-done)}
+  /* ★2026-10-11 オーナー指示「切り替えも欲しい」。すべて／旅の記録／暮らしの記録 で絞り込む。 */
+  .kswitch{display:flex;gap:6px;margin:0 0 14px}
+  .kswitch button{flex:1;font-family:inherit;font-size:12px;font-weight:800;padding:8px 4px;
+    border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink-sub);cursor:pointer}
+  .kswitch button.on{border-color:var(--brand-deep);background:var(--brand-deep);color:#fff}
+  .kempty{text-align:center;color:var(--ink-sub);font-size:13px;padding:28px 12px;line-height:1.8}
   .tag.addrec{background:var(--bg);border:1px solid var(--brand-deep);color:var(--brand-deep);text-decoration:none;cursor:pointer}
   #empty{text-align:center;padding:64px 24px}
   #empty .emo{font-size:40px}
@@ -103,6 +115,11 @@
        お店を渡さずに記録の画面を開く＝向こうで「どこで飲みましたか？」から選べる。 -->
   <a class="recnew" id="recNewBtn">コーヒー日記に書く</a>
   <div class="recnew-s">家でも、出かけた先でも、お店でも。</div>
+  <div class="kswitch" id="kswitch">
+    <button type="button" data-kind="all" class="on">すべて</button>
+    <button type="button" data-kind="trip">旅の記録</button>
+    <button type="button" data-kind="home">暮らしの記録</button>
+  </div>
   <div id="list"></div>
   <!-- ロースター紹介の入口（旅の記録の最後）＝推薦フォーム(テスト)へ -->
   <div class="jointo" id="jointo">
@@ -146,6 +163,10 @@
   const params = new URLSearchParams(location.search);
   const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   let USER_ID = "";
+  // ★2026-10-11 切り替え（すべて／旅の記録／暮らしの記録）で使う。
+  let ALL_ROWS = [];   // 並べ替えまで終わった全部の行
+  let TODO_HTML = "";  // 「まだ書いていない一杯」のかたまり
+  let KIND = "all";    // いま選ばれている切り替え
 
   function render(d){
     const checkins = (d.checkins||[]);
@@ -212,17 +233,39 @@
         '</div>';
     }
 
-    $("list").innerHTML = todoHtml + rows.map(r=>{
+    ALL_ROWS = rows;
+    TODO_HTML = todoHtml;
+    paintList();
+    $("status").classList.add("hidden");
+    $("empty").classList.add("hidden");         // ★2026-10-07 念のためここでも隠す
+    $("main").classList.remove("hidden");
+  }
+
+  // ★2026-10-11 選ばれた切り替えに合わせて、一覧を並べ直す。
+  //   旅の記録＝店舗IDが在る行／暮らしの記録＝店舗IDが空の行。
+  //   ★「まだ書いていない一杯」はお店の話なので、暮らしの記録だけにしたときは出さない。
+  function paintList(){
+    const rows = ALL_ROWS.filter(function(r){
+      if (KIND === "trip") return !!r.shopId;
+      if (KIND === "home") return !r.shopId;
+      return true;
+    });
+    if (!rows.length){
+      $("list").innerHTML = '<div class="kempty">ここに出せる一杯は、まだありません。<br>上の「コーヒー日記に書く」から残せます。</div>';
+      return;
+    }
+    $("list").innerHTML = (KIND === "home" ? "" : TODO_HTML) + rows.map(r=>{
       const dr=r.dr;
       const recorded = !!dr;
       const logo = r.shopId
         ? '<img class="hlogo" src="https://japancoffeejourney.com/jcj_passport_img/shop/'+encodeURIComponent(r.shopId)+'/logo.png" onerror="this.style.display=\'none\'">'
         : '';
-      // ★2026-10-06 オーナー指示：この一杯がどちらかを、行の先頭に出す。
+      // ★2026-10-11 オーナー指示：小さな札をやめて、行のいちばん上に帯を置く。
       //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝暮らしの記録。
-      let tags = r.shopId
-        ? '<span class="tag kind">旅の記録</span>'
-        : '<span class="tag kind home">暮らしの記録</span>';
+      const band = r.shopId
+        ? '<div class="kindband">旅の記録</div>'
+        : '<div class="kindband home">暮らしの記録</div>';
+      let tags = '';
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
         if (dr.country) tags += '<span class="tag ctry">'+esc(dr.country)+'</span>';
@@ -248,6 +291,7 @@
           'onerror="this.onerror=null;var b=document.createElement(\'div\');b.className=\'hphoto phbad\';b.textContent=\'写真を表示できません\';this.replaceWith(b);">'
         : '';
       return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'">'+
+        band+
         '<div class="htop"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
         '<div class="hbody"><div class="hname">'+esc(r.shopName||"お店")+'</div>'+
         '<div class="hpl">'+esc(r.pref||"")+'</div>'+
@@ -268,11 +312,16 @@
         if(id) location.href="shop.html?shop="+encodeURIComponent(id)+"&t="+Date.now();
       };
     });
-
-    $("status").classList.add("hidden");
-    $("empty").classList.add("hidden");         // ★2026-10-07 念のためここでも隠す
-    $("main").classList.remove("hidden");
   }
+
+  // ★2026-10-11 切り替えのボタンを押したら、選び直して並べ直す。
+  $("kswitch").querySelectorAll("button").forEach(function(b){
+    b.onclick = function(){
+      KIND = b.getAttribute("data-kind");
+      $("kswitch").querySelectorAll("button").forEach(function(x){ x.classList.toggle("on", x === b); });
+      paintList();
+    };
+  });
 
   // 保存URL(lh3形式など)を、LINE内ブラウザで映りやすいDriveサムネイルURLへ変換
   function toThumbUrl(u){
