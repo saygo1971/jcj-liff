@@ -231,19 +231,39 @@
 
   const sel = { drink:"", country:"", process:"", grind:"", brew:"" };
 
-  // ★2026-10-06 前に選んだ抽出ツールを覚えておく＝器具を変えた日だけ選び直せばよい。
-  //   この端末の中だけに残る覚え書き。読めなくても画面は普通に動く。
-  const BREW_KEY = "jcj_last_brew";
-  function loadLastBrew(){ try { return localStorage.getItem(BREW_KEY) || ""; } catch(e){ return ""; } }
-  function saveLastBrew(v){ try { localStorage.setItem(BREW_KEY, v || ""); } catch(e){} }
+  // ★2026-10-11 オーナー決定：おうちの記録は、前に書いた内容を【全部】覚えておく。
+  //   ★理由（オーナーの言葉）＝毎日 違う淹れ方で違う豆を飲む方は少ない。
+  //     前回のものが入っていた方がやりやすいし、淹れ方を変えようと思った時に前回の情報が参考になる。
+  //   ★覚えるのは【おうちのときの内容だけ】。お店のときは いままで通り。
+  //   ★ひとことメモと写真は覚えない（その一杯ごとのものなので）。
+  //   ★この端末の中だけに残る覚え書き。読めなくても画面は普通に動く。
+  const HOME_KEY = "jcj_last_home";
+  const BREW_KEY = "jcj_last_brew";   // ★2026-10-06 の抽出ツールだけの覚え書き（引き継ぎに使う）
+  function loadLastHome(){
+    let o = {};
+    try { const r = JSON.parse(localStorage.getItem(HOME_KEY) || "{}"); if (r && typeof r === "object") o = r; } catch(e){}
+    // ★前に抽出ツールだけを覚えていた方のぶんを引き継ぐ（1回だけ・上書きはしない）
+    if (!o.brew){ try { const b = localStorage.getItem(BREW_KEY); if (b) o.brew = b; } catch(e){} }
+    return o;
+  }
+  function saveLastHome(key, value){
+    try {
+      const o = loadLastHome();
+      o[key] = value || "";
+      localStorage.setItem(HOME_KEY, JSON.stringify(o));
+    } catch(e){}
+  }
+  let curIsHome = false;   // ★いまの場所がおうちか（覚えるかどうかの判断に使う）
 
   // ★2026-10-06 オーナー指摘を受けて、ボタンの列をやめてプルダウンにした。
   //   場所（お店／うち）を変えるたびに中身を並べ直す。
   //   いま選ばれているものが新しい並びに無ければ、選ばれていない状態に戻す。
   //   一番上は いつも「えらぶ」＝選ばなくてよい（どれも任意）。
-  function buildSelect(box, items, key){
+  //   ★def ＝ 最初から選ばれている値（前に書いた内容／本番の既定値）
+  function buildSelect(box, items, key, def){
     const el = $(box);
     if (sel[key] && items.indexOf(sel[key]) < 0) sel[key] = "";
+    if (!sel[key] && def && items.indexOf(def) >= 0) sel[key] = def;
     el.innerHTML = "";
     const blank = document.createElement("option");
     blank.value = ""; blank.textContent = "えらぶ";
@@ -256,7 +276,8 @@
     el.value = sel[key] || "";
     el.onchange = function(){
       sel[key] = el.value || "";
-      if (key === "brew") saveLastBrew(sel[key]);   // ★次に開いたとき最初から入っているように
+      // ★2026-10-11 おうちのときだけ覚える（次に開いたとき最初から入っているように）
+      if (curIsHome) saveLastHome(key, sel[key]);
     };
   }
 
@@ -333,27 +354,37 @@
   // ★2026-10-06 オーナー指示：お店かうちかで、選ぶ項目そのものを出し分ける。
   function paintFields(){
     const isHome = !curShopId;
+    curIsHome = isHome;
+    // ★2026-10-11 おうちのときは、前に書いた内容を全部 差し込む（まだ何も選んでいない欄だけ）
+    const last = isHome ? loadLastHome() : {};
+    let filled = 0;
+    function pick(key, items){
+      if (!isHome) return "";
+      const v = last[key];
+      if (v && items.indexOf(v) >= 0){ filled++; return v; }
+      return "";
+    }
 
     // 飲みもの＝お店とうちで並びが違う（ドリップバッグはうちだけ）
-    buildSelect("selDrink", isHome ? DRINKS_HOME : DRINKS_SHOP, "drink");
+    const COUNTRY_ITEMS = isHome ? COUNTRIES_BASE : COUNTRIES_BASE.concat(["わからない"]);
+    const PROCESS_ITEMS = isHome ? PROCESSES_BASE : PROCESSES_BASE.concat(["わからない"]);
+    buildSelect("selDrink", isHome ? DRINKS_HOME : DRINKS_SHOP, "drink", pick("drink", isHome ? DRINKS_HOME : DRINKS_SHOP));
     // 生産国・精製方法＝「わからない」はお店のときだけ出す
-    buildSelect("selCountry", isHome ? COUNTRIES_BASE : COUNTRIES_BASE.concat(["わからない"]), "country");
-    buildSelect("selProcess", isHome ? PROCESSES_BASE : PROCESSES_BASE.concat(["わからない"]), "process");
+    buildSelect("selCountry", COUNTRY_ITEMS, "country", pick("country", COUNTRY_ITEMS));
+    buildSelect("selProcess", PROCESS_ITEMS, "process", pick("process", PROCESS_ITEMS));
 
     // 抽出ツール・挽き目・湯温＝うちのときだけ
     $("homeOnly").classList.toggle("hidden", !isHome);
     if (isHome){
-      // ★前に選んだ抽出ツールを、最初から選ばれた状態にする（変えた日だけ選び直せばよい）
-      if (!sel.brew){
-        const last = loadLastBrew();
-        if (BREWS.indexOf(last) >= 0) sel.brew = last;
-      }
-      buildSelect("selBrew", BREWS, "brew");
-      buildSelect("selGrind", GRINDS, "grind");
-      $("brewNote").textContent = sel.brew ? "前に選んだ器具です。変えた日だけ選び直してください。" : "";
+      buildSelect("selBrew", BREWS, "brew", pick("brew", BREWS));
+      buildSelect("selGrind", GRINDS, "grind", pick("grind", GRINDS));
+      // ★湯温は数字なので、選ぶ所とは別に差し込む
+      if ($("temp") && !$("temp").value && last.temp){ $("temp").value = last.temp; filled++; }
+      $("brewNote").textContent = filled ? "前に書いた内容が入っています。変えた所だけ直してください。" : "";
     } else {
       sel.brew = ""; sel.grind = "";
       if ($("temp")) $("temp").value = "";
+      $("brewNote").textContent = "";
     }
   }
 
@@ -513,6 +544,10 @@
         $("pickList").classList.add("hidden");
         $("pickMsg").textContent = "";
         $("otherName").focus();
+      };
+      // ★2026-10-11 湯温は数字の入力なので、ここで覚える（おうちのときだけ）
+      if ($("temp")) $("temp").onchange = function(){
+        if (curIsHome) saveLastHome("temp", String($("temp").value || "").trim());
       };
       $("otherOk").onclick = function(){
         const v = $("otherName").value.trim();
