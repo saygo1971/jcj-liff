@@ -1,5 +1,20 @@
 <!doctype html>
+<!--
+  ★★この控えは 2026-10-11 に【生きている本番（414行）】で置き換えたものです。
+  ★それまでの控えは 334行で、★生きている本番（396行）より 62行 古く、
+    ★これを本番へ上げると 2026-10-10 の第1便が消える状態でした
+    （合言葉 opId・催事の印 ev・「このチケットは、イベント会場のブースでのみ…」の文）。
+  ★中身 ＝ 2026-10-11 12:02 に curl で取った本番の実物（396行・md5 93c9324c37211f1f40595ed35df7a075）
+           ＋ 2026-10-11 の直し（券を使ったあとも「今日の一杯は？」を残す）
+           ＝ 414行・md5 2a960b5b65059bd854ec81d89c4e4816
+  🔴★上げる前に、★必ず 生きている本番を curl で取り直して突き合わせてください。
+     ★本番は手で上げる運用なので、★この控えが また古くなっている可能性があります。
+  ★一式 ＝ JCJ事業部/_本番へ運ぶ一式_20261011/
+-->
 <html lang="ja">
+<!-- REL checkin/index.html prod v1 (この一杯を残す＝記録への入口新設 / 紹介ボタンを枠線へ格下げ / マイル特典を1行リンクへ) | 2026-09-06 | v0(live現物・RELコメント無し)を土台に差分のみ | 定数=本番(GAS AKfycbwvdgDo… / CHECKIN 2010671952-JEJp6R4e / LOG_DRINK 2010671952-GHkNcjqs / SHARE 2010671952-tIFYHtLE / OA @740rorcl) -->
+<!-- ★2026-10-01（朝）：マイルの使い道（豆の割引）が終わったので、「あと◯マイルで マイル特典」の案内と、交換ページへのリンクを外しました。 -->
+<!-- ★2026-10-01（昼）：単位を km にする日。(1)「マイル」の文字を画面から外した (2)「合計 ◯マイル」の行ごと削除（A-1＝使えるマイルは無くなる） (3) 紹介の +100 も画面から外した（★2026-10-01 オーナー決定で付与そのものを止めるため）。★祝福のお知らせは残る。 ★「＋◯」に単位を書いていないのは、再訪10・イベント5が同じ場所に出て km と言い切れないため（本部へ報告ずみ）。 -->
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -20,6 +35,10 @@
     .pref{font-size:13px;color:var(--muted)}
     .go{width:100%;margin-top:16px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
     .go:disabled{opacity:.5}
+    /* 記録（今日の一杯）＝この画面の主役。塗りの主役ボタンは画面に1つだけ。 */
+    .recsec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+    .rectitle{text-align:center;font-size:15px;font-weight:700;color:#222}
+    .rec{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#C04A55;text-decoration:none}
     .fine{font-size:11px;color:var(--hint);margin-top:8px;text-align:center}
     .done{padding:18px;text-align:center;color:#fff}
     .done.ci{background:var(--brand)}
@@ -31,7 +50,7 @@
     .refbox{background:#f2f8f5;border:1px solid #d6e7de;border-radius:12px;padding:14px}
     .reftitle{font-size:14px;font-weight:800;color:var(--brand);text-align:center}
     .refdesc{font-size:12px;color:#555;text-align:center;margin-top:6px;line-height:1.7}
-    .refbtn{width:100%;margin-top:12px;height:50px;border-radius:12px;border:none;font-size:15px;font-weight:700;color:#fff;background:var(--brand)}
+    .refbtn{width:100%;margin-top:12px;height:50px;border-radius:12px;border:1px solid var(--brand);font-size:15px;font-weight:700;color:var(--brand);background:#fff}
     .mile{font-size:24px;font-weight:800;color:var(--brand);text-align:center;margin:8px 0}
     .total{font-size:13px;color:var(--muted);text-align:center}
     .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
@@ -50,13 +69,6 @@
     .status{color:var(--muted);font-size:13px;padding:34px 0;text-align:center}
     .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
-    /* 🎁 マイル特典 進捗バー（メッセージ方式カードと同じ見せ方） */
-    .bsec{margin-top:14px}
-    .pbar{width:100%;height:12px;background:#EDE7DF;border-radius:6px;overflow:hidden}
-    .pfill{height:100%;background:#6F4E37;border-radius:6px}
-    .bready{display:block;text-align:center;margin-top:10px;font-size:14px;font-weight:800;color:#6F4E37;text-decoration:none}
-    .bnext{text-align:center;margin-top:4px;font-size:11px;color:#8A7A6A}
-    .bmore{text-align:center;margin-top:10px;font-size:13px;color:#6F4E37;font-weight:700}
     .hidden{display:none}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -81,11 +93,17 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
   // 本番の公式アカウント（未登録者の遷移先）
   const OA_URL = "https://line.me/R/ti/p/@740rorcl";
-  // 紹介の「送る側」LIFF＝share_prod（"送る相手を選ぶ"）。?shopId=<チェックインした店ID> を付けて開く。友だち初来店で紹介者に+100マイル。
+  // 紹介の「送る側」LIFF＝share_prod（"送る相手を選ぶ"）。?shopId=<チェックインした店ID> を付けて開く。友だち初来店で、紹介した方へ祝福のお知らせが届く（★2026-10-01 オーナー決定で +100 の付与は止める）。
   // ※referral(2010671952-xTVp44uz)は"受け取る側"でshareId必須。送る本人がそこへ飛ぶと「紹介情報が見つかりません」になるため share_prod へ。
   const SHARE_URL = "https://liff.line.me/2010671952-tIFYHtLE";
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
+  // 記録（今日の一杯）＝本番の記録ページ。飛び先は japancoffeejourney.com/log_drink/（curlで実測）。
+  const LOG_DRINK_LIFF_ID = "2010671952-GHkNcjqs";
+  // ★橋渡しの宛先＝このLINE公式アカウント。★本番の値（上の OA_URL と同じ）。テスト環境の値をここに書かないこと
+  const LINE_OA_ID = "740rorcl";
+  // ★橋渡しの入切。false にすると今までの画面（この画面の中でチェックイン）に戻る＝★切り戻しはここ1か所だけ
+  const BRIDGE_TO_MESSAGE = true;
   // ======================================
 
   const $ = id => document.getElementById(id);
@@ -93,9 +111,17 @@
 
   let USER_ID = "";
   let SPOT = "";
+  // ★2026-09-29：プレートのQRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
+  //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
+  let EV = params.get("ev") || "";
   let st = null;
   let count = 1;
   let busy = false;
+  /*★★2026-10-11 追加：チェックイン完了のときに作った「今日の一杯は？」の中身を、ここに覚えます。
+   *  🔴★なぜ要るか＝券を使うと renderTicketUsed が画面の中身を【丸ごと置き換える】ので、
+   *    ★記録ボタンが消えていました（2026-10-11 オーナー指摘「今日の一杯は？のボタンがない」）。
+   *  ⇒ ★★当日、ブースで試飲した方が【コーヒー日記に1件も残せません】。*/
+  let RECORD_HTML = "";
 
   function showLoading(msg){ $("status").classList.remove("hidden"); $("spin").classList.remove("hidden"); $("statusText").textContent = msg; }
   function showStatusText(msg){ $("status").classList.remove("hidden"); $("spin").classList.add("hidden"); $("statusText").textContent = msg; }
@@ -143,7 +169,9 @@
     try{
       const geoParams = await getGeoParams();   // 初回は「位置情報を許可しますか？」ポップアップが出る
       b.textContent = "記録しています…";
-      const r = await api("checkin_do", Object.assign({ spot: SPOT }, geoParams));
+      const extra = Object.assign({ spot: SPOT }, geoParams);
+      if (EV) extra.ev = EV;                    // ★2026-09-29：どのイベントかを一緒に送る
+      const r = await api("checkin_do", extra);
       busy = false;
       if(!r || !r.ok){
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
@@ -179,35 +207,29 @@
       banner = '<img id="donecard" class="donecard" alt="チェックイン完了" src="' + esc(cardUrl) + '">';
     }
     const mileHtml = r.alreadyToday
-      ? '<div class="total">同じ日の重複はマイルを二重に付けません</div>'
-      : '<div class="mile">＋' + (Number(r.earnedMile)||0) + 'マイル</div><div class="total">合計 ' + (Number(r.newTotal)||0) + 'マイル</div>';
+      ? '<div class="total">同じ日の重複は二重に数えません</div>'
+      : '<div class="mile">＋' + (Number(r.earnedMile)||0) + '</div>';
 
     // 旅の記録への導線（素の一行・控えめ）。新型チェックインはトークに残らないため、確認先を案内する。
     const noteHtml = '<div style="font-size:13px;color:#332822;font-weight:500;text-align:center;margin-top:8px">チェックインは、旅の記録から確認できます。</div>';
 
-    // 🎁 マイル特典（豆クーポン）進捗バー：合計マイルに対し「あと△で🎁マイル特典」。
-    //   checkin_do の couponMile / beansDiscountYen / beansExchangeUrl(=CONFIG beans_liff_id 由来) を使う。config未設定(0/空)なら非表示。
-    let beansHtml = "";
-    const couponMile = Number(r.couponMile) || 0;
-    if (couponMile > 0) {
-      const yTotal = Number(r.newTotal) || 0;
-      const prog = yTotal % couponMile;
-      const remain = couponMile - prog;
-      const ready = Math.floor(yTotal / couponMile) >= 1;
-      const discYen = Number(r.beansDiscountYen) || 0;
-      const discText = discYen > 0 ? "（¥" + discYen + "割引）" : "";
-      const fillPct = Math.max(0, Math.min(100, Math.round(prog / couponMile * 100)));
-      const exUrl = String(r.beansExchangeUrl || "").trim();
-      const bar = '<div class="pbar"><div class="pfill" style="width:' + fillPct + '%"></div></div>';
-      if (ready && exUrl) {
-        beansHtml = '<div class="bsec">' + bar +
-          '<a id="beansEx" class="bready" href="' + esc(exUrl) + '">🎁 マイル特典と交換できます！（タップで交換）</a>' +
-          '<div class="bnext">あと ' + remain + ' マイルで、次の特典</div></div>';
-      } else {
-        beansHtml = '<div class="bsec">' + bar +
-          '<div class="bmore">あと ' + remain + ' マイルで 🎁 マイル特典' + discText + '</div></div>';
-      }
-    }
+    // ★2026-10-01：マイルの使い道（豆の割引）が終わったので、
+    //   「あと◯マイルで…」の案内と、交換ページへのリンクは出しません。
+    const beansHtml = "";
+
+    // 記録（今日の一杯）：区切り線の下に「今日の一杯は？／まだ香りが残っているうちに。／この一杯を残す」。
+    //   渡すのは shop（店ID）と name（店名）の2つだけ＝本番「旅の記録」ページの記録リンクと同じ形。
+    //   pref＝記録ページ側で受け取るだけで使っていない／date＝過去の来店に足す時だけの値。どちらも渡さない。
+    const recUrl = LOG_DRINK_LIFF_ID
+      ? ('https://liff.line.me/' + LOG_DRINK_LIFF_ID + '?shop=' + encodeURIComponent(st.shopId || SPOT || "") + '&name=' + encodeURIComponent(r.shopName || ""))
+      : "";
+    const recordHtml =
+      '<div class="recsec">' +
+        '<div class="rectitle">今日の一杯は？</div>' +
+        '<div class="fine" style="margin-top:4px">まだ香りが残っているうちに。</div>' +
+        '<a id="recordBtn" class="rec"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を残す</a>' +
+      '</div>';
+    RECORD_HTML = recordHtml;   // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
 
     let ticketHtml = "";
     if (r.ticketEnabled && Number(r.ticketBalance) > 0){
@@ -220,18 +242,18 @@
         '</div>';
     }
 
-    // 紹介コーナー：チェックインした今この瞬間に友だちへお店を紹介（友だち初来店で紹介者に+100マイル）。
+    // 紹介コーナー：チェックインした今この瞬間に友だちへお店を紹介（友だち初来店で、紹介した方へ祝福のお知らせが届く）。
     const refHtml =
       '<div class="refcard"><div class="refbox">' +
-        '<div class="reftitle">🎁 友だちを誘って +100マイル</div>' +
-        '<div class="refdesc">今この場でお店をシェア。友だちが初めて来店すると、あなたに100マイル入ります。</div>' +
+        '<div class="reftitle">友だちを誘う</div>' +
+        '<div class="refdesc">今この場でお店をシェア。友だちが初めてこのお店に来ると、お知らせが届きます。</div>' +
         '<button id="refBtn" class="refbtn">このお店を紹介する</button>' +
       '</div></div>';
 
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(r.shopName) + '</div>' +
-      mileHtml + noteHtml + beansHtml + ticketHtml + refHtml;
+      mileHtml + noteHtml + recordHtml + beansHtml + ticketHtml + refHtml;
       // 「試飲チケットについて」リンク＋説明は削除（試飲を隠す方針＝豆割引1本／本部v21 2026-08-16）。
       // 試飲チケット本体(ticketHtml)は ticketEnabled&&残>0 の時だけ描画＝本番は試飲販売なしのため実質非表示。
 
@@ -252,37 +274,80 @@
       else location.href = url;
     };
 
-    // 🎁 マイル特典 交換リンク：LINE内はアプリ内ウィンドウで交換ページ(mame)を開く。
-    const bx = document.getElementById("beansEx");
-    if (bx) bx.onclick = function(ev){
-      ev.preventDefault();
-      const url = bx.getAttribute("href");
-      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: url, external: false });
-      else location.href = url;
-    };
+    // 記録ボタン：記録ページ(log_drink)を開く（LINE内はアプリ内ウィンドウ＝この画面の他のリンクと同じ作法）。
+    //   ★★2026-10-11：配線を wireRecordBtn_ にまとめました（★券を使ったあとにも、もう一度 配線するため）。
+    wireRecordBtn_();
 
     if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
   }
 
   function wireTicket(bal){
     count = 1;
+    /*★★2026-10-10 追加：この1回の使用につく「合言葉」（opId）。
+     *  🔴★いまの本番は これを送っていません。だから受ける側（ticket.js の consumeTickets_）の
+     *    「同じ操作を2回 引かない」歯止めが、2つとも まるごと飛ばされています。
+     *    ⇒ 通信が切れて押し直すと、券が2枚 減ります。
+     *  ★★作り直すのは「別の使用になったとき」だけです。
+     *    ・通信が切れて押し直したとき → ★同じ値を送ります（＝2枚 減りません）
+     *    ・枚数を変えたとき           → 別の使用なので作り直します
+     *    ・はっきり断られたとき       → その使用は成立していないので作り直します
+     *  ★券を使う画面（ticket_use.html）と同じ考え方です。*/
+    let useOpIdCk = "";
+    let opCount = 0;
     const render = ()=>{ $("cnt").textContent = count; $("minus").disabled = busy || count<=1; $("plus").disabled = busy || count>=Math.min(bal,10); $("use").textContent = busy ? "処理中…" : (count+"枚を使う"); };
     $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
     $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
     $("use").onclick = async ()=>{
       if(busy) return; busy = true; render();
+      // ★合言葉が無いとき、または枚数が変わったときだけ 作り直します。
+      //   ★押し直しのときは ここを通らないので、同じ値がそのまま送られます。
+      if(!useOpIdCk || opCount !== count){
+        useOpIdCk = "use_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+        opCount = count;
+      }
       try{
-        const d = await api("use_do", { spotId: st.shopId, count: count });
+        /*★★2026-10-10 追加：4つ 足します。★どれも無くても いままでどおり動きます。
+         *  opId        ＝この1回の使用の合言葉（★2枚 減らないための歯止め）
+         *  ev          ＝会場のQR（?ev=）から来たときだけ入る催事ID
+         *                ★これが無いと「ロースターのお店で使った」と記録され、
+         *                ★2026-10-08 オーナー決定A（催事の券は会場だけ）が働きません
+         *  seenBalance ＝この画面がいま出している残り枚数
+         *  shopName    ＝この画面が出している店名 */
+        const d = await api("use_do", { spotId: st.shopId, count: count,
+          opId: useOpIdCk, seenBalance: bal, shopName: (st && st.shopName) || "",
+          ev: EV || "" });
         busy = false;
         if(!d || !d.ok){
           render();
-          const msg = d && d.error === "insufficient" ? "残り枚数が足りません。" : (d && d.error === "not_enabled" ? "この店は試飲チケット対応ではありません。" : "チケットの使用に失敗しました。");
+          // ★2026-10-10：「会場でしか使えない券」を、そう書きます。
+          //   🔴★いまは「残り枚数が足りません。」と出ます。★券を持っているのに、です。
+          const msg = d && d.error === "event_only" ? "このチケットは、イベント会場のブースでのみお使いいただけます。"
+            : d && d.error === "insufficient" ? "残り枚数が足りません。"
+            : (d && d.error === "not_enabled" ? "この店は試飲チケット対応ではありません。" : "チケットの使用に失敗しました。");
+          // ★はっきり断られた＝その使用は成立していないので、合言葉を捨てます。
+          if(d && d.error) useOpIdCk = "";
           $("tmsg").className = "msg ng"; $("tmsg").textContent = msg; return;
         }
         renderTicketUsed(d);
-      }catch(e){ busy=false; render(); $("tmsg").className="msg ng"; $("tmsg").textContent="通信に失敗しました。もう一度お試しください。"; }
+      }catch(e){
+        // ★★通信が切れたとき＝★成立したかどうか分かりません。
+        //   ⇒ ★合言葉は捨てません。押し直しで同じ値を送り、2枚 減らないようにします。
+        busy=false; render(); $("tmsg").className="msg ng"; $("tmsg").textContent="通信に失敗しました。もう一度お試しください。";
+      }
     };
     render();
+  }
+
+  /*★★2026-10-11 追加：記録ボタンの配線。★中身は元のまま（1文字も変えていません）。
+   *  ★呼ぶ所＝①チェックイン完了のとき ②券を使ったあと（renderTicketUsed）の2か所。
+   *  ★HTMLを置き直したら、必ずここを呼ぶこと（★押しても開かない形になります）。*/
+  function wireRecordBtn_(){
+    const rec = document.getElementById("recordBtn");
+    if (rec) rec.onclick = function(ev){
+      const url = rec.getAttribute("href");
+      if (!url) { ev.preventDefault(); return; }
+      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+    };
   }
 
   function renderTicketUsed(d){
@@ -293,7 +358,11 @@
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
       '<div class="total" style="margin-top:6px">残り ' + (Number(d.balanceAfter)||0) + '枚</div>' +
-      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>';
+      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>' +
+      /*★★2026-10-11：記録ボタンを、ここに戻します。
+       *  ★順番＝【お店の人に見せる → 記録する】（★本部指示 2026-10-11）。*/
+      RECORD_HTML;
+    wireRecordBtn_();   // ★置き直したので、押したときの仕掛けを もう一度 付けます
   }
 
   function renderNeedRegister(){
@@ -324,6 +393,29 @@
     if(!st || !st.ok){
       if (st && st.error === "shop_not_found"){ showStatusText("お店が見つかりませんでした。プレートのリンクをご確認ください。"); return; }
       showStatusText("読み込みに失敗しました：" + (st && st.error || "unknown")); return;
+    }
+    // ★★橋渡し（審査会2026-09-13・設計骨子②）＝チェックイン作り直しの中心。
+    //   プレート（NFC/QR）から開いたこの画面では liff.sendMessages が403で使えず、
+    //   このままチェックインしても【トークには何も残りません】。
+    //   ⇒ お客さま自身に一文を送ってもらい、その【返信】としてカードを出す（★無料・pushを1通も使わない）。
+    //   ★これで既存のプレートを1枚も刷り直さずに済む。
+    //   ★戻すときは BRIDGE_TO_MESSAGE を false にするだけ（このページ1か所）。
+    // ★★2026-09-29 追加：`!EV` を足します。
+    //   ★なぜ＝下の橋渡しは location.href で別の画面へ飛んで return します。
+    //     ⇒ ★この下の renderPrompt() に来ません ⇒ doCheckin() も呼ばれません
+    //     ⇒ ★イベントID（ev）が1度も送られません。
+    //   ★`!EV` を足すと、★**ev が付いたQRのときだけ** 橋渡しを飛ばし、いままでの画面で進みます。
+    //   ★**ふつうのお店（ev が無いQR）は1文字も変わりません**（橋渡しもトークのカードもそのまま）。
+    //   🔴★失うもの＝会場ではトークにカードが残りません（画面の中で完了して終わり）。
+    if (BRIDGE_TO_MESSAGE && !EV && liff.isInClient && liff.isInClient()) {
+      const nm = String((st && st.shopName) || "").trim();
+      if (nm) {
+        showLoading("チェックインの画面をひらいています…");
+        location.href = "https://line.me/R/oaMessage/@" + LINE_OA_ID + "/?"
+                      + encodeURIComponent(nm + " に来ました");
+        return;
+      }
+      // 店名が取れないときは橋渡しをやめ、今までの画面へ落とす（安全側）
     }
     renderPrompt();
   }
