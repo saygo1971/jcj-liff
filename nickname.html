@@ -13,7 +13,7 @@
   ・★決めなければ お名前は出ません（何もしなければ、いままでと同じ）。
   ・★この画面には専用のLINEの番号を作っていません。
     saved.html と同じやり方＝パスポートから相対で開き、パスポートが置いた jcj_uid を引き継ぎます。
-    ★本番注意（リリース番へ）：passport.html と nickname.html を必ず"同じ階層"に置くこと。
+    ★本番注意：この画面は /passport/ の中に置くこと。★戻る先は passportUrl() が住所を見て決めます。
   ・受け口＝GAS の nickname_get / nickname_set。
 -->
 <style>
@@ -77,6 +77,14 @@
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   const $ = id => document.getElementById(id);
+  // 🔴★2026-10-15 パスポートへ戻る先。★本番とテストで【ファイル名が違います】。
+  //   本番＝ /passport/ というフォルダで、中身は index.html（passport.html は在りません＝404）
+  //   テスト＝同じ並びに passport.html
+  //   ★2026-10-14 にここを "passport.html" 固定にしたまま本番へ上げ、
+  //     お名前を決めたあとに404が出ました（オーナーが実機で発見）。
+  function passportUrl(){
+    return (location.pathname.indexOf("/passport/") >= 0) ? "index.html" : "passport.html";
+  }
   let UID = "";
   let CUR = "";
 
@@ -120,7 +128,7 @@
       // ★2026-10-11 オーナー指示：決まったら画面を出さずに、パスポートへ戻る。
       CUR = String(d.nickname || "");
       say(okMsg, "ok");
-      location.href = "passport.html";
+      location.href = passportUrl();
     }catch(e){
       say("通信エラーが起きました。電波の良い場所でお試しください。", "ng");
       $("clearBtn").disabled = false;
