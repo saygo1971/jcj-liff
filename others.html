@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>ほかの方の一杯</title>
+<script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
+<!--
+  ☕ ほかの方の一杯（みんなの記録）
+  ・★2026-10-14 オーナー指示の④。本部決定＝言葉「ほかの方の一杯」／置き場所＝コーヒー日記の一覧の上。
+  ・受け口＝GAS の recent_diary。★返るのは 日付・お名前・お店の名前・飲みもの・生産国・精製方法・メモ・写真 だけ。
+    ★ユーザーIDは返りません。drink_log の3列目（LINEのお名前）も1か所も読んでいません。
+  ・★お名前は、ご本人がパスポートで決めたニックネームだけ。決めていない方は 何も出しません
+    （「名無し」のような言葉も出しません）。
+  ・★暮らしの一杯には、場所を出しません（おうちの場所は出さないため）。
+  ・★この画面には専用のLINEの番号を作っていません。コーヒー日記の一覧から相対で開きます。
+    🔴★本番では /history/others.html（history の index.html と同じ階層）に置くこと。
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:#2B5D4F;color:#fff;padding:13px 16px;font-size:17px;font-weight:800;position:sticky;top:0;z-index:5}
+  #status{text-align:center;padding:80px 20px;color:var(--ink-sub);font-size:14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--brand-deep);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:14px 16px 44px}
+  .lead{font-size:12.5px;color:var(--ink);line-height:1.8;margin:0 2px 12px}
+  .invite{display:block;text-align:center;background:var(--bg);border:1.5px solid var(--brand-deep);
+    color:var(--brand-deep);font-size:13px;font-weight:800;border-radius:12px;padding:12px;
+    text-decoration:none;margin:0 0 16px}
+  .row{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px}
+  .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .dt{font-size:11px;color:var(--ink-sub);flex:0 0 auto}
+  .who{font-size:12px;font-weight:800;color:var(--ink);flex:0 0 auto}
+  .shop{font-size:12px;color:var(--ink-sub);flex:0 0 auto}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .tag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700;background:var(--paper);color:var(--ink)}
+  .tag.sub{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
+  .memo{font-size:12.5px;color:var(--ink);line-height:1.75;background:var(--paper);
+    border-radius:10px;padding:9px 11px;margin-top:8px}
+  .photo{width:100%;border-radius:10px;margin-top:8px;display:block}
+  .none{text-align:center;color:var(--ink-sub);font-size:13px;padding:40px 12px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="bar">ほかの方の一杯</div>
+<div id="status"><div class="spin"></div>読み込んでいます…</div>
+
+<div id="main" class="wrap hidden">
+  <!-- ★2026-10-14 本部指示：どこまで公開されるかが1行で分かる文を置く。
+       ★新しい文は作らず、nickname.html に在る文をそのまま使っています。 -->
+  <div class="lead">ここで決めたお名前（ニックネーム）は、公開されたあなたの一杯に表示されます。</div>
+  <a class="invite" id="toNick">お名前を決めると、あなたの一杯にも お名前が出ます。</a>
+  <div id="list"></div>
+</div>
+
+<script>
+  // ★件数は ここ1か所だけ。変えるときは この数字を変える。
+  const SHOW_COUNT = 20;
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  // ★お名前を決める画面の場所。本番は /passport/ に、テストは同じ並びに在るので、
+  //   いまの住所を見て決める（上げる場所を間違えても静かに404にならないように）。
+  function nicknameUrl(){
+    return (location.pathname.indexOf("/history/") >= 0) ? "../passport/nickname.html" : "nickname.html";
+  }
+  // 保存された写真のURLを、LINE内ブラウザで映りやすい形に直す（ほかの画面と同じ作り）
+  function thumb(u){
+    if(!u) return u;
+    var m = u.match(/lh3\.googleusercontent\.com\/d\/([^=?/]+)/) || u.match(/[?&]id=([^&]+)/) || u.match(/\/d\/([^/?]+)/);
+    if(m && m[1]) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1200";
+    return u;
+  }
+
+  function render(entries){
+    if (!entries.length){
+      $("list").innerHTML = '<div class="none">まだ一杯がありません。</div>';
+      return;
+    }
+    $("list").innerHTML = entries.map(function(x){
+      // ★お名前を決めていない方は、お名前の所に何も出しません（言葉も出しません）
+      var who  = x.name     ? '<span class="who">'+esc(x.name)+'</span>' : '';
+      // ★暮らしの一杯には場所を出しません（お店の一杯だけ お店の名前）
+      var shop = x.shopName ? '<span class="shop">'+esc(x.shopName)+'</span>' : '';
+      var tags = "";
+      if (x.drink)   tags += '<span class="tag">'+esc(x.drink)+'</span>';
+      if (x.country) tags += '<span class="tag sub">'+esc(x.country)+'</span>';
+      if (x.process) tags += '<span class="tag sub">'+esc(x.process)+'</span>';
+      // ★写真が無い一杯でも形がくずれないよう、写真もメモも「在るときだけ」足す
+      var memo  = x.memo  ? '<div class="memo">'+esc(x.memo)+'</div>' : '';
+      var photo = x.photo ? '<img class="photo" loading="lazy" alt="" src="'+esc(thumb(x.photo))+'" onerror="this.remove()">' : '';
+      return '<div class="row"><div class="top"><span class="dt">'+esc(x.date||"")+'</span>'+who+shop+'</div>'+
+             (tags ? '<div class="tags">'+tags+'</div>' : '')+memo+photo+'</div>';
+    }).join("");
+  }
+
+  async function main(){
+    $("toNick").href = nicknameUrl();
+    try{
+      const res = await fetch(GAS_URL+"?action=recent_diary&limit="+SHOW_COUNT+"&_="+Date.now());
+      const d = await res.json();
+      if (!d || !d.ok) throw new Error("ng");
+      render(d.entries || []);
+    }catch(e){
+      $("list").innerHTML = '<div class="none">読み込めませんでした。<br>電波の良い場所でお試しください。</div>';
+    }
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+  main();
+</script>
+</body>
+</html>

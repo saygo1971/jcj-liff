@@ -82,6 +82,9 @@
   .kswitch{display:flex;gap:6px;margin:0 0 14px}
   .kswitch button{flex:1;font-family:inherit;font-size:12px;font-weight:800;padding:8px 4px;
     border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink-sub);cursor:pointer}
+  /* ☕ ★2026-10-14 ほかの方の一杯への入口。切り替えのすぐ下。 */
+  .othersLink{display:block;text-align:center;background:var(--paper);color:var(--ink);
+    font-size:13px;font-weight:800;border-radius:12px;padding:12px;text-decoration:none;margin:0 0 14px}
   .kswitch button.on{border-color:var(--brand-deep);background:var(--brand-deep);color:#fff}
   .kempty{text-align:center;color:var(--ink-sub);font-size:13px;padding:28px 12px;line-height:1.8}
   .tag.addrec{background:var(--bg);border:1px solid var(--brand-deep);color:var(--brand-deep);text-decoration:none;cursor:pointer}
@@ -120,6 +123,10 @@
     <button type="button" data-kind="trip">旅の記録</button>
     <button type="button" data-kind="home">暮らしの記録</button>
   </div>
+  <!-- ☕ ★2026-10-14 オーナー指示の④。本部決定＝言葉「ほかの方の一杯」／置き場所＝この一覧の上。
+       ★飛び先は同じ階層の others.html（専用のLINEの番号は作っていません）。
+       🔴★本番では /history/others.html に置くこと。 -->
+  <a class="othersLink" id="othersLink" href="others.html">ほかの方の一杯 ›</a>
   <div id="list"></div>
   <!-- ロースター紹介の入口（旅の記録の最後）＝推薦フォーム(テスト)へ -->
   <div class="jointo" id="jointo">
