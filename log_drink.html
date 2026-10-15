@@ -99,6 +99,22 @@
   #done .goHist{display:inline-block;margin-top:20px;background:#fff;color:var(--state-done);border:1.5px solid var(--state-done);
     text-decoration:none;font-weight:800;border-radius:12px;padding:11px 22px;font-size:14px}
   /* 友だちに紹介する＝主役（テラコッタ・1画面1つ） */
+  /* 🏷️ ★2026-10-16 オーナー判定：一杯を書いた直後に、ニックネームを1回だけ聞く。
+     ★一度 決めた方・一度 閉じた方には、もう出しません。
+     ★使うのは すでに在る nickname.html の受け口（nickname_get / nickname_set）。新しく作っていません。 */
+  #done .nkBox{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line,#DDD6CE);text-align:left}
+  #done .nkLead{font-size:12.5px;color:var(--ink);line-height:1.8}
+  #done .nkIn{width:100%;font-family:inherit;font-size:16px;padding:11px;border-radius:10px;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink);margin-top:10px}
+  #done .nkNote{font-size:11px;color:var(--ink-sub);line-height:1.7;margin-top:7px}
+  #done .nkMsg{font-size:12.5px;line-height:1.7;margin-top:8px;min-height:1em}
+  #done .nkMsg.ng{color:var(--brand-deep);font-weight:700}
+  #done .nkRow{display:flex;gap:8px;margin-top:10px}
+  #done .nkOk{flex:1;font-family:inherit;font-size:14px;font-weight:800;padding:12px;border-radius:11px;
+    border:0;background:var(--brand-deep);color:#fff;cursor:pointer}
+  #done .nkOk:disabled{background:#D9CFC6}
+  #done .nkLater{flex:0 0 88px;font-family:inherit;font-size:13px;padding:12px;border-radius:11px;
+    border:1.5px solid var(--line);background:#fff;color:var(--ink-sub);cursor:pointer}
   #done .refWrap{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line,#DDD6CE)}
   #done .refBtn{display:inline-block;background:var(--brand-deep);color:#fff;text-decoration:none;font-weight:800;
     border-radius:12px;padding:13px 26px;font-size:15px;box-shadow:0 4px 10px rgba(192,74,85,.25)}
@@ -185,6 +201,18 @@
   <div class="t" id="doneT">記録しました</div>
   <div class="msg" id="doneMsg">この一杯が、あなたのコーヒー日記になりました。<br>次のお店でも、ぜひ残してください。</div>
   <a class="goHist" id="goHist" href="#">コーヒー日記を見る</a>
+  <!-- 🏷️ ★2026-10-16 ニックネームを1回だけ聞く。★決めた方・閉じた方には出ません。 -->
+  <div class="nkBox hidden" id="nkBox">
+    <div class="nkLead">ここで決めたお名前（ニックネーム）は、公開されたあなたの一杯に表示されます。</div>
+    <input class="nkIn" id="nkIn" type="text" maxlength="12" placeholder="例：まめ太郎" autocomplete="off">
+    <div class="nkNote">★本名やご連絡先は入れないでください。<br>★あとで いつでも変えられます。</div>
+    <div class="nkMsg" id="nkMsg"></div>
+    <div class="nkRow">
+      <button type="button" class="nkOk" id="nkOk" disabled>このお名前にする</button>
+      <button type="button" class="nkLater" id="nkLater">あとで</button>
+    </div>
+  </div>
+
   <!-- ③ 友だちに紹介（記録できた瞬間に・明確な文言／メリット一言） -->
   <div class="refWrap" id="refWrap">
     <a class="refBtn" id="refBtn" href="#">友だちに紹介する</a>
@@ -513,10 +541,74 @@
       }
       $("main").classList.add("hidden");
       $("done").classList.remove("hidden");
+      nkMaybeAsk();   // 🏷️ ★2026-10-16 ニックネームを1回だけ聞く（返事を待たない・出ないこともある）
     } catch(e){
       $("submitBtn").disabled = false; $("submitBtn").textContent = SUBMIT_LABEL;
       $("err").textContent = "通信エラーが起きました。電波の良い場所でお試しください。";
     }
+  }
+
+  // 🏷️ ★2026-10-16 オーナー判定：一杯を書いた直後に、ニックネームを1回だけ聞く。
+  //   出さない条件が2つ
+  //     ① すでに決めている（受け口 nickname_get が空でない）
+  //     ② 一度「あとで」を押した（この端末に覚えておく）
+  //   ★使うのは すでに本番に在る nickname_get / nickname_set。新しい受け口は作っていません。
+  //   ★正直な限界＝②はこの端末にだけ残ります。別の端末では もう一度 出ます。
+  //     （台帳に「聞いた印」の欄を足さない、という決まりに従っています）
+  const NK_DONE_KEY = "jcj_nick_asked";
+  function nkAskedBefore(){
+    try{ return localStorage.getItem(NK_DONE_KEY) === "1"; }catch(e){ return false; }
+  }
+  function nkRemember(){
+    try{ localStorage.setItem(NK_DONE_KEY, "1"); }catch(e){}
+  }
+  function nkSay(t, kind){
+    const m = $("nkMsg"); if(!m) return;
+    m.textContent = t || ""; m.className = "nkMsg" + (kind ? (" "+kind) : "");
+  }
+  async function nkMaybeAsk(){
+    if (!$("nkBox")) return;
+    if (!USER_ID) return;                 // 誰か分からないときは出さない
+    if (nkAskedBefore()) return;          // 一度 決めた／閉じた
+    try{
+      const res = await fetch(GAS_URL + "?action=nickname_get&userId=" + encodeURIComponent(USER_ID) + "&_=" + Date.now());
+      const d = await res.json();
+      if (!d || !d.ok) return;            // 読めないときは出さない（静かに見送る）
+      if (String(d.nickname || "").trim()){ nkRemember(); return; }   // もう決めている
+      if (d.hasRow === false) return;     // 台帳にその方の行が無い＝まだ登録が終わっていない
+    }catch(e){ return; }                  // 通信できないときは出さない
+    $("nkIn").addEventListener("input", function(){
+      $("nkOk").disabled = ($("nkIn").value.trim() === "");
+      nkSay("");
+    });
+    $("nkOk").onclick = async function(){
+      const v = $("nkIn").value.trim();
+      if (!v) return;
+      $("nkOk").disabled = true; $("nkLater").disabled = true; nkSay("送っています…");
+      try{
+        const q = new URLSearchParams({ action:"nickname_set", userId:USER_ID, nickname:v, _:Date.now() });
+        const r2 = await fetch(GAS_URL + "?" + q.toString());
+        const d2 = await r2.json();
+        if (!d2 || !d2.ok){
+          nkSay((d2 && d2.msg) ? d2.msg : "うまくいきませんでした。もう一度お試しください。", "ng");
+          $("nkOk").disabled = false; $("nkLater").disabled = false; return;
+        }
+        nkRemember();
+        // 🔴★2026-10-16 ここで esc( ) を使っていましたが、この画面に esc は在りません。
+        //   在る前提で書いて、黙って止まっていました（台帳には入っていたのに画面が変わらない）。
+        //   ⇒ 文字をそのまま入れる textContent に変えました。道具が要りません。
+        var nkDone = document.createElement("div");
+        nkDone.className = "nkLead";
+        nkDone.textContent = "お名前を「" + String(d2.nickname || "") + "」にしました。これからの一杯に出ます。";
+        $("nkBox").innerHTML = "";
+        $("nkBox").appendChild(nkDone);
+      }catch(e){
+        nkSay("通信エラーが起きました。電波の良い場所でお試しください。", "ng");
+        $("nkOk").disabled = false; $("nkLater").disabled = false;
+      }
+    };
+    $("nkLater").onclick = function(){ nkRemember(); $("nkBox").classList.add("hidden"); };
+    $("nkBox").classList.remove("hidden");
   }
 
   function closeApp(){ try{ if(liff && liff.isInClient && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){} history.length>1?history.back():window.close(); }
