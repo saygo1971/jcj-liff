@@ -1427,9 +1427,88 @@
       if(!USER_ID) return;   // LINE外＝本人不明＝マイル非表示
       var res=await fetch(GAS_URL+"?action=user_context&userId="+encodeURIComponent(USER_ID)+"&_="+Date.now());
       var d=await res.json();
-      if(d&&d.ok){ USER_CTX={home:d.home||null,homePrecise:!!d.homePrecise,visited:d.visited||{},now:d.now||Date.now()}; }
+      if(d&&d.ok){ USER_CTX={home:d.home||null,homePrecise:!!d.homePrecise,visited:d.visited||{},now:d.now||Date.now(),pref:d.pref||""}; }
     }catch(e){}
   }
+
+  /* ===== FIELDSTYLE 先行パックのお知らせ（2026-10-15 追加） =====
+     ・会場に近い6県（愛知・三重・岐阜・静岡・滋賀・長野）の方にだけ出す
+     ・1人2回まで。押して買う画面へ行った方には、もう出さない
+     ・2026-11-14 08:00（先行パックの終わり）を過ぎたら、ひとりでに出なくなる
+     ・値段と中身は、買う画面と設定の値をそのまま書いている（2026-10-16 時点）
+     ・この囲みを消せば、元どおりになる（ほかの所を1行も変えていない）        */
+  var FSPOP_END   = Date.UTC(2026,10,13,23,0,0);            // 2026-11-14 08:00（日本時間）
+  var FSPOP_PREFS = ["愛知県","三重県","岐阜県","静岡県","滋賀県","長野県"];
+  var FSPOP_BUY   = "https://liff.line.me/2010671952-7skS1QBT";
+  var FSPOP_KEY   = "jcj_fs_popup_v1";
+  var FSPOP_MAX   = 2;                                       // 閉じた方に出す回数の上限
+
+  function fsPopRead(){
+    try{ var o=JSON.parse(localStorage.getItem(FSPOP_KEY)||"{}"); return (o&&typeof o==="object")?o:{}; }
+    catch(e){ return {}; }
+  }
+  function fsPopWrite(o){ try{ localStorage.setItem(FSPOP_KEY, JSON.stringify(o)); }catch(e){} }
+
+  function fsPopShouldShow(){
+    if(Date.now() >= FSPOP_END) return false;                          // 先行の期間が終わった
+    if(!USER_ID) return false;                                         // LINEの外＝どなたか分からない
+    if(FSPOP_PREFS.indexOf(String((USER_CTX&&USER_CTX.pref)||"").trim()) < 0) return false;  // 6県以外
+    var s = fsPopRead();
+    if(s.tapped) return false;                                         // 押した方には もう出さない
+    return (Number(s.closed)||0) < FSPOP_MAX;
+  }
+
+  function fsPopStyle(){
+    if(document.getElementById("fspopCss")) return;
+    var st=document.createElement("style"); st.id="fspopCss";
+    st.textContent=
+      ".fspop-ov{position:fixed;inset:0;background:rgba(58,47,37,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9999}"+
+      ".fspop{background:var(--paper);border-radius:18px;max-width:330px;width:100%;padding:22px 20px 14px;box-shadow:0 10px 30px rgba(80,60,35,.28);position:relative;text-align:left}"+
+      ".fspop .kick{position:absolute;top:-9px;left:18px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:.03em}"+
+      ".fspop h3{margin:4px 0 10px;font-size:17px;font-weight:800;line-height:1.35;color:var(--ink)}"+
+      ".fspop p{margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--ink)}"+
+      ".fspop p.deal{background:#fbf3ea;border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-weight:700}"+
+      ".fspop p.cond{margin-bottom:14px;color:var(--accent-d);font-weight:800}"+
+      ".fspop .go{display:block;background:var(--accent);color:#fff;font-size:14px;font-weight:800;text-align:center;padding:13px;border-radius:12px;text-decoration:none;box-shadow:0 3px 9px rgba(180,92,46,.32)}"+
+      ".fspop .cls{display:block;width:100%;margin-top:4px;background:none;border:0;color:var(--sub);font-size:12.5px;padding:11px;cursor:pointer;font-family:inherit}";
+    document.head.appendChild(st);
+  }
+
+  function fsPopMaybeShow(){
+    try{
+      if(!fsPopShouldShow()) return;
+      fsPopStyle();
+      var ov=document.createElement("div"); ov.className="fspop-ov"; ov.id="fspopOv";
+      var bx=document.createElement("div"); bx.className="fspop";
+      var kk=document.createElement("div"); kk.className="kick"; kk.textContent="JCJから";
+      var h =document.createElement("h3");  h.textContent="FIELDSTYLEで使える試飲チケットを、先行販売しています。";
+      var p =document.createElement("p");
+      p.textContent="11月14日・15日、FIELDSTYLE 愛知。全国10のロースターのブースで、"
+        +"コーヒー1杯と引き換えられる試飲チケットです。";
+      var p2=document.createElement("p"); p2.className="deal";
+      p2.textContent="先行パックだけ、くり返し使えるJCJカップ（単品600円）が付きます。"
+        +"先行パック 1,500円＝試飲チケット3枚＋地図＋カップ1つ。";
+      var p3=document.createElement("p"); p3.className="cond";
+      p3.textContent="100セット限り。11月14日の朝8時までです。";
+      var a =document.createElement("a"); a.className="go"; a.href=FSPOP_BUY; a.textContent="先行パックを見る";
+      var b =document.createElement("button"); b.className="cls"; b.type="button"; b.textContent="閉じる";
+
+      a.addEventListener("click", function(){
+        var s=fsPopRead(); s.tapped=1; fsPopWrite(s);
+        logAction("fs_popup_tap");
+      });
+      b.addEventListener("click", function(){
+        var s=fsPopRead(); s.closed=(Number(s.closed)||0)+1; fsPopWrite(s);
+        logAction("fs_popup_close");
+        if(ov.parentNode) ov.parentNode.removeChild(ov);
+      });
+
+      bx.appendChild(kk); bx.appendChild(h); bx.appendChild(p); bx.appendChild(p2); bx.appendChild(p3); bx.appendChild(a); bx.appendChild(b);
+      ov.appendChild(bx); document.body.appendChild(ov);
+      logAction("fs_popup_view");
+    }catch(e){}
+  }
+  /* ===== ここまで FIELDSTYLE 先行パックのお知らせ ===== */
 
   async function main(){
     var liffP = initLiff();        // LIFF起動は店取得と並列（待ち時間を重ねる）
@@ -1443,6 +1522,7 @@
     loadNudge();                   // お知らせ箱（並列）
     await loadUserContext();       // 居住地＋来店履歴
     if(USER_CTX.home && $("listView").classList.contains("show")) renderList(); // 表示中の一覧をマイル付きで再描画
+    fsPopMaybeShow();              // FIELDSTYLE 先行パックのお知らせ（6県・期間内・2回まで）
   }
   main().catch(function(err){ $("statusText").textContent="読み込みに失敗しました。時間をおいてお試しください。"; $("spin").classList.add("hidden"); });
 </script>
