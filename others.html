@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>ほかの方の一杯</title>
+<title>みんなの一杯</title>
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <!--
   ☕ ほかの方の一杯（みんなの記録）
@@ -33,6 +33,10 @@
     color:var(--brand-deep);font-size:13px;font-weight:800;border-radius:12px;padding:12px;
     text-decoration:none;margin:0 0 16px}
   .row{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px}
+  /* ☕ ★2026-10-15 オーナー指示：日記をタップしたら、そのお店のページへ飛ぶ。
+     ★お店の一杯だけ。暮らしの一杯は飛び先が無いので、押せる見た目にしません。 */
+  .row.tap{cursor:pointer}
+  .row.tap .shop{text-decoration:underline;text-underline-offset:2px}
   .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
   .dt{font-size:11px;color:var(--ink-sub);flex:0 0 auto}
   .who{font-size:12px;font-weight:800;color:var(--ink);flex:0 0 auto}
@@ -47,7 +51,7 @@
 </style>
 </head>
 <body>
-<div class="bar">ほかの方の一杯</div>
+<div class="bar">みんなの一杯</div>
 <div id="status"><div class="spin"></div>読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
@@ -95,9 +99,20 @@
       // ★写真が無い一杯でも形がくずれないよう、写真もメモも「在るときだけ」足す
       var memo  = x.memo  ? '<div class="memo">'+esc(x.memo)+'</div>' : '';
       var photo = x.photo ? '<img class="photo" loading="lazy" alt="" src="'+esc(thumb(x.photo))+'" onerror="this.remove()">' : '';
-      return '<div class="row"><div class="top"><span class="dt">'+esc(x.date||"")+'</span>'+who+shop+'</div>'+
+      // ★2026-10-15 お店の一杯だけ、押すとそのお店のページへ。
+      //   ★飛び先は同じ置き場の shop.html（本番 /history/shop.html ／ テストは同じ並び）。
+      var sid = String(x.shopId || "");
+      return '<div class="row'+(sid?' tap':'')+'"'+(sid?' data-shop="'+esc(sid)+'"':'')+'>'+
+             '<div class="top"><span class="dt">'+esc(x.date||"")+'</span>'+who+shop+'</div>'+
              (tags ? '<div class="tags">'+tags+'</div>' : '')+memo+photo+'</div>';
     }).join("");
+    // ★2026-10-15 押したら そのお店のページへ。写真を押したときも同じ（拡大は作っていません）。
+    $("list").querySelectorAll(".row.tap").forEach(function(r){
+      r.onclick = function(){
+        var id = r.getAttribute("data-shop");
+        if (id) location.href = "shop.html?shop=" + encodeURIComponent(id) + "&t=" + Date.now();
+      };
+    });
   }
 
   async function main(){
