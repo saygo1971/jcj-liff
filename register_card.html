@@ -79,10 +79,6 @@
 
   /* 結果②：チェックイン */
   .civ{color:var(--state-done);font-weight:500;font-size:12px;margin-top:2px}
-  .mile{text-align:center;margin:12px 0 2px}
-  .mile .p{font-size:15px;color:var(--ink-sub)}
-  .mile .n{font-size:30px;font-weight:600}
-  .mile .u{font-size:14px;color:var(--ink-sub)}
   .lightblk{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
   .lightblk .t{text-align:center;font-size:13px;font-weight:500}
   .dots{text-align:center;margin-top:8px;line-height:1}
@@ -165,7 +161,6 @@
           </div>
         </div>
         <button class="btn-sub" id="nearMapBtn">地図でほかのお店も見る</button>
-        <div class="footnote">遠くのお店ほど、行くと貯まるマイルが大きくなります。</div>
       </div>
     </div>
   </div>
@@ -186,7 +181,6 @@
             <div class="civ">チェックインしました</div>
           </div>
         </div>
-        <div class="mile"><span class="p">＋</span><span class="n" id="ciMile">0</span><span class="u"> マイル</span></div>
 
         <div class="lightblk">
           <div class="t" id="ciLightText">最初の灯りがともりました</div>
@@ -336,7 +330,6 @@
       $("ciWelcomeSub").textContent = startLabel + "を出発点にしました";
       $("ciRegion").textContent = (ci.pref || pref) + (ci.city ? "｜" + ci.city : "");
       $("ciName").textContent = ci.shopName || "";
-      $("ciMile").textContent = (ci.mile != null ? ci.mile : 0);
       if(ci.logo){ $("ciLogo").style.backgroundImage = "url('" + ci.logo + "')"; $("ciLogo").textContent = ""; }
 
       const area = ci.areaName || "この地方";
