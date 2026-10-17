@@ -27,6 +27,14 @@
   .summ .s{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:12px;text-align:center;padding:10px 4px}
   .summ .s b{display:block;font-size:22px;color:var(--ink);font-weight:900}
   .summ .s span{font-size:10.5px;color:var(--ink-sub)}
+  /* ★2026-10-17 「残した一杯」＝書くたびに増える数。ここだけ色を付けて一番に見えるようにする。 */
+  .summ .s.main{background:var(--done-tint);border-color:var(--state-done)}
+  .summ .s.main b{color:var(--state-done)}
+  .summ .s.main span{color:var(--state-done);font-weight:700}
+  .mcup{text-align:center;font-size:11.5px;color:var(--ink-sub);margin:-8px 0 16px}
+  .mcup b{color:var(--ink);font-weight:900;font-size:13px}
+  /* ★2026-10-17 記録1件ごとの「このお店 ◯回目」。帯の右に小さく置く。 */
+  .kindband .seq{float:right;font-weight:900;letter-spacing:0}
   .hrow{display:flex;flex-direction:column;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
   .hrow.recorded{border:1.5px solid var(--state-done)}
   .htop{display:flex;gap:10px}
@@ -109,11 +117,17 @@
 <div id="main" class="wrap hidden">
   <div id="refresh" class="refresh hidden">最新に更新中…</div>
   <div class="hlead">これまでの一杯と、歩いた道のり。<br>旅の記録も、暮らしの記録も、日付の順に並びます。</div>
+  <!-- ★2026-10-17 オーナー指示：書いても上の数が1つも動かなかった（3つとも来店から計算していた）。
+       ⇒ 一番左に「残した一杯」を足す＝★一杯を書くたびに、この数が1つ増える。
+       ★この画面はご本人だけが見ます（LINEのログインを通り、ご自分のID分だけを取る）。公開されません。 -->
   <div class="summ">
+    <div class="s main"><b id="nCup">0</b><span>残した一杯</span></div>
     <div class="s"><b id="nVisit">0</b><span>訪問した回数</span></div>
     <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
     <div class="s"><b id="nPref">0</b><span>行った県</span></div>
   </div>
+  <!-- ★2026-10-17 今月と先月の杯数。★0杯のときは何も出さない（空の行を出さない）。 -->
+  <div class="mcup hidden" id="mcup"></div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：お店が決まっていない記録の入口。
        お店を渡さずに記録の画面を開く＝向こうで「どこで飲みましたか？」から選べる。 -->
   <a class="recnew" id="recNewBtn">コーヒー日記に書く</a>
@@ -209,18 +223,58 @@
     // 日付順（新しい順）に自然に混ぜる
     rows.sort((a,b)=> (b.ms||0)-(a.ms||0));
 
+    // ★2026-10-17 記録1件ごとに「このお店 ◯回目」を付ける。
+    //   ★数え方＝この一覧に出ているその店の行を、古い方から1・2・3…と数える。
+    //     ⇒ 一覧を指で数えても同じ数になる（ご本人が確かめられる数え方にする）。
+    //   ★お店が決まっていない行（暮らしの記録）には付けない。
+    //   ★新しい口（GAS）は作りません。いま届いているデータだけで数えます。
+    const seqOf = {};
+    for (let i = rows.length - 1; i >= 0; i--) {      // 古い方から数える
+      const sid = rows[i].shopId;
+      if (!sid) continue;
+      seqOf[sid] = (seqOf[sid] || 0) + 1;
+      rows[i].seq = seqOf[sid];
+    }
+
     // まとめ（訪問数・店数・県数＝来店ベース。従来どおり）
     const shops = {}, prefs = {};
     checkins.forEach(c => { if(c.shopId) shops[c.shopId]=1; if(c.pref) prefs[c.pref]=1; });
     $("nVisit").textContent = checkins.length;
     $("nShop").textContent = Object.keys(shops).length;
     $("nPref").textContent = Object.keys(prefs).length;
+    // ★2026-10-17 「残した一杯」＝書いた記録の件数。★ここが、書くたびに1つ増える数。
+    $("nCup").textContent = drinks.length;
+
+    // ★2026-10-17 今月と先月の杯数。★どちらも0杯なら、この行ごと出しません（空の行を出さない）。
+    const now = new Date();
+    const thisM = now.getFullYear() * 12 + now.getMonth();
+    let cupThis = 0, cupLast = 0;
+    drinks.forEach(x => {
+      if (!x.ms) return;
+      const d = new Date(x.ms);
+      const m = d.getFullYear() * 12 + d.getMonth();
+      if (m === thisM) cupThis++;
+      else if (m === thisM - 1) cupLast++;
+    });
+    if (cupThis || cupLast){
+      $("mcup").innerHTML = "今月 <b>" + cupThis + "</b> 杯　／　先月 <b>" + cupLast + "</b> 杯";
+      $("mcup").classList.remove("hidden");
+    } else {
+      $("mcup").classList.add("hidden");
+    }
 
     // ★審査会 関門4（2026-09-13・行動デザイン役）＝「あとから戻ってくる場所」を成立させる。
     //   トークのカードはチェックインが増えるほど上へ流れて見つからなくなる。
     //   ⇒ 書いていない一杯を【この画面の一番上】に集める。これが無いと「後日書く」は絵に描いた餅。
     //   ★直近30日に限る＝古いものまで並べると件数が大きくなり、責められている感じになるため。
     //   ★1件も無ければ何も出さない（空の箱を出さない）。
+    //
+    // ★★2026-10-17 オーナー指示で【言葉だけ】を直しました。
+    //   前＝「まだ書いていない一杯が ◯件あります」＋「ほか ◯件は、下の一覧から書けます」
+    //   後＝「あとから書き足せる一杯」（★件数を出さない）
+    //   ★なぜ＝件数を出すと「◯件 遅れている」と読めて、責められている感じになる。
+    //   ★集める働きは残しました（審査会 関門4 の「あとから戻ってくる場所」を壊さないため）。
+    //     ⇒ ★消したのではなく、言葉を変えただけです。
     const NOT_YET_DAYS = 30;
     const nowMs = Date.now();
     const notYet = rows.filter(r => r.visit && !r.dr && r.ms && (nowMs - r.ms) <= NOT_YET_DAYS*86400000);
@@ -228,7 +282,7 @@
     if (notYet.length){
       const top = notYet.slice(0, 3);
       todoHtml =
-        '<div class="todo"><div class="todoT">まだ書いていない一杯が ' + notYet.length + '件あります</div>' +
+        '<div class="todo"><div class="todoT">あとから書き足せる一杯</div>' +
         top.map(r=>{
           const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(r.shopId||"")
                   + "&name="+encodeURIComponent(r.shopName||"")+"&date="+encodeURIComponent(r.date||"");
@@ -236,7 +290,7 @@
                + '<span class="todoN">'+esc(r.shopName||"お店")+'</span>'
                + '<span class="todoGo">書く</span></a>';
         }).join("") +
-        (notYet.length>3 ? '<div class="todoMore">ほか '+(notYet.length-3)+'件は、下の一覧から書けます</div>' : '') +
+        (notYet.length>3 ? '<div class="todoMore">ほかの日の分も、下の一覧から書けます</div>' : '') +
         '</div>';
     }
 
@@ -246,6 +300,15 @@
     $("status").classList.add("hidden");
     $("empty").classList.add("hidden");         // ★2026-10-07 念のためここでも隠す
     $("main").classList.remove("hidden");
+  }
+
+  // ★2026-10-17 行の名前。★前は、お店が決まっていない行（暮らしの記録）にも「お店」と
+  //   出ていました（家で飲んだ一杯に「お店」と出る＝明らかな誤り）。
+  //   ⇒ お店が決まっている行＝お店の名前。決まっていない行＝書かれた場所の名前、
+  //      書かれていなければ「家で飲んだ一杯」。
+  function nameOf(r){
+    if (r.shopId) return r.shopName || "お店";
+    return r.shopName || "家で飲んだ一杯";
   }
 
   // ★2026-10-11 選ばれた切り替えに合わせて、一覧を並べ直す。
@@ -269,8 +332,10 @@
         : '';
       // ★2026-10-11 オーナー指示：小さな札をやめて、行のいちばん上に帯を置く。
       //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝暮らしの記録。
+      // ★2026-10-17 帯の右に「このお店 ◯回目」を出す。★お店が決まっている行だけ。
+      const seqTxt = (r.shopId && r.seq) ? '<span class="seq">このお店 ' + r.seq + '回目</span>' : '';
       const band = r.shopId
-        ? '<div class="kindband">旅の記録</div>'
+        ? '<div class="kindband">旅の記録' + seqTxt + '</div>'
         : '<div class="kindband home">暮らしの記録</div>';
       let tags = '';
       if (dr){
@@ -300,7 +365,7 @@
       return '<div class="hrow'+(recorded?' recorded':'')+'" data-shop="'+esc(r.shopId||"")+'">'+
         band+
         '<div class="htop"><div class="hdate"><span class="d">'+esc(r.date)+'</span>'+logo+'</div>'+
-        '<div class="hbody"><div class="hname">'+esc(r.shopName||"お店")+'</div>'+
+        '<div class="hbody"><div class="hname">'+esc(nameOf(r))+'</div>'+
         '<div class="hpl">'+esc(r.pref||"")+'</div>'+
         '<div class="htags">'+tags+'</div></div></div>'+
         memoHtml+
