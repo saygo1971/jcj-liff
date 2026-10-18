@@ -35,6 +35,21 @@
   .mcup b{color:var(--ink);font-weight:900;font-size:13px}
   /* ★2026-10-17 記録1件ごとの「このお店 ◯回目」。帯の右に小さく置く。 */
   .kindband .seq{float:right;font-weight:900;letter-spacing:0}
+  /* 🔒 ★2026-10-18 「…」＝この一杯の設定（自分だけが見る／消す） */
+  .kindband .dots{float:right;margin:-4px -6px 0 8px;background:transparent;border:0;color:#fff;
+    font-size:17px;font-weight:900;line-height:1;padding:4px 8px;cursor:pointer;font-family:inherit}
+  .privmark{margin-top:9px;font-size:11.5px;font-weight:700;color:var(--ink-sub)}
+  /* 🔒 下から出る選択（この一杯の設定／消す確かめ） */
+  .sheet{position:fixed;inset:0;background:rgba(20,15,10,.45);display:none;align-items:flex-end;z-index:60}
+  .sheet.show{display:flex}
+  .sheetIn{background:var(--bg);width:100%;max-width:480px;margin:0 auto;border-radius:16px 16px 0 0;padding:8px 0 14px}
+  .sheetT{font-size:13px;font-weight:800;color:var(--ink-sub);padding:12px 18px 6px}
+  .sheetB{display:block;width:100%;background:transparent;border:0;border-top:1px solid var(--line);
+    font-family:inherit;font-size:15px;font-weight:700;color:var(--ink);padding:15px 18px;text-align:left;cursor:pointer}
+  .sheetB.danger{color:var(--brand-deep)}
+  .sheetB.cancel{color:var(--ink-sub);font-weight:600}
+  .sheetMsg{font-size:13px;line-height:1.75;color:var(--ink);padding:4px 18px 10px;white-space:pre-line}
+  .sheetNote{font-size:11.5px;color:var(--ink-sub);padding:0 18px 8px}
   .hrow{display:flex;flex-direction:column;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
   .hrow.recorded{border:1.5px solid var(--state-done)}
   .htop{display:flex;gap:10px}
@@ -159,6 +174,9 @@
   <a class="recnew" id="recNewBtn2">コーヒー日記に書く</a>
   <div class="recnew-s">家でも、出かけた先でも、お店でも。</div>
 </div>
+
+<!-- 🔒 ★2026-10-18 この一杯の設定（下から出ます）。背景か「やめる」で閉じます。 -->
+<div class="sheet" id="sheet"><div class="sheetIn" id="sheetIn"></div></div>
 
 <!-- 写真の拡大（タップで開く／背景か×で閉じる） -->
 <div class="lightbox" id="lightbox"><button class="lx" id="lxClose" aria-label="閉じる">×</button><img id="lxImg" alt=""></div>
@@ -333,10 +351,16 @@
       // ★2026-10-11 オーナー指示：小さな札をやめて、行のいちばん上に帯を置く。
       //   お店が決まっている（店舗IDがある）＝旅の記録／決まっていない＝暮らしの記録。
       // ★2026-10-17 帯の右に「このお店 ◯回目」を出す。★お店が決まっている行だけ。
+      // 🔒 ★2026-10-18 記録を書いた行だけ、右上に「…」を出す（切り替え・消す）。
+      //   ★記録IDが返ってきていないとき（GASがまだ古いとき）は、出しません。
+      const recId = (dr && dr.id) ? String(dr.id) : "";
+      const dots  = recId ? '<button type="button" class="dots" data-id="'+esc(recId)+'" aria-label="この一杯の設定">…</button>' : '';
       const seqTxt = (r.shopId && r.seq) ? '<span class="seq">このお店 ' + r.seq + '回目</span>' : '';
       const band = r.shopId
-        ? '<div class="kindband">旅の記録' + seqTxt + '</div>'
-        : '<div class="kindband home">暮らしの記録</div>';
+        ? '<div class="kindband">旅の記録' + dots + seqTxt + '</div>'
+        : '<div class="kindband home">暮らしの記録' + dots + '</div>';
+      // 🔒 ★2026-10-18「自分だけが見る」に変えてある記録だけ、印を出す。
+      const privMark = (dr && dr.pub === 0) ? '<div class="privmark">🔒 自分だけが見る</div>' : '';
       let tags = '';
       if (dr){
         if (dr.drink)   tags += '<span class="tag drink">'+esc(dr.drink)+'</span>';
@@ -370,13 +394,23 @@
         '<div class="htags">'+tags+'</div></div></div>'+
         memoHtml+
         photoHtml+
+        privMark+
       '</div>';
     }).join("");
+
+    // 🔒 ★2026-10-18 「…」＝この一杯の設定を開く。
+    $("list").querySelectorAll(".dots").forEach(function(b){
+      b.onclick = function(ev){
+        ev.stopPropagation();                        // ★行タップ（お店へ飛ぶ）より先に止める
+        openSheetFor(b.getAttribute("data-id"));
+      };
+    });
 
     // 行をタップ→お店の詳細（「記録を追加する」ボタンを押した時はそちら優先）
     $("list").querySelectorAll(".hrow").forEach(function(row){
       row.style.cursor="pointer";
       row.onclick=function(e){
+        if(e.target.closest(".dots")) return;   // 「…」は自分の処理へ
         if(e.target.closest(".addrec")) return; // 記録を追加するは自分のリンクへ
         const ph = e.target.closest(".hphoto");
         if(ph){ openLightbox(ph.getAttribute("src")); return; } // 写真タップ＝拡大（店詳細に行かない）
@@ -402,6 +436,86 @@
     if(m && m[1]) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1200";
     return u; // Driveでない（Xサーバー等）URLはそのまま
   }
+  // 🔒 ================= この一杯の設定（2026-10-18） =================
+  //   ★「自分だけが見る」に変える／この一杯を消す。
+  //   ★写真のことわりは、ここでは出しません（オーナー指示 2026-10-18）。
+  //     全文は「遊び方・使い方」のページに置いてあります。
+  function findDrink(id){
+    for (let i=0;i<ALL_ROWS.length;i++){
+      const d = ALL_ROWS[i].dr;
+      if (d && String(d.id||"") === String(id)) return d;
+    }
+    return null;
+  }
+  function closeSheet(){ $("sheet").classList.remove("show"); $("sheetIn").innerHTML=""; }
+  $("sheet").onclick = function(e){ if (e.target === this) closeSheet(); };
+
+  function openSheetFor(id){
+    const d = findDrink(id);
+    if (!d) return;
+    const isPub = (d.pub !== 0);
+    $("sheetIn").innerHTML =
+      '<div class="sheetT">この一杯</div>' +
+      '<button type="button" class="sheetB" id="sbToggle">' +
+        (isPub ? '自分だけが見るようにする' : 'お店のページにも出す') +
+      '</button>' +
+      '<button type="button" class="sheetB danger" id="sbDel">この一杯を消す</button>' +
+      '<button type="button" class="sheetB cancel" id="sbCancel">やめる</button>';
+    $("sheet").classList.add("show");
+    $("sbCancel").onclick = closeSheet;
+    $("sbToggle").onclick = function(){ doSetPublic(id, isPub ? 0 : 1); };
+    $("sbDel").onclick    = function(){ askDelete(id); };
+  }
+
+  function askDelete(id){
+    $("sheetIn").innerHTML =
+      '<div class="sheetT">この一杯を消しますか？</div>' +
+      '<div class="sheetMsg">書いた内容と写真が消えます。\nお店のページからも消えます。\n一度 消すと、元に戻せません。</div>' +
+      '<button type="button" class="sheetB danger" id="sbDelYes">消す</button>' +
+      '<button type="button" class="sheetB cancel" id="sbDelNo">やめる</button>';
+    $("sbDelNo").onclick = closeSheet;
+    $("sbDelYes").onclick = function(){ doDelete(id); };
+  }
+
+  function sheetBusy(msg){
+    $("sheetIn").innerHTML = '<div class="sheetT">'+esc(msg)+'</div><div class="sheetNote">そのままお待ちください。</div>';
+  }
+  function sheetFailed(msg){
+    $("sheetIn").innerHTML =
+      '<div class="sheetT">'+esc(msg)+'</div>' +
+      '<button type="button" class="sheetB cancel" id="sbClose">閉じる</button>';
+    $("sbClose").onclick = closeSheet;
+  }
+
+  // ★終わったら、前回分の控えを捨ててから読み直す（古い姿が残らないように）
+  function reloadAfterChange(){
+    try{ localStorage.removeItem("jcj_hist_"+USER_ID); }catch(e){}
+    closeSheet();
+    load();
+  }
+
+  async function doSetPublic(id, pub){
+    sheetBusy(pub ? "お店のページにも出すようにしています…" : "自分だけが見るようにしています…");
+    try{
+      const res = await fetch(GAS_URL+"?action=diary_set_public&userId="+encodeURIComponent(USER_ID)+
+                              "&id="+encodeURIComponent(id)+"&pub="+(pub?"1":"0")+"&_="+Date.now());
+      const d = await res.json();
+      if(!d || !d.ok) return sheetFailed("変えられませんでした。時間をおいてお試しください。");
+      reloadAfterChange();
+    }catch(e){ sheetFailed("通信エラーが起きました。電波の良い場所でお試しください。"); }
+  }
+
+  async function doDelete(id){
+    sheetBusy("消しています…");
+    try{
+      const res = await fetch(GAS_URL+"?action=diary_delete&userId="+encodeURIComponent(USER_ID)+
+                              "&id="+encodeURIComponent(id)+"&_="+Date.now());
+      const d = await res.json();
+      if(!d || !d.ok) return sheetFailed("消せませんでした。時間をおいてお試しください。");
+      reloadAfterChange();
+    }catch(e){ sheetFailed("通信エラーが起きました。電波の良い場所でお試しください。"); }
+  }
+
   // 写真の拡大（ライトボックス）。背景タップか×で閉じる。
   function openLightbox(src){ if(!src) return; $("lxImg").src = src; $("lightbox").classList.add("show"); }
   function closeLightbox(){ $("lightbox").classList.remove("show"); $("lxImg").src=""; }
