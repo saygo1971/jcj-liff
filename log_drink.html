@@ -91,11 +91,8 @@
   .photox{position:absolute;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;background:#221C1A;color:#fff;
     border:2px solid #fff;font-size:15px;line-height:1;cursor:pointer}
   .photonote{font-size:11.5px;color:var(--ink-sub);margin-top:9px;line-height:1.6}
-  /* 🔒 ★2026-10-18 この一杯を「出す／自分だけ」 */
-  .pubbox{margin:18px 0 14px;background:var(--paper);border-radius:12px;padding:12px 14px}
-  .pubt{font-size:12.5px;font-weight:800;color:var(--ink);margin-bottom:6px}
-  .pubrow{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:14px;cursor:pointer}
-  .pubrow input{width:19px;height:19px;accent-color:var(--brand-deep);flex:0 0 auto;margin:0}
+  /* 🛑★2026-10-20 この一杯を「出す／自分だけ」の見た目は、使う所ごと外しました。
+     ★見た目の決まりも残しません（使っていない決まりを残すと、次に読む人が「まだ在る」と誤解するため）。 */
   #done{text-align:center;padding:70px 24px}
   #done .emo{font-size:44px}
   #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:var(--state-done)}
@@ -191,16 +188,16 @@
     <div class="photonote">写真を撮る前に、お店の方にご確認ください。</div>
   </div>
 
-  <!-- 🔒 ★2026-10-18 オーナー指示「非公開で書けるようにする」。
-       ★「公開／非公開」という言葉は使わず、何が起きるかで書く。
-       ★はじめは「お店のページにも出す」が選ばれています
-         （オーナー決定 2026-10-18「今までの記録は公開したままがいい」と同じ向き）。
-       ★あとからコーヒー日記の「…」で、いつでも変えられます。 -->
-  <div class="pubbox">
-    <div class="pubt">この一杯を</div>
-    <label class="pubrow"><input type="radio" name="pub" value="1" checked><span>お店のページにも出す</span></label>
-    <label class="pubrow"><input type="radio" name="pub" value="0"><span>自分だけが見る</span></label>
-  </div>
+  <!-- 🛑★2026-10-20 オーナー指示で【外しました】。
+       前＝ここに「この一杯を ◉お店のページにも出す ／ ○自分だけが見る」を置いていました。
+       外した理由＝★書く前に迷わせるからです。
+         選ぶところを置くと、書く人は「これは出していいものか」を考えます。
+         考えさせた分だけ手が止まり、★公開が減るのではなく【書くこと自体】が減ります。
+       ★サウナイキタイに「非公開で投稿」が在るのを真似しましたが、
+         それが成り立つ条件（サ活1,000万件＝1件が全体に効かない）まで真似していませんでした。
+         JCJは194件・30軒で、★1件が全体の0.5%です。件数が違えば結果が逆になります。
+       ★あとから変える道は残してあります＝コーヒー日記の「…」。
+         ⇒ 書く手は止めず、気が変わったら取り下げられる形にしました。 -->
 
   <button class="btn" id="submitBtn">この一杯を記録する</button>
   <a class="later" id="laterLink" href="#">あとで</a>
@@ -210,7 +207,7 @@
        ★押す人に見える所（ここ）にも1行 置く。
        ★★2026-10-18 選べるようになったので「載ることがあります」をやめ、言い切る形に直した。 -->
   <div class="tiny">任意です</div>
-  <div class="tiny">「お店のページにも出す」を選ぶと、書いた内容と写真がお店のページに出ます。<br>お名前は、パスポートで決めた方だけ出ます。<br>あとから「自分だけが見る」に変えられます。</div>
+  <div class="tiny">書いた内容と写真は、このお店のページに出ます。<br>お名前は、パスポートで決めた方だけ出ます。<br>あとから「自分だけが見る」に変えたり、消したりできます。</div>
 </div>
 
 <div id="done" class="hidden">
@@ -518,9 +515,11 @@
       $("err").textContent = "飲みものか生産国を1つえらぶか、写真を追加してください。";
       return;
     }
-    // 🔒 ★2026-10-18「自分だけが見る」が選ばれていれば pub=0 を送る（既定は 1＝出す）。
-    const pubEl = document.querySelector('input[name="pub"]:checked');
-    const pubVal = (pubEl && pubEl.value === "0") ? "0" : "1";
+    // 🛑★2026-10-20 書くときに選ぶところは【外しました】。
+    //   ⇒ ここは必ず "1"（お店のページにも出す）を送ります。
+    //   ★送る仕組みそのものは残してあります。あとで要ると分かったとき、作り直さずに済むためです。
+    //   ★この1行を消さないでください。GAS側は pub を受け取る作りのままです。
+    const pubVal = "1";
     $("submitBtn").disabled = true; $("submitBtn").textContent = "記録中…";
     try {
       // 写真つきは「1回のやり取り」でまとめて送る＝写真保存＋記録をサーバー側で続けて処理（往復1回で速い）。
