@@ -477,6 +477,22 @@
     $("sbDelYes").onclick = function(){ doDelete(id); };
   }
 
+  // 🗣 ★2026-10-20 審査会の条件3。うまくいかなかった理由を、普通の言葉で出す。
+  //   ★「busy」「photo_delete_failed」のような機械の言葉を、そのまま出さない。
+  //   ★直せるものは「どうすればよいか」まで書く。直せないものは「時間をおいて」で止める。
+  function diaryWhy(d, head){
+    const e = (d && d.error) ? String(d.error) : "";
+    if (e === "busy")
+      return "いま、ほかの方の記録も同時に書き込まれています。\n30秒ほどおいて、もう一度お試しください。";
+    if (e === "photo_column_unknown" || e === "photo_delete_failed")
+      return head + "\n写真を消せなかったため、途中で止めました。\n記録はそのまま残っています。\nお手数ですが、運営までお知らせください。";
+    if (e === "not_found")
+      return head + "\nこの一杯が見つかりませんでした。\n画面を開き直してお試しください。";
+    if (e === "already_deleted")
+      return "この一杯は、すでに消えています。";
+    return head + "\n時間をおいてお試しください。";
+  }
+
   function sheetBusy(msg){
     $("sheetIn").innerHTML = '<div class="sheetT">'+esc(msg)+'</div><div class="sheetNote">そのままお待ちください。</div>';
   }
@@ -500,7 +516,7 @@
       const res = await fetch(GAS_URL+"?action=diary_set_public&userId="+encodeURIComponent(USER_ID)+
                               "&id="+encodeURIComponent(id)+"&pub="+(pub?"1":"0")+"&_="+Date.now());
       const d = await res.json();
-      if(!d || !d.ok) return sheetFailed("変えられませんでした。時間をおいてお試しください。");
+      if(!d || !d.ok) return sheetFailed(diaryWhy(d, "変えられませんでした。"));
       reloadAfterChange();
     }catch(e){ sheetFailed("通信エラーが起きました。電波の良い場所でお試しください。"); }
   }
@@ -511,7 +527,7 @@
       const res = await fetch(GAS_URL+"?action=diary_delete&userId="+encodeURIComponent(USER_ID)+
                               "&id="+encodeURIComponent(id)+"&_="+Date.now());
       const d = await res.json();
-      if(!d || !d.ok) return sheetFailed("消せませんでした。時間をおいてお試しください。");
+      if(!d || !d.ok) return sheetFailed(diaryWhy(d, "消せませんでした。"));
       reloadAfterChange();
     }catch(e){ sheetFailed("通信エラーが起きました。電波の良い場所でお試しください。"); }
   }
