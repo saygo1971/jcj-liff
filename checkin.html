@@ -405,10 +405,13 @@
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       headerHtml +
+      /*★★2026-10-22 オーナー指示：チケットのまとまりを【上】にしました。
+       *  ★理由＝「この一杯を記録する」が上に在ると、先にそちらを押してしまうため。
+       *  ★戻すときは、下の3行を recordHtml → areaHtml → ticketHtml の順に戻すだけです。*/
+      ticketHtml +
       recordHtml +
       areaHtml +
       beansProgHtml +
-      ticketHtml +
       // ★2026-10-06：受付の帯と「無料の1杯」の置き場所を足しました。
       //   ★中身は下の1回の問い合わせ（cup_state）で、カップと一緒に埋めます＝通信は1回のままです。
       '<div id="recsec"></div>' +
@@ -419,8 +422,12 @@
       '<div id="cupsec"></div>' +
       refHtml;
 
+    /*★★2026-10-22 オーナー指示：会場（イベントのQR）では「あと◯店で◯◯コンプリート」を出しません。
+     *  ★理由＝イベントでは必要のない案内のためです。
+     *  ★ふつうのお店（ev が付かないQR）では、いままでどおり出ます。
+     *  ★戻すときは、下の `if (!EV)` の1行を外すだけです。*/
     // 地域コンプリート進捗＋正しいロゴ（area_progressが logo=R列 と exterior を同梱）。未デプロイ・非対象時は静かに据え置き。
-    (async ()=>{
+    if (!EV) (async ()=>{
       try{
         const ap = await api("area_progress", { shopId: st.shopId || SPOT || "" });
         if (!ap) return;
