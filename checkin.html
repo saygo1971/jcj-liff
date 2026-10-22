@@ -163,12 +163,7 @@
   let SPOT = "";
   // ★2026-09-26：QRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
   //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
-  /*🔴★★2026-10-22 直し：ここで読むと【必ず空】になります。
-   *  ★理由＝LINEは QRの ?spot=…&ev=… を liff.state という形に包んで渡し、
-   *    元に戻すのは liff.init です。この行は liff.init より前に動くので、まだ戻っていません。
-   *  ★その結果、お店は合っているのに【イベントの印だけ消えて】ふつうの来店として記録されていました。
-   *  ⇒ ★読むのは liff.init のあと（下の main の中・SPOT と同じ場所）に移しました。*/
-  let EV = "";
+  let EV = params.get("ev") || "";
   let st = null;      // checkin_state の結果
   let count = 1;
   let busy = false;
@@ -849,8 +844,6 @@
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
     SPOT = params.get("spot") || params.get("spotId") || "";
-    // ★2026-10-22：ev は liff.init のあとに読みます（前に読むと必ず空になります）。
-    EV = params.get("ev") || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
     if(!SPOT){ showStatusText("店番号がURLにありません。プレートのリンクをご確認ください。"); return; }
 
