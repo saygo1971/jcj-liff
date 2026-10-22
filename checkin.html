@@ -409,6 +409,9 @@
        *  ★理由＝「この一杯を記録する」が上に在ると、先にそちらを押してしまうため。
        *  ★戻すときは、下の3行を recordHtml → areaHtml → ticketHtml の順に戻すだけです。*/
       ticketHtml +
+      /*★2026-10-22 オーナー指示：「1枚を使う」と「今日の一杯は？」の間が狭いので、少し空けます。
+       *  ★両方が出ているときだけ空けます（★片方しか無いときは何も変わりません）。*/
+      ((ticketHtml && recordHtml) ? '<div style="height:20px"></div>' : '') +
       recordHtml +
       areaHtml +
       beansProgHtml +
