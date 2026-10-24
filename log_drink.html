@@ -72,6 +72,11 @@
     font-size:15px;font-family:inherit;background:var(--bg);color:var(--ink)}
   .row input[type=number]{width:96px;border:1px solid var(--line);border-radius:10px;padding:11px 10px;
     font-size:15px;font-family:inherit;background:var(--bg);color:var(--ink)}
+  /* ★2026-10-23 「このお店で豆も買いました」の印。お店のときだけ出る。 */
+  .beansrow{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:11px 12px;
+    border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+  .beansrow input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--brand-deep);margin:0}
+  .beanstx{font-size:14px;font-weight:800;color:var(--ink)}
   textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
     font-family:inherit;resize:vertical;min-height:64px;background:var(--bg);color:var(--ink)}
   .btn{background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
@@ -164,6 +169,13 @@
   <div class="row"><span class="lb">飲みもの</span><select id="selDrink"></select></div>
   <div class="row"><span class="lb">生産国</span><select id="selCountry"></select></div>
   <div class="row"><span class="lb">精製方法</span><select id="selProcess"></select></div>
+
+  <!-- ★2026-10-23 オーナー決定：豆を買ったことを、一杯の記録と一緒に残せるようにした。
+       ★お店が一覧から決まっているときだけ出す（どのお店で買ったかが分かるため）。 -->
+  <label class="beansrow hidden" id="beansRow">
+    <input type="checkbox" id="beansChk">
+    <span class="beanstx">このお店で豆も買いました</span>
+  </label>
 
   <div class="homeonly hidden" id="homeOnly">
     <div class="row"><span class="lb">抽出ツール</span><select id="selBrew"></select></div>
@@ -268,12 +280,12 @@
   // ★2026-10-06 オーナー指示：お店かうちかを選んだ時点で、選ぶ項目そのものを出し分ける。
   //   ★ドリップバッグ＝おうちだけ（お店では出てこないため）
   //   ★「わからない」＝お店だけ（ご自分で買った豆なら袋に書いてあるため）
-  // ★2026-10-10 オーナー決定：「豆を買った」を足した（お店のときだけ）。
-  //   ★台帳に欄は足していない＝「飲みもの」の欄にそのまま入る。
-  //   ★受け口も触っていない（中身を決めつけていないため、そのまま受け取ります）。
-  //   ★数え方＝「飲みもの＝豆を買った」の行を数えるだけ。
-  //   🔴1つだけ選ぶ形なので、飲んで かつ 買った方は2回 記録することになります。
-  const DRINKS_SHOP = ["ドリップ","エスプレッソ","カフェラテ","アメリカーノ","水出し","豆を買った","その他"];
+  // ★2026-10-23 オーナー決定：「豆を買った」を飲みものの選択から【外して】、別の印にしました。
+  //   理由＝1つしか選べないため、飲んで かつ 買った方は「飲んだ方」を選び、
+  //        豆を買った記録が残っていませんでした（本番の直近50件で0件・2026-10-23に実測）。
+  //   ⇒ 下の「豆も買いました」の印（beansChk）で、一杯の記録と一緒に残せるようにしました。
+  //   ★お店が一覧から決まっているときだけ出します（どのお店で買ったかが分かる記録だけ残すため）。
+  const DRINKS_SHOP = ["ドリップ","エスプレッソ","カフェラテ","アメリカーノ","水出し","その他"];
   const DRINKS_HOME = ["ドリップ","ドリップバッグ","水出し","エスプレッソ","カフェラテ","その他"];
   const COUNTRIES_BASE = ["エチオピア","ケニア","コロンビア","ブラジル","グアテマラ","コスタリカ","ホンジュラス","パナマ","インドネシア","ルワンダ","ブレンド","その他"];
   const PROCESSES_BASE = ["ウォッシュト","ナチュラル","ハニー","アナエロビック"];
@@ -428,6 +440,11 @@
     buildSelect("selCountry", COUNTRY_ITEMS, "country", pick("country", COUNTRY_ITEMS));
     buildSelect("selProcess", PROCESS_ITEMS, "process", pick("process", PROCESS_ITEMS));
 
+    // ★2026-10-23 「このお店で豆も買いました」＝お店が一覧から決まっているときだけ出す。
+    //   ★その他（名前を打っただけ）や うちでは出しません＝どのお店で買ったか分からないため。
+    $("beansRow").classList.toggle("hidden", !curShopId);
+    if (!curShopId) $("beansChk").checked = false;   // お店をうちに選び直したら、印も外す
+
     // 抽出ツール・挽き目・湯温＝うちのときだけ
     $("homeOnly").classList.toggle("hidden", !(isHome && placeChosen));
     if (isHome && placeChosen){
@@ -511,7 +528,11 @@
       return;
     }
     // 写真だけの記録も許可（飲みもの等が無くても写真があればOK）
-    if (!sel.drink && !sel.country && !sel.process && !memo && !window._photoData && !sel.grind && !tempVal && !sel.brew){
+    // ★2026-10-23 豆を買っただけ（飲んでいない）の記録も残せるようにする。
+    //   ★以前は「飲みもの＝豆を買った」を選んでいただく形でした。その選択肢は外したので、
+    //     ここに入れておかないと、豆だけ買った方が1件も残せなくなります。
+    const beansVal = (!$("beansRow").classList.contains("hidden") && $("beansChk").checked) ? "1" : "";
+    if (!sel.drink && !sel.country && !sel.process && !memo && !window._photoData && !sel.grind && !tempVal && !sel.brew && !beansVal){
       $("err").textContent = "飲みものか生産国を1つえらぶか、写真を追加してください。";
       return;
     }
@@ -534,7 +555,8 @@
             drink:sel.drink, country:sel.country,
             process:sel.process, memo:memo, date:REC_DATE, photo:window._photoData,
             grind:sel.grind, temp:tempVal, brew:sel.brew,      // ★2026-10-06
-            pub:pubVal                                         // 🔒 ★2026-10-18
+            pub:pubVal,                                        // 🔒 ★2026-10-18
+            beans:beansVal                                     // ★2026-10-23 豆も買った
           })
         });
         d = await res.json();
@@ -544,6 +566,7 @@
           drink:sel.drink, country:sel.country, process:sel.process, memo:memo, date:REC_DATE,
           grind:sel.grind, temp:tempVal, brew:sel.brew,         // ★2026-10-06
           pub:pubVal,                                           // 🔒 ★2026-10-18
+          beans:beansVal,                                       // ★2026-10-23 豆も買った
           photoUrl:"", _:Date.now()
         });
         const res = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
