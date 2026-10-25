@@ -161,6 +161,14 @@
   /* 🔴★絵の大きさを必ず決める。★決めないと横いっぱいに伸びます（2026-09-26 実際に起きました）。
      ★もとの .nav svg の指定は .nav の中だけに効くので、この枠には届きません。 */
   .navwide svg{width:22px;height:22px;flex:0 0 auto}
+  /* ☕ ★★2026-10-25 「コーヒー日記」の入口に、残した一杯の数を出す。
+     ★なぜ＝パスポートに「杯」の字が1つも在りませんでした（2026-10-25 に本番の実物で確認）。
+       一杯を書いても、パスポートの何も増えない状態でした。
+     🛑★本部の注文＝小さくし過ぎないこと。⇒ 12px＝.nav .lb（ほかの入口の文字）と同じ大きさ。
+       ★9px の small は使いません（見えなければ意味がないため）。
+     ★3つ並びは崩れません（横幅は flex:1 で等分・高さは3つとも同じに伸びる）。
+       ★128杯（3けた）でも折り返さないことを、実物の見た目で確かめました（2026-10-25）。 */
+  .nav .lb .cup{display:block;font-style:normal;font-size:12px;font-weight:800;margin-top:4px}
   /* ★「買ったもの」＝中に文字を足さない（★足すとボタンの大きさがズレて3つ並びが崩れる）。
      ★まだ使っていない券か、受け取っていないカップがあるとき【だけ】枠をピンクにする。
      ★この画面の決まり＝ピンク＝これから起こすこと／緑＝終わったこと。 */
@@ -239,7 +247,7 @@
     <div class="move">
       <a class="navwide" id="navDiscover"><span class="lb"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><circle cx="10.5" cy="10.5" r="1.6"/></svg>発見地図<small>次の1軒をさがす</small></span></a>
       <div class="nav">
-        <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M14.5 5l3.5 3.5-8.5 8.5-4.5 1 1-4.5z"/></svg><span class="lb">コーヒー日記</span></a>
+        <a class="second" id="navHistory"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M14.5 5l3.5 3.5-8.5 8.5-4.5 1 1-4.5z"/></svg><span class="lb">コーヒー日記<em class="cup hidden" id="navCup"></em></span></a>
         <a class="second" id="navLogo"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5.4a2 2 0 0 1 4 0v1.4c0 .8.35 1.1 1 1.45.75.4 1.2.6 1.2 1.65V12H7.8v-1.05c0-1.05.45-1.25 1.2-1.65.65-.35 1-.65 1-1.45z"/><rect x="4.5" y="12.5" width="15" height="5.2" rx="1.2"/></svg><span class="lb">ロゴ帳</span></a>
         <a class="second" id="navBought"><svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="lb">買ったもの</span></a>
       </div>
@@ -384,6 +392,19 @@
     if ($("nickLine")){
       $("nickLine").textContent = _nick ? (_nick + " ›") : "ニックネーム ›";
       $("nickLine").classList.toggle("val", !!_nick);
+    }
+    // ☕ ★★2026-10-25 「コーヒー日記」の入口に、残した一杯の数を出す。
+    //   ★0杯のときは出しません（「0杯」は、書いていないことを責める形に読めるため）。
+    //   ★前回分（localStorage）には cupCount が入っていないことがあります。
+    //     ★そのときも出しません（0杯と嘘をつかない）。最新が届いたら出ます。
+    const _cup = Number(d.cupCount);
+    if ($("navCup")){
+      if (Number.isFinite(_cup) && _cup > 0){
+        $("navCup").textContent = _cup + "杯";
+        $("navCup").classList.remove("hidden");
+      } else {
+        $("navCup").classList.add("hidden");
+      }
     }
     // ロゴ帳の丸（取得ロゴ＋空丸。合計は最低16マスまで空丸で満たす＝並びが崩れない）
     const got = Number(d.logoGot)||0, total = Number(d.logoTotal)||0;
