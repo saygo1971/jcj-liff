@@ -105,8 +105,23 @@
   .kswitch{display:flex;gap:6px;margin:0 0 14px}
   .kswitch button{flex:1;font-family:inherit;font-size:12px;font-weight:800;padding:8px 4px;
     border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink-sub);cursor:pointer}
-  /* ☕ ★2026-10-14 ほかの方の一杯への入口。切り替えのすぐ下。 */
-  .othersLink{display:block;text-align:center;background:var(--paper);color:var(--ink);
+  /* ☕ ★2026-10-14 ほかの方の一杯への入口。切り替えのすぐ下。
+     ★★2026-10-26 オーナーさまが「【みんなの一杯 ›】というボタンがない」とおっしゃいました。
+       ★調べた結果＝出ていました。消えても隠れてもいません（配られている実物に在り・
+         隠す作り0か所・画面の幅で消える作り0個）。★押せるものに見えないだけでした。
+       ★この画面で押せるものは5つ。★枠も塗りつぶしも無いのは これだけでした。
+         コーヒー日記に書く … 白地＋1.5pxの赤い枠＋赤い文字
+         すべて／旅の記録／暮らしの記録 … 白地＋1.5pxの枠
+         書く … 白地＋枠 ／ お店を教える … 赤で塗りつぶし
+         🔴 みんなの一杯 › … きなり地＋枠なし＋黒い文字  ←★これだけ
+       ★しかも置き場所が【切り替えボタン（白）】と【白いカード】の間なので、
+         きなり色の帯が、2つの白い箱を分ける仕切りに見えていました。
+     ⇒ ★直したのは【枠】と【文字の色】だけ。★言葉も置き場所も変えていません。
+     🛑★大きさ13px と 太さ800 は変えていません（本部の条件＝
+        「コーヒー日記に書く」より目立たせない。あちらは14px）。
+     ★きなりの地は残します＝切り替えボタン（白地）と見分けが付くため。 */
+  .othersLink{display:block;text-align:center;background:var(--paper);
+    border:1.5px solid var(--brand-deep);color:var(--brand-deep);
     font-size:13px;font-weight:800;border-radius:12px;padding:12px;text-decoration:none;margin:0 0 14px}
   .kswitch button.on{border-color:var(--brand-deep);background:var(--brand-deep);color:#fff}
   .kempty{text-align:center;color:var(--ink-sub);font-size:13px;padding:28px 12px;line-height:1.8}
