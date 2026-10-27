@@ -208,6 +208,35 @@
   .nearsum .ns-l b{color:var(--accent);font-size:16px}
   .nearsum .ns-n{font-size:12.5px;color:var(--sub);margin-top:3px}
   .nearsum .ns-n b{color:var(--accent);font-size:14px}
+  /* 🗺 ★2026-10-28 地図の上に重ねる、横に送るカード（審査会 条件1〜6・10〜13） */
+  .nearrail{position:absolute;left:0;right:0;bottom:8px;z-index:6;
+    display:flex;gap:9px;padding:0 10px 2px;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nearrail::-webkit-scrollbar{display:none}
+  /* ★86% ＝ 右のカードが少しだけ見える（条件2「まだ在る」と指で分かるため） */
+  .rcard{flex:0 0 86%;scroll-snap-align:center;background:#fff;border-radius:13px;
+    box-shadow:0 5px 16px rgba(50,38,26,.26);padding:9px;display:flex;gap:9px;cursor:pointer}
+  .rcard .r-im{flex:0 0 78px;height:78px;border-radius:9px;overflow:hidden;background:#f2ece2;position:relative}
+  .rcard .r-im img{width:100%;height:100%;object-fit:cover;display:block}
+  .rcard .r-im .r-lb{position:absolute;left:4px;bottom:4px;background:rgba(40,30,20,.72);color:#fff;
+    font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px}
+  .rcard .r-tx{min-width:0;flex:1}
+  .rcard .r-pf{font-size:10px;color:var(--sub);font-weight:700}
+  .rcard .r-pf em{font-style:normal;color:var(--accent);margin-left:5px}
+  .rcard .r-nm{font-size:13.5px;font-weight:800;line-height:1.25;margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rcard .r-ac{font-size:10.5px;color:#5c4d3d;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rcard .r-km{font-size:14px;font-weight:800;color:var(--accent);margin-top:4px}
+  .rcard .r-km small{font-size:9.5px;color:var(--sub);font-weight:700;margin-left:5px}
+  .rcard .r-b{display:flex;gap:6px;margin-top:6px}
+  .rcard .r-b a{flex:1;text-align:center;font-size:10.5px;font-weight:800;text-decoration:none;
+    padding:7px 2px;border-radius:8px}
+  .rcard .r-b .rb1{background:var(--accent);color:#fff}
+  .rcard .r-b .rb2{background:#fff;border:1.2px solid var(--accent);color:var(--accent)}
+  .railtog{position:absolute;right:10px;top:10px;z-index:7;border:none;cursor:pointer;
+    background:rgba(255,255,255,.95);color:var(--brown-d);font-family:inherit;
+    font-size:11.5px;font-weight:800;padding:7px 12px;border-radius:999px;
+    box-shadow:0 2px 7px rgba(50,38,26,.2)}
   .nearlist{padding:2px 0 0}
   .nearlist .pick-hdr{margin:10px 2px 8px}
   .nc-note{font-size:11px;color:var(--sub);margin:0 2px 9px;line-height:1.65}
@@ -427,6 +456,9 @@
         <!-- ★鍵（GMAP_KEY）が空のあいだ、地図のかわりに出す文（審査会 条件2） -->
         <div class="nearnote hidden" id="nearMapNote">地図を準備しています。一覧はこの下に出ています</div>
         <button class="hidden" id="nearAgain">この場所で再検索</button>
+        <!-- 🗺 ★2026-10-28 地図の上に重ねる、横に送るカード（審査会 条件1〜6） -->
+        <div class="nearrail hidden" id="nearRail"></div>
+        <button class="railtog hidden" id="nearRailTog">一覧で見る</button>
         <button id="nearHereBtn" title="いまいる場所"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.94 3A9 9 0 0013 3.06V1h-2v2.06A9 9 0 003.06 11H1v2h2.06A9 9 0 0011 20.94V23h2v-2.06A9 9 0 0020.94 13H23v-2h-2.06z"/></svg></button>
       </div>
       <div class="nearsum hidden" id="nearSum"></div>
@@ -1537,6 +1569,13 @@
   var nearOnlyJoined= false; // 参加している店だけにしぼっているか
   var nearQuery     = "";    // エリア・店名で探す（小文字にしてから入れる）
   var nearAll       = [];    // しぼったあとの全部（近い順）
+  // 🗺 ★2026-10-28 横に送るカードと、ロゴの印（審査会 条件1〜6・10〜13）
+  var NEAR_LOGO_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
+  var nearLogoOK     = {};    // お店の番号 → true(ロゴが読めた)／false(無い)／null(調べ中)
+  var gmapMarkerByIdx= {};    // お店の番号(SHOPSの位置) → 地図の印
+  var nearSelIdx     = null;  // いま選ばれているお店（SHOPSの位置）
+  var nearRailOn     = true;  // true＝横に送るカード／false＝いままでの縦並び
+  var _railT=null, _redrawT=null;
   var nearCards     = [];    // そのうち、お店のカードに出す分
   var nearStarted   = false; // もう位置を取りにいったか
   var nearBound     = false; // ボタンに動きを付けたか
@@ -1649,7 +1688,95 @@
     box.innerHTML=h;
   }
 
-  function nearRender(){ nearCompute(); nearRenderSum(); nearRenderList(); nearDrawPins(); }
+  // 🗺 ★2026-10-28 地図の上に重ねる、横に送るカード（審査会 条件1〜6）
+  //   条件1 … 横に送ると、地図の印が光って そこへ動きます（これが この形の全部です）
+  //   条件2 … 右のカードが少しだけ見えます（.rcard の 86% ＝「まだ在る」と指で分かる）
+  //   条件3 … 絵が無いお店は、絵の枠ごと出しません（onerror で消す）
+  //   条件4 … 地図は 300px、カードは約104px ＝ 地図が3分の2 見えています
+  //   条件5 … 絵は loading="lazy" ＝ 見えている分だけ先に読みます
+  //   条件7 … 地図が出せないときは、いままでの縦並びのままにします
+  function nearRailHTML(s, first){
+    var dir="https://www.google.com/maps/dir/?api=1&destination="+s.lat+","+s.lng;
+    var img = (s.pending===1) ? (s.mapImg||"") : (s.photo||"");
+    var lb  = (s.pending===1 && img) ? '<span class="r-lb">地図</span>' : '';
+    var im  = img ? ('<div class="r-im"><img src="'+esc(img)+'" alt="" loading="lazy" '
+                   + 'onerror="this.parentNode.style.display=\'none\'">'+lb+'</div>') : '';
+    var from= (nearOriginKind==="gps") ? "いまの場所から" : (nearOriginKind==="home" ? "お住まいから" : "ここから");
+    return '<div class="rcard" data-i="'+s.idx+'">'
+      + im
+      + '<div class="r-tx">'
+      +   '<div class="r-pf">'+esc(s.pref)+(first?'<em>いちばん近い</em>':'')+'</div>'
+      +   '<div class="r-nm">'+esc(s.name)+'</div>'
+      +   (s.access?('<div class="r-ac">'+esc(s.access)+'</div>'):'')
+      +   '<div class="r-km">'+s._d.toFixed(1)+' km<small>'+from+'</small></div>'
+      +   '<div class="r-b">'
+      +     '<a class="rb1">このお店を見る</a>'
+      +     '<a class="rb2" href="'+esc(dir)+'" target="_blank" rel="noopener" data-id="'+esc(s.id)+'">経路</a>'
+      +   '</div>'
+      + '</div></div>';
+  }
+
+  function nearRenderRail(){
+    var rail=$("nearRail"), tog=$("nearRailTog"), list=$("nearList");
+    // ★地図が出せていないときは、いままでの縦並びのまま（条件7）
+    if(!gmap || !nearCards.length){
+      rail.classList.add("hidden"); rail.innerHTML="";
+      tog.classList.add("hidden");
+      list.classList.remove("hidden");
+      return;
+    }
+    tog.classList.remove("hidden");
+    if(nearRailOn){
+      rail.innerHTML=nearCards.map(function(s,i){ return nearRailHTML(s, i===0); }).join("");
+      rail.classList.remove("hidden");
+      list.classList.add("hidden");
+      tog.textContent="一覧で見る";
+      if(nearSelIdx==null && nearCards[0]) nearSelIdx=nearCards[0].idx;
+    }else{
+      rail.classList.add("hidden"); rail.innerHTML="";
+      list.classList.remove("hidden");
+      tog.textContent="地図で見る";
+    }
+  }
+
+  // ★カードと地図の印を、連れ立って動かします（条件1）
+  function nearSelect(idx, fromPin){
+    if(!nearRailOn || !gmap){ if(SHOPS[idx]) openSheet(idx); return; }
+    nearSelIdx=idx;
+    var s=SHOPS[idx];
+    if(s && s.lat!=null && s.lng!=null) gmap.panTo({lat:s.lat,lng:s.lng});
+    nearDrawPins();
+    if(fromPin) nearRailScrollTo(idx);
+  }
+  function nearRailScrollTo(idx){
+    var rail=$("nearRail");
+    var el=rail.querySelector('.rcard[data-i="'+idx+'"]');
+    if(!el) return;
+    var left = el.offsetLeft - (rail.clientWidth - el.clientWidth)/2;
+    try{ rail.scrollTo({left:left, behavior:"smooth"}); }catch(e){ rail.scrollLeft=left; }
+  }
+  // ★指を離して落ち着いたら、真ん中のカードを選びます
+  function nearRailOnScroll(){
+    clearTimeout(_railT);
+    _railT=setTimeout(function(){
+      var rail=$("nearRail");
+      if(rail.classList.contains("hidden")) return;
+      var mid=rail.scrollLeft + rail.clientWidth/2, best=null, bd=1e9;
+      Array.prototype.forEach.call(rail.children,function(el){
+        var m=el.offsetLeft+el.clientWidth/2, d=Math.abs(m-mid);
+        if(d<bd){ bd=d; best=el; }
+      });
+      if(!best) return;
+      var i=parseInt(best.getAttribute("data-i"),10);
+      if(isNaN(i) || i===nearSelIdx) return;
+      nearSelIdx=i;
+      var s=SHOPS[i];
+      if(gmap && s && s.lat!=null && s.lng!=null) gmap.panTo({lat:s.lat,lng:s.lng});
+      nearDrawPins();
+    },150);
+  }
+
+  function nearRender(){ nearCompute(); nearRenderSum(); nearRenderList(); nearRenderRail(); nearDrawPins(); }
 
   // ───── Googleの地図 ─────
   // 鍵が空のときに出す形。★一覧・距離・お店のカードは、このあとも動きます（条件2）
@@ -1687,10 +1814,16 @@
       $("nearMap").classList.remove("hidden");
       $("nearHereBtn").classList.remove("hidden");
       nearSetMe();
+      // 🗺 ★2026-10-28 地図ができた【あと】に、横に送るカードを組み立てます。
+      //   ★理由＝カードは地図の上に重ねるので、地図が無いあいだは出しません（条件7）。
+      //     位置が決まってから地図ができるまでに間があり、その間に1回 組み立てると
+      //     「地図が無い」と判断されて、いつまでも縦並びのままになります。
+      nearRenderRail();
       nearDrawPins();
     }catch(e){
       gmap=null;
       nearNoMap("地図を出せませんでした。一覧はこの下に出ています");
+      nearRenderRail();   // ★地図が出せないときは、いままでの縦並びに戻します（条件7）
     }
   }
   // 自分の青い点
@@ -1705,6 +1838,40 @@
   }
   // ★条件6＝いま見えている範囲のお店だけ描く。まとめる仕掛けは作っていません。
   //   ★色は日本地図と同じ決まりです（参加しているお店＝赤い丸／まだ登録されていないお店＝白い丸・赤い枠線）。
+  // 🗺 ★2026-10-28 地図の印（審査会 条件10〜13）
+  //   参加しているお店 … ロゴの印（読めたときだけ）
+  //   未参加のお店     … いままでの印（白丸）
+  //   🛑★ロゴが読めなかったら、参加店でも【いままでの印】に戻します＝割れた絵を地図に出さない。
+  //     2026-10-28 時点で、参加78軒のうち1軒（OKN_ETOMOIRI）はロゴのファイルが在りません。
+  //     これから参加するお店も、ロゴが後から届きます。
+  //   ★丸く切り抜く加工はできません＝画像の置き場所が、加工の許可（CORS）を出していないためです
+  //     （2026-10-28 に実物で確認）。ロゴは四角のまま、大きさと形で見分けます（条件12）。
+  function nearPinPending(sel){
+    return {path:google.maps.SymbolPath.CIRCLE, scale: sel?9:6.5,
+            fillColor:"#ffffff", fillOpacity:1,
+            strokeColor:"#C04A55", strokeWeight: sel?3.4:2.4};
+  }
+  function nearPinJoined(sel){
+    return {path:google.maps.SymbolPath.CIRCLE, scale: sel?9.5:7,
+            fillColor:"#C04A55", fillOpacity:1,
+            strokeColor:"#ffffff", strokeWeight: sel?3:2};
+  }
+  function nearPinLogo(id, sel){
+    var S = sel?46:34;
+    return {url: NEAR_LOGO_BASE + encodeURIComponent(id) + "/logo.png",
+            scaledSize:new google.maps.Size(S,S),
+            anchor:new google.maps.Point(S/2,S/2)};
+  }
+  // ★ロゴが在るかを1回だけ確かめる。読めたら印を描き直す（まとめて1回・180ミリ秒後）
+  function nearLogoProbe(id){
+    nearLogoOK[id]=null;
+    var im=new Image();
+    im.onload =function(){ nearLogoOK[id]=true;  nearDrawPinsSoon(); };
+    im.onerror=function(){ nearLogoOK[id]=false; };
+    im.src=NEAR_LOGO_BASE + encodeURIComponent(id) + "/logo.png";
+  }
+  function nearDrawPinsSoon(){ clearTimeout(_redrawT); _redrawT=setTimeout(nearDrawPins,180); }
+
   function nearDrawPins(){
     if(!gmap) return;
     var b=gmap.getBounds(); if(!b) return;
@@ -1712,6 +1879,7 @@
     var inView=nearGeoShops().filter(nearPass).filter(function(s){
       return b.contains(new google.maps.LatLng(s.lat,s.lng));
     });
+    // ★見えている範囲がこれを超えたら、中心に近い順に絞る（条件6・13）
     if(inView.length>NEAR_PIN_MAX){
       inView=inView.map(function(s){ return [haversineKm(cl,cg,s.lat,s.lng),s]; })
                    .sort(function(x,y){ return x[0]-y[0]; })
@@ -1719,15 +1887,17 @@
                    .map(function(x){ return x[1]; });
     }
     gmapMarkers.forEach(function(m){ m.setMap(null); });
-    gmapMarkers=[];
+    gmapMarkers=[]; gmapMarkerByIdx={};
     inView.forEach(function(s){
-      var joined=(s.pending!==1);
+      var joined=(s.pending!==1), sel=(s.idx===nearSelIdx), ic;
+      if(joined && nearLogoOK[s.id]===true)      ic=nearPinLogo(s.id, sel);
+      else if(joined)                            ic=nearPinJoined(sel);
+      else                                       ic=nearPinPending(sel);
       var m=new google.maps.Marker({map:gmap,position:{lat:s.lat,lng:s.lng},title:s.name,
-        icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,
-              fillColor:joined?"#C04A55":"#ffffff",fillOpacity:1,
-              strokeColor:joined?"#ffffff":"#C04A55",strokeWeight:joined?2:2.4}});
-      m.addListener("click",function(){ openSheet(s.idx); });
-      gmapMarkers.push(m);
+        zIndex: sel?999:(joined?2:1), icon:ic});
+      m.addListener("click",function(){ nearSelect(s.idx,true); });
+      gmapMarkers.push(m); gmapMarkerByIdx[s.idx]=m;
+      if(joined && nearLogoOK[s.id]===undefined) nearLogoProbe(s.id);
     });
   }
 
@@ -1817,6 +1987,22 @@
     $("nearJoined").onclick=function(){ nearOnlyJoined=true; nearChipSync(); nearRender(); };
     // ★見た目の案2 と同じ＝はじめから近い順に並んでいます（並べ替えのボタンではありません）
     $("nearSort").onclick=function(){ toast("近い順に並んでいます"); };
+    // 🗺 ★2026-10-28 横に送るカードの押したときの道
+    $("nearRail").addEventListener("scroll", nearRailOnScroll, {passive:true});
+    $("nearRail").addEventListener("click",function(e){
+      var a=e.target.closest(".rb2");
+      if(a){ var id=a.getAttribute("data-id"); if(id) logOutbound(id,"google_map"); return; }
+      var c=e.target.closest(".rcard"); if(!c) return;
+      var i=+c.getAttribute("data-i");
+      if(!(i>=0) || !SHOPS[i]) return;
+      // ★真ん中のカードを押したら お店を開く。横のカードを押したら そこへ送る
+      if(i===nearSelIdx || e.target.closest(".rb1")) openSheet(i);
+      else { nearSelIdx=i; nearRailScrollTo(i);
+             var s=SHOPS[i];
+             if(gmap && s && s.lat!=null) gmap.panTo({lat:s.lat,lng:s.lng});
+             nearDrawPins(); }
+    });
+    $("nearRailTog").onclick=function(){ nearRailOn=!nearRailOn; nearRenderRail(); nearDrawPins(); };
     $("nearList").addEventListener("click",function(e){
       var a=e.target.closest(".nb2");
       if(a){ var id=a.getAttribute("data-id"); if(id) logOutbound(id,"google_map"); return; }   // 「ここへの経路」はそのまま開く

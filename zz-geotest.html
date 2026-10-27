@@ -1825,10 +1825,16 @@
       $("nearMap").classList.remove("hidden");
       $("nearHereBtn").classList.remove("hidden");
       nearSetMe();
+      // 🗺 ★2026-10-28 地図ができた【あと】に、横に送るカードを組み立てます。
+      //   ★理由＝カードは地図の上に重ねるので、地図が無いあいだは出しません（条件7）。
+      //     位置が決まってから地図ができるまでに間があり、その間に1回 組み立てると
+      //     「地図が無い」と判断されて、いつまでも縦並びのままになります。
+      nearRenderRail();
       nearDrawPins();
     }catch(e){
       gmap=null;
       nearNoMap("地図を出せませんでした。一覧はこの下に出ています");
+      nearRenderRail();   // ★地図が出せないときは、いままでの縦並びに戻します（条件7）
     }
   }
   // 自分の青い点
