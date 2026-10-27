@@ -6,6 +6,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <title>ロースターを探す｜JCJパスポート</title>
+<!-- ★2026-10-27 Googleの地図の鍵（APIキー）。★置き場所はこの1か所だけです（審査会 条件2）。
+     ★ここに鍵を入れます（本部が後で入れます）。
+     ・空のあいだは地図を出さず「地図を準備しています。一覧はこの下に出ています」と出します。
+       ★お店の一覧・距離・お店のカードは、鍵が空でもそのまま動きます。
+     ・★鍵には必ず「使える場所の制限」をかけてください（かけないと、他人に使われて請求がこちらに来ます）。 -->
+<script>var GMAP_KEY = "";   /* ★ここに鍵を入れます */</script>
 <style>
   :root{
     --cream:#FFFFFF; --paper:#ffffff; --ink:#221C1A; --sub:#6E655E;
@@ -43,8 +49,13 @@
   .seg{margin:0 16px;background:#f0e7da;border-radius:12px;padding:3px;display:flex;position:relative}
   .seg button{flex:1;border:none;background:none;font-family:inherit;font-size:12px;font-weight:800;color:var(--sub);padding:9px 2px;border-radius:9px;cursor:pointer;z-index:1;white-space:nowrap}
   .seg button.on{color:var(--ink)}
-  .seg .knob{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);background:var(--paper);border-radius:9px;box-shadow:0 2px 6px rgba(120,95,60,.14);transition:transform .22s ease}
-  .seg.on-list .knob{transform:translateX(100%)}
+  /* ★2026-10-27 ボタンが3つになったので、動く下敷き（knob）を3つ用にしました。
+       ・幅＝3等分（入れ物の内側は 100% から 6px 引いた分なので、1つぶんは calc(33.3333% - 2px)）
+       ・「近くを探す」＝いちばん左＝動かさない（クラスを付けない）
+       ・「ロースターマップ」＝1つぶん右（on-map）／「ロースター一覧」＝2つぶん右（on-list） */
+  .seg .knob{position:absolute;top:3px;bottom:3px;left:3px;width:calc(33.3333% - 2px);background:var(--paper);border-radius:9px;box-shadow:0 2px 6px rgba(120,95,60,.14);transition:transform .22s ease}
+  .seg.on-map .knob{transform:translateX(100%)}
+  .seg.on-list .knob{transform:translateX(200%)}
 
   .filters{padding:11px 8px 3px}
   .frow{display:flex;gap:7px;overflow-x:auto;padding:2px 8px 8px;scrollbar-width:none}
@@ -167,6 +178,40 @@
   .empty{padding:30px 20px;text-align:center;color:var(--sub);font-size:12.5px;display:none}
   .empty.show{display:block}
 
+  /* ===== 📍 2026-10-27「近くを探す」の見た目 =====
+     ★ここより上のきまりは1行も変えていません（日本地図・一覧の見た目はそのままです）。
+     ★見た目は _マイマップ_20261025/見た目の案2_地図と一覧_20261026.html に合わせています。 */
+  .nearwrap{padding:4px 14px 18px}
+  .nearmsg{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:4px 0 10px}
+  .nearmsg .nm-t{font-size:13.5px;font-weight:800;color:var(--ink);line-height:1.5}
+  .nearmsg .nm-s{font-size:11.5px;color:var(--sub);margin-top:5px;line-height:1.75}
+  .nearmsg .nm-b{display:block;width:100%;margin-top:11px;height:44px;border-radius:12px;background:var(--accent);border:none;color:#fff;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .nearq{margin:0 0 9px}
+  .nearq input{width:100%;padding:11px 15px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:22px}
+  .nearmapbox{position:relative;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--sea)}
+  #nearMap{width:100%;height:300px}
+  .nearnote{padding:30px 18px;text-align:center;font-size:13px;color:var(--sub);line-height:1.85}
+  #nearAgain{position:absolute;z-index:5;top:10px;left:50%;transform:translateX(-50%);background:#fff;color:var(--accent);border:none;border-radius:22px;padding:9px 18px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;font-family:inherit}
+  #nearHereBtn{position:absolute;z-index:5;right:12px;bottom:14px;width:46px;height:46px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.28);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  #nearHereBtn svg{width:23px;height:23px;fill:#1a73e8}
+  .nearsum{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:10px 13px;margin:10px 0 2px;font-size:13px;line-height:1.7}
+  .nearsum .ns-l b{color:var(--accent);font-size:16px}
+  .nearsum .ns-n{font-size:12.5px;color:var(--sub);margin-top:3px}
+  .nearsum .ns-n b{color:var(--accent);font-size:14px}
+  .nearlist{padding:2px 0 0}
+  .nearlist .pick-hdr{margin:10px 2px 8px}
+  .nc-note{font-size:11px;color:var(--sub);margin:0 2px 9px;line-height:1.65}
+  .nc-more{font-size:11px;color:var(--sub);text-align:center;margin:10px 2px 0;line-height:1.65}
+  .ncard{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:11px 13px;margin-bottom:10px}
+  .ncard .nc-pref{font-size:11px;color:var(--sub);font-weight:700}
+  .ncard .nc-nm{font-size:15px;font-weight:800;line-height:1.3;margin-top:1px}
+  .ncard .nc-ac{font-size:11.5px;color:#5c4d3d;margin-top:4px;line-height:1.5}
+  .ncard .nc-km{font-size:15px;font-weight:800;color:var(--accent);margin-top:6px}
+  .ncard .nc-b{display:flex;gap:8px;margin-top:10px}
+  .ncard .nc-b a{flex:1;text-align:center;font-size:12.5px;font-weight:800;text-decoration:none;padding:10px 3px;border-radius:10px;cursor:pointer}
+  .ncard .nb1{background:var(--accent);color:#fff}
+  .ncard .nb2{background:var(--paper);color:var(--accent);border:1.4px solid var(--accent)}
+
   .sheet{position:fixed;left:0;right:0;top:0;bottom:0;height:100vh;height:100dvh;background:rgba(28,21,15,.34);display:none;align-items:flex-end;z-index:40}
   .sheet.show{display:flex}
   .gciBtn{display:block;width:100%;margin:10px 0 0;padding:14px;border:0;border-radius:11px;
@@ -196,6 +241,15 @@
   .sd .pref{font-size:11.5px;color:var(--sub);font-weight:700;padding-right:34px}
   .sd .acc{font-size:12px;color:#5c4d3d;font-weight:600;margin-top:4px;line-height:1.45;padding-right:34px}
   .sd .nm{font-size:20px;font-weight:800;margin-top:4px;padding-right:34px}
+  /* ★2026-10-27 カードの作り直し（審査会 合格）。見本＝デスクトップの カードの見本_20261027.html */
+  /*   旅コピー（spots Y列）。空のときは要素ごと出さないので、ここでは余白だけ決めます */
+  .sd .copy{font-size:12.5px;color:#4a3c2e;line-height:1.65;margin-top:9px}
+  /*   お店の印（深めの焙煎／テイクアウト／焼き菓子）。
+       ★.chip は上の「しぼり込みのボタン」でも使っている名前なので、
+         .sd .chips の中だけ見た目を上書きします（しぼり込みのボタンは1つも変わりません） */
+  .sd .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+  .sd .chips .chip{font-size:11px;font-weight:700;color:var(--brown-d);background:#fff;
+    border:1.2px solid var(--line);border-radius:999px;padding:4px 10px;cursor:default}
   .sd .ro{font-size:12.5px;color:var(--sub);margin-top:2px}
   /* お店を知る：インライン横スワイプ（外観→店内→お店の人・写真＋文章） */
   .sd .sw{margin-top:13px;background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -239,7 +293,7 @@
   <div id="main" class="hidden">
 
     <div class="travelvow">コーヒーを飲みに、日本を旅しよう。<br>遠いほど、物語は濃い。</div>
-    <div id="lineNote" class="linenote hidden">マイルはLINEアプリの中で見られます</div>
+    <div id="lineNote" class="linenote hidden">旅の距離はLINEアプリの中で見られます</div>
 
     <div id="nudge" class="nudge hidden">
       <div class="kick">次の1軒</div>
@@ -257,12 +311,15 @@
     <div class="segbar">
       <div class="seg" id="seg">
         <span class="knob"></span>
-        <button class="on" id="segMap" onclick="setView('map')">ロースターマップ</button>
+        <!-- ★2026-10-27 3つめ（いちばん左）に「近くを探す」を足しました。★最初に開くのはここです（審査会 決定）。
+             ★「ロースターマップ」＝日本地図は、消さずに2つめに残しています。 -->
+        <button class="on" id="segNear" onclick="setView('near')">近くを探す</button>
+        <button id="segMap" onclick="setView('map')">ロースターマップ</button>
         <button id="segList" onclick="setView('list')">ロースター一覧</button>
       </div>
     </div>
 
-    <div class="filters">
+    <div class="filters" id="filtersRow">
       <div class="frow" id="areaRow"><span class="lab">エリア</span></div>
       <div class="frow"><span class="lab">こだわり</span>
         <button class="chip" data-tag="beans" onclick="setTag(this)">🫘 豆割あり</button>
@@ -344,6 +401,28 @@
       <div id="picks" class="picks hidden"></div>
     </div>
 
+    <!-- ★2026-10-27「近くを探す」（審査会 条件つき合格・87.3点・7名全員 承認）。
+         ★並びは _マイマップ_20261025/見た目の案2_地図と一覧_20261026.html と同じにしています。
+         ★上の日本地図（ロースターマップ）と下の一覧には1行も触っていません。足しただけです。 -->
+    <div class="nearwrap" id="nearView" style="display:none">
+      <div class="nearmsg hidden" id="nearMsg"></div>
+      <div class="frow" id="nearChips">
+        <button class="chip on" id="nearAll">全部</button>
+        <button class="chip" id="nearJoined">参加している店だけ</button>
+        <button class="chip" id="nearSort">近い順</button>
+      </div>
+      <div class="nearq"><input id="nearQ" type="search" placeholder="エリア・店名で探す" autocomplete="off"></div>
+      <div class="nearmapbox" id="nearMapBox">
+        <div id="nearMap"></div>
+        <!-- ★鍵（GMAP_KEY）が空のあいだ、地図のかわりに出す文（審査会 条件2） -->
+        <div class="nearnote hidden" id="nearMapNote">地図を準備しています。一覧はこの下に出ています</div>
+        <button class="hidden" id="nearAgain">この場所で再検索</button>
+        <button id="nearHereBtn" title="いまいる場所"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8.94 3A9 9 0 0013 3.06V1h-2v2.06A9 9 0 003.06 11H1v2h2.06A9 9 0 0011 20.94V23h2v-2.06A9 9 0 0020.94 13H23v-2h-2.06z"/></svg></button>
+      </div>
+      <div class="nearsum hidden" id="nearSum"></div>
+      <div class="nearlist" id="nearList"></div>
+    </div>
+
     <div class="list" id="listView"></div>
     <div class="empty" id="emptyView">この条件に合うお店はまだありません。</div>
 
@@ -354,13 +433,19 @@
       <button class="x" onclick="closeSheet()">✕</button>
       <div class="sd">
         <div class="pref" id="sdPref">—</div>
-        <div class="acc hidden" id="sdAccessTop"></div>
         <div class="nm" id="sdName">—</div>
         <div class="sw" id="sdSwipe" style="display:none">
           <div class="track" id="sdTrack"></div>
           <div class="dots" id="sdDots"></div>
         </div>
         <div class="sdmile" id="sdMile"></div>
+        <!-- ★2026-10-27 審査会で決まった並び（見本＝カードの見本_20261027.html の中央）。
+             都道府県 → 店名 → 写真 → 色つきの距離 → アクセス → 旅コピー → お店の印 → 定休日 → 住所
+             ★アクセス（sdAccessTop）は、前は店名の【上】に在りました。
+               色つきの距離の【すぐ下】へ移しました（目が行く所の真下に読ませたいものを並べるため）。 -->
+        <div class="acc hidden" id="sdAccessTop"></div>
+        <div class="copy hidden" id="sdCopy"></div>
+        <div class="chips hidden" id="sdChips"></div>
         <div class="info">
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
@@ -375,7 +460,7 @@
           <a class="lk hidden" id="sdIg" target="_blank" rel="noopener">Instagram</a>
           <a class="lk hidden" id="sdLineLink" target="_blank" rel="noopener">LINE</a>
         </div>
-        <div class="why" id="sdWhy">お店に着いたらチェックイン → 旅マイルを貯めて豆のお会計に使えます</div>
+        <div class="why" id="sdWhy">お店に着いたらチェックイン → 旅の記録が残ります</div>
         <button class="gciBtn" id="sdGci" style="display:none">このお店でチェックインする</button>
         <div class="gciNote" id="sdGciNote" style="display:none">お店に着いてから押してください</div>
         <div class="gciBox" id="sdGciBox"></div>
@@ -384,7 +469,10 @@
           <div class="fs-t">お店の方へ</div>
           <div class="fs-m" id="sdForShopMsg"></div>
         </div>
-        <div class="fine hidden" id="sdPendFine">写真・営業時間・定休日は、お店の承諾をいただいてから載せています。</div>
+        <!-- ★2026-10-27「紹介文」を足しました（審査会 条件4）。
+             ★理由＝未参加のお店の旅コピーは、お店が書いた文ではなく、本部が公開情報から書いたものです。
+               取り下げの受け口（下の「お店の方へ」のフォーム）と対になる一文です。 -->
+        <div class="fine hidden" id="sdPendFine">写真・営業時間・定休日・紹介文は、お店の承諾をいただいてから載せています。</div>
       </div>
       <div class="sdfoot">
         <a class="go" id="sdGo" target="_blank" rel="noopener">Googleマップで行き方・営業時間</a>
@@ -463,6 +551,10 @@
     var full=Math.max(10,km);
     return {km:km,eligible:eligible,mile:eligible?full:10,full:full,nextDate:eligible?null:new Date(last+NINETY_DAYS)};
   }
+  // 🛑★2026-10-27 この関数は【どこからも呼んでいません】（審査会で言い方を変えたため）。
+  //   ・前の言い方＝「＋45マイルの寄り道」「片道◯マイルの冒険」など
+  //   ・いまの言い方＝mileHTML の中の「旅の記録 ＋約◯km」
+  //   ★元に戻せるように、消さずに残しています。戻すときは mileHTML から呼び直してください。
   // 距離マイルを"旅の勲章"の言葉に（遠いほど誇らしく）。数字＝もらえるマイルであり旅した距離でもある
   function tierLabel(mile){
     if(mile<=15) return 'ご近所の一杯';
@@ -474,7 +566,13 @@
     var m=mileInfo(s); if(!m) return '';
     var approx=USER_CTX.homePrecise?'':'（おおよそ）';
     if(m.eligible){
-      return '<div class="milerow"><span class="milepill">'+tierLabel(m.mile)+'</span><span class="milekm">行けば貯まる ・ 約'+m.km+'km先'+approx+'</span></div>';
+      // ★2026-10-27 審査会で決まった言い方（案1を採用）。
+      //   ・丸い色つき＝「旅の記録 ＋約◯km」… 何が増えるのかを、そのまま書いています
+      //   ・その横＝「お住まいから」… ◯kmが【どこからの◯km】なのかが分かります
+      //   ★数字は m.km（お住まいからの距離）を使います。m.mile ではありません。
+      //     ＝m.mile は 10 を下回らない決まりがあり、近いお店では距離と違う数字が出るためです。
+      //   🛑★「マイル」「寄り道」「冒険」「行けば貯まる」は書かないこと（2026-09-25・2026-10-27 の決定）。
+      return '<div class="milerow"><span class="milepill">旅の記録 ＋約'+m.km+'km</span><span class="milekm">お住まいから'+approx+'</span></div>';
     }
     // 最近行ったばかり（90日以内）＝数字だけだと"バグ?"と考えさせる→理由を一言そえる
     var d=m.nextDate, md=(d.getMonth()+1)+'月'+d.getDate()+'日';
@@ -1045,10 +1143,23 @@
   };
   window.setTag=function(el){curBeans=!curBeans;el.classList.toggle("on",curBeans);refresh();};
   window.setView=function(v){
+    // ★2026-10-27 行き先が3つになりました（near＝近くを探す ／ map＝日本地図 ／ list＝一覧）。
+    //   ★map と list のふるまいは前と同じです。near を足しただけです。
+    $("segNear").classList.toggle("on",v==="near");
     $("segMap").classList.toggle("on",v==="map");$("segList").classList.toggle("on",v==="list");
+    $("seg").classList.toggle("on-map",v==="map");
     $("seg").classList.toggle("on-list",v==="list");
     $("mapView").style.display=(v==="map")?"block":"none";
     $("listView").classList.toggle("show",v==="list");
+    $("nearView").style.display=(v==="near")?"block":"none";
+    // ★エリア・こだわりのしぼり込みは、日本地図と一覧のためのものです。
+    //   「近くを探す」には自前のしぼり込み（全部／参加している店だけ）があるので隠します。
+    $("filtersRow").style.display=(v==="near")?"none":"";
+    if(v==="near"){
+      $("emptyView").classList.remove("show");
+      nearStart();
+      if(gmap&&window.google&&google.maps&&google.maps.event) google.maps.event.trigger(gmap,"resize");
+    }
     if(v==="list")renderList();
     logAction("toggle_view",{mode:v});
   };
@@ -1165,16 +1276,37 @@
     }
     return u;
   }
+  // ★2026-10-27 お店の印（深めの焙煎／テイクアウト／焼き菓子）。spots の AS・AT・AU列。
+  //   ・discover_shops.js が 1＝あり ／ 0＝なし ／ null＝伺えていない で渡してきます。
+  //   ・★1 のときだけ出します。0・null・項目そのものが無いとき（未参加店）は何も出しません。
+  //   ・3つとも出ないときは、入れ物ごと隠します（空の枠を出さないため）。
+  // 🛑★「深めの焙煎」は、いまは出しません（2026-10-27 審査会 条件2）。
+  //   理由＝docs/2026-10-08_connexcoffee登録_申し送り.md の22行に
+  //         「AS（深めの焙煎）は あり と記入したが、実際は常時ではない」と本部自身の記録が残っています。
+  //         味の話は日によって変わるため、設備の話（テイクアウト・焼き菓子）より後に出します。
+  //   ★登録の担当がお店に確かめ直したら、下の SHOW_DARK_ROAST を true にするだけで出ます。
+  var SHOW_DARK_ROAST = false;
+  function renderShopChips(s){
+    var box=$("sdChips"); if(!box) return;
+    var labels=[];
+    if(SHOW_DARK_ROAST && s.darkRoast===1) labels.push("深めの焙煎");
+    if(s.takeout===1) labels.push("テイクアウト");
+    if(s.sweets===1) labels.push("焼き菓子");
+    if(!labels.length){ box.innerHTML=""; box.classList.add("hidden"); return; }
+    var h=""; for(var i=0;i<labels.length;i++){ h+='<span class="chip">'+esc(labels[i])+'</span>'; }
+    box.innerHTML=h; box.classList.remove("hidden");
+  }
+
   function renderPending(s){
     var isP = (s.pending===1);
     ["sdPendBox","sdForShop","sdPendFine"].forEach(function(id){
       var el=$(id); if(el) el.classList.toggle("hidden", !isP);
     });
-    // ★「豆のお会計に使えます」は未参加店では言わない（無い物をあると書かない）
+    // ★2026-10-01：マイルの使い道が終わったので、その案内は出しません。
+    //   ★参加店・未参加店とも同じ1文になりました（★本番の discover.html と同じ文です）。
+    //   ★2026-10-27：テスト環境だけ古い文が残っていたので、本番に合わせました。
     var why=$("sdWhy");
-    if(why) why.textContent = isP
-      ? "お店に着いたらチェックイン → 旅マイルが貯まります"
-      : "お店に着いたらチェックイン → 旅マイルを貯めて豆のお会計に使えます";
+    if(why) why.textContent = "お店に着いたらチェックイン → 旅の記録が残ります";
     if(!isP) return;
 
     // ★案A確定版の誘い文（2026-09-18・オーナー指摘を受けた書き直し）
@@ -1217,9 +1349,18 @@
     var s=SHOPS[i];
     logAction("view_detail",{shopId:s.id});
     buildSwipe(s);
-    $("sdPref").textContent=(s.place&&s.place.length)?s.place:s.pref;$("sdName").textContent=s.name;
+    // ★2026-10-27 いちばん上は【都道府県】にしました（審査会 合格）。
+    //   ★前は display_place（s.place＝住所の一部。例「中目黒」）を先に出していました。
+    //     同じお店が、一覧では「東京都」・カードでは「中目黒」と、別のことを言っていました。
+    //   ★一覧の方（renderList）は はじめから s.pref を出しているので、これで言うことが揃います。
+    $("sdPref").textContent=s.pref;$("sdName").textContent=s.name;
     $("sdMile").innerHTML=mileHTML(s);
-    setRow("sdAccessTop","sdAccessTop",s.access);   // アクセスはヘッダー（場所の下・店名の上）に表示
+    setRow("sdAccessTop","sdAccessTop",s.access);   // ★アクセスは色つきの距離の【すぐ下】に出します（2026-10-27 移動）
+    // ★2026-10-27 旅コピー（spots Y列）をアクセスの下に出します。
+    //   ★空のお店は要素ごと出しません（「準備中」とは書きません＝手を抜いているように見えるため）。
+    setRow("sdCopy","sdCopy",s.copy);
+    // ★2026-10-27 お店の印。「あり」と答えのあったものだけ出します（上の renderShopChips）。
+    renderShopChips(s);
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",stripZip(s.address));
     renderPending(s);
@@ -1352,6 +1493,326 @@
     }
   }
 
+  /* ===== 📍 2026-10-27「近くを探す」=====
+     審査会＝docs/2026-10-27_審査会_結果_近くのロースターを探す地図.md（条件つき合格・87.3点）
+     ・いまいる場所を取り、そのまわりのロースターを Googleの地図とお店のカードで出します
+     ・★日本地図（ロースターマップ）と一覧の作りには1行も触っていません。足しただけです
+     ・★GASは1文字も直していません。お店の緯度・経度は discover_shops が前から返しています
+     守っている条件：
+       条件2 … 鍵（GMAP_KEY）はこのファイルの先頭の1か所だけ。空のときは地図を出さず、
+                一覧・距離・お店のカードはそのまま動きます
+       条件3 … 位置情報を断られたら、登録していただいたお住まいで出します。
+                お住まいも無ければ「ロースターマップ（日本地図）から探す」ボタンを出します
+       条件4 … 5km以内が0軒でも止めず、「いちばん近いのは ◯km先の ◯◯（都道府県）」を必ず出します
+       条件6 … 地図に描く丸は【いま見えている範囲】のお店だけ。まとめる仕掛け（クラスタ）は作っていません
+     ★座標が入っていないお店（2026-10-27 時点で5軒）は、地図にもお店のカードにも出しません       */
+  var NEAR_ZOOM     = 13;    // 地図を開いたときの寄り具合（見た目の案2 と同じ）
+  var NEAR_CARD_MAX = 40;    // お店のカードに並べる数（★数は全部のお店で数えます）
+  var NEAR_PIN_MAX  = 150;   // 地図に描く丸の数の上限（★見えている範囲がこれを超えたら、中心に近い順）
+  var nearOrigin    = null;  // [緯度,経度]＝ここからの距離を出す
+  var nearOriginKind= "";    // "gps"＝いまいる場所／"home"＝登録のお住まい／"center"＝地図を動かした先
+  var nearOnlyJoined= false; // 参加している店だけにしぼっているか
+  var nearQuery     = "";    // エリア・店名で探す（小文字にしてから入れる）
+  var nearAll       = [];    // しぼったあとの全部（近い順）
+  var nearCards     = [];    // そのうち、お店のカードに出す分
+  var nearStarted   = false; // もう位置を取りにいったか
+  var nearBound     = false; // ボタンに動きを付けたか
+  var nearWaitHome  = false; // 位置を断られ、お住まいの到着を待っているか
+  var nearUserCtxDone = false;                 // user_context の読み込みが終わったか
+  var gmap=null, gmapMarkers=[], gmapMe=null;  // Googleの地図・お店の丸・自分の青い点
+  var gmapLoading=false, gmapApiReady=false;
+
+  // 座標が入っているお店だけ（★入っていないお店は出さない）
+  function nearGeoShops(){ return SHOPS.filter(function(s){ return s.lat!=null && s.lng!=null; }); }
+
+  // ★「京都」で探したときに、東京都のお店が出てこないようにする仕掛け。
+  //   ★理由＝「東京都」という文字の中に「京都」が入っています。
+  //     ★2026-10-27 に実際にためしたところ、「京都」で東京都のお店まで116軒 出ました。
+  //   ・都道府県は【先頭から合うか】だけで見ます（真ん中だけ合っても、探している県ではありません）
+  //   ・住所も【先頭の都道府県を外してから】見ます（住所も「東京都…」で始まるためです）
+  //   ・店名・アクセスは、今までどおり どこが合っても通します
+  //     （「京都駅から徒歩5分」で探したい方がいるためです）
+  function nearPrefHit(pref,q){
+    if(!pref||!q) return false;
+    if(pref.indexOf(q)===0) return true;
+    return pref.replace(/[都道府県]$/,"").indexOf(q)===0;
+  }
+  function nearAddrBody(s){
+    if(s._naddr!=null) return s._naddr;                    // 1軒につき1回だけ計算する
+    var a=stripZip(s.address||"");
+    if(s.pref && a.indexOf(s.pref)===0) a=a.slice(s.pref.length);
+    s._naddr=a; return a;
+  }
+  // ★display_place（spots M列）も「東京都｜大田区・田園調布」の形で、先頭に都道府県が付いています。
+  //   ★2026-10-27 実測＝これを外す前は「京都」で東京都のお店が4軒 出ました（Ariowl Coffee ほか）。
+  //   ⇒ 「｜」より後ろ（市区町村・地名）だけを見ます。
+  function nearPlaceBody(s){
+    var p=String(s.place||""); var i=p.indexOf("｜");
+    return i>=0 ? p.slice(i+1) : p;
+  }
+
+  // いまのしぼり込み（全部／参加している店だけ＋エリア・店名で探す）を通るか
+  function nearPass(s){
+    if(nearOnlyJoined && s.pending===1) return false;
+    if(nearQuery){
+      var t=(s.name+" "+nearPlaceBody(s)+" "+nearAddrBody(s)+" "+(s.access||"")).toLowerCase();
+      if(t.indexOf(nearQuery)<0 && !nearPrefHit(s.pref,nearQuery)) return false;
+    }
+    return true;
+  }
+
+  // 距離を計算して近い順に並べる（haversineKm は前から在るものを使います）
+  function nearCompute(){
+    if(!nearOrigin){ nearAll=[]; nearCards=[]; return; }
+    nearAll=nearGeoShops().filter(nearPass).map(function(s){
+      var o={}; for(var k in s){ o[k]=s[k]; }
+      o._d=haversineKm(nearOrigin[0],nearOrigin[1],s.lat,s.lng);
+      return o;
+    }).sort(function(a,b){ return a._d-b._d; });
+    nearCards=nearAll.slice(0,NEAR_CARD_MAX);
+  }
+
+  // ★「（おおよそ）」は、登録のお住まいから数えているときだけ付けます。
+  //   ★いまいる場所が取れた方には付けません＝本当にその場所からの距離だからです（審査会の提案）。
+  function nearApprox(){ return (nearOriginKind==="home" && !USER_CTX.homePrecise) ? "（おおよそ）" : ""; }
+
+  // 地図の下の数字。★0軒で止めないこと（条件4）
+  function nearRenderSum(){
+    var box=$("nearSum");
+    if(!nearOrigin || !nearAll.length){
+      box.innerHTML = nearOrigin ? '<div class="ns-l">この条件に合うお店はありませんでした。</div>' : "";
+      box.classList.toggle("hidden", !nearOrigin);
+      return;
+    }
+    var n5=0,n10=0;
+    nearAll.forEach(function(s){ if(s._d<=5)n5++; if(s._d<=10)n10++; });
+    var h="";
+    if(n5>0)       h+='<div class="ns-l">5km以内に <b>'+n5+'</b> 軒　／　10km以内に <b>'+n10+'</b> 軒</div>';
+    else if(n10>0) h+='<div class="ns-l">5km以内にはありません。10km以内に <b>'+n10+'</b> 軒</div>';
+    else           h+='<div class="ns-l">5km以内にはありません。</div>';
+    var t=nearAll[0];
+    h+='<div class="ns-n">いちばん近いのは <b>'+t._d.toFixed(1)+'</b>km先の '+esc(t.name)+'（'+esc(t.pref)+'）'+nearApprox()+'</div>';
+    box.innerHTML=h; box.classList.remove("hidden");
+  }
+
+  // お店のカード（店名・都道府県・アクセス・距離・「このお店を見る」「ここへの経路」）
+  //   ★「このお店を見る」＝いまの画面のお店のカード（openSheet）を開きます。新しいカードは作っていません。
+  function nearCardHTML(s){
+    var dir="https://www.google.com/maps/dir/?api=1&destination="+s.lat+","+s.lng;
+    var city=cityOf(s);
+    return '<div class="ncard" data-i="'+s.idx+'">'
+      + '<div class="nc-pref">'+esc(s.pref)+(city?" "+esc(city):"")+'</div>'
+      + '<div class="nc-nm">'+esc(s.name)+'</div>'
+      + (s.access?('<div class="nc-ac">'+esc(s.access)+'</div>'):"")
+      + '<div class="nc-km">'+s._d.toFixed(1)+' km'+nearApprox()+'</div>'
+      + '<div class="nc-b">'
+      +   '<a class="nb1">このお店を見る</a>'
+      +   '<a class="nb2" href="'+esc(dir)+'" target="_blank" rel="noopener" data-id="'+esc(s.id)+'">ここへの経路</a>'
+      + '</div></div>';
+  }
+
+  function nearRenderList(){
+    var box=$("nearList");
+    if(!nearOrigin || !nearCards.length){ box.innerHTML=""; return; }
+    var h='<div class="pick-hdr"><b>近い順</b><span class="pick-cnt">'+nearAll.length+'店</span></div>';
+    // ★まだ登録されていないお店の呼び方は【1回だけ】出す（2026-09-25 オーナー決定）。
+    //   ★近い順に並べるので、かたまりに分けられません。だから見出しの下に一言だけ置きます。
+    var anyPend=false; nearCards.forEach(function(s){ if(s.pending===1) anyPend=true; });
+    if(anyPend) h+='<div class="nc-note">'+esc(HDR_PENDING)+'も混ざっています</div>';
+    h+=nearCards.map(nearCardHTML).join("");
+    if(nearAll.length>nearCards.length){
+      h+='<div class="nc-more">近い順に'+nearCards.length+'軒まで出しています（この条件では全'+nearAll.length+'軒）</div>';
+    }
+    box.innerHTML=h;
+  }
+
+  function nearRender(){ nearCompute(); nearRenderSum(); nearRenderList(); nearDrawPins(); }
+
+  // ───── Googleの地図 ─────
+  // 鍵が空のときに出す形。★一覧・距離・お店のカードは、このあとも動きます（条件2）
+  function nearNoMap(text){
+    $("nearMap").classList.add("hidden");
+    $("nearAgain").classList.add("hidden");
+    $("nearHereBtn").classList.add("hidden");
+    var n=$("nearMapNote"); n.textContent=text; n.classList.remove("hidden");
+  }
+  function nearLoadMap(){
+    if(!GMAP_KEY){ nearNoMap("地図を準備しています。一覧はこの下に出ています"); return; }
+    if(gmapApiReady||gmapLoading) return;
+    gmapLoading=true;
+    window.__nearGmapInit=function(){ gmapLoading=false; gmapApiReady=true; nearMapTry(); };
+    var sc=document.createElement("script");
+    sc.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(GMAP_KEY)
+         + "&callback=__nearGmapInit&language=ja&region=JP&loading=async";
+    sc.async=true;
+    sc.onerror=function(){ gmapLoading=false; nearNoMap("地図を出せませんでした。一覧はこの下に出ています"); };
+    document.head.appendChild(sc);
+  }
+  // 地図は【いまいる場所が決まってから】作ります（決まる前に作ると、よその場所が一瞬 見えるため）
+  function nearMapTry(){
+    if(gmap || !gmapApiReady || !nearOrigin) return;
+    try{
+      gmap=new google.maps.Map($("nearMap"),{
+        center:{lat:nearOrigin[0],lng:nearOrigin[1]}, zoom:NEAR_ZOOM,
+        disableDefaultUI:true, zoomControl:true, gestureHandling:"greedy", clickableIcons:false
+      });
+      // ★動かし終わったときだけ描き直す＝指で動かしているあいだは描きません
+      gmap.addListener("idle",function(){ nearDrawPins(); });
+      gmap.addListener("dragend",function(){ $("nearAgain").classList.remove("hidden"); });
+      gmap.addListener("zoom_changed",function(){ $("nearAgain").classList.remove("hidden"); });
+      $("nearMapNote").classList.add("hidden");
+      $("nearMap").classList.remove("hidden");
+      $("nearHereBtn").classList.remove("hidden");
+      nearSetMe();
+      nearDrawPins();
+    }catch(e){
+      gmap=null;
+      nearNoMap("地図を出せませんでした。一覧はこの下に出ています");
+    }
+  }
+  // 自分の青い点
+  function nearSetMe(){
+    if(!gmap||!nearOrigin) return;
+    var p={lat:nearOrigin[0],lng:nearOrigin[1]};
+    if(!gmapMe){
+      gmapMe=new google.maps.Marker({map:gmap,position:p,zIndex:999,
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:"#1a73e8",fillOpacity:1,
+              strokeColor:"#ffffff",strokeWeight:3}});
+    } else { gmapMe.setPosition(p); }
+  }
+  // ★条件6＝いま見えている範囲のお店だけ描く。まとめる仕掛けは作っていません。
+  //   ★色は日本地図と同じ決まりです（参加しているお店＝赤い丸／まだ登録されていないお店＝白い丸・赤い枠線）。
+  function nearDrawPins(){
+    if(!gmap) return;
+    var b=gmap.getBounds(); if(!b) return;
+    var c=gmap.getCenter(), cl=c.lat(), cg=c.lng();
+    var inView=nearGeoShops().filter(nearPass).filter(function(s){
+      return b.contains(new google.maps.LatLng(s.lat,s.lng));
+    });
+    if(inView.length>NEAR_PIN_MAX){
+      inView=inView.map(function(s){ return [haversineKm(cl,cg,s.lat,s.lng),s]; })
+                   .sort(function(x,y){ return x[0]-y[0]; })
+                   .slice(0,NEAR_PIN_MAX)
+                   .map(function(x){ return x[1]; });
+    }
+    gmapMarkers.forEach(function(m){ m.setMap(null); });
+    gmapMarkers=[];
+    inView.forEach(function(s){
+      var joined=(s.pending!==1);
+      var m=new google.maps.Marker({map:gmap,position:{lat:s.lat,lng:s.lng},title:s.name,
+        icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,
+              fillColor:joined?"#C04A55":"#ffffff",fillOpacity:1,
+              strokeColor:joined?"#ffffff":"#C04A55",strokeWeight:joined?2:2.4}});
+      m.addListener("click",function(){ openSheet(s.idx); });
+      gmapMarkers.push(m);
+    });
+  }
+
+  // ───── いまいる場所 ─────
+  function nearMsgSet(html){ var m=$("nearMsg"); if(html){ m.innerHTML=html; m.classList.remove("hidden"); } else { m.innerHTML=""; m.classList.add("hidden"); } }
+
+  // ★その場で取り直す・高精度（maximumAge:0＝前の位置を使い回さない）。gciGeo と同じ決まりです。
+  function nearLocate(){
+    nearMsgSet('<div class="nm-t">いまいる場所を確かめています…</div>');
+    if(!navigator.geolocation){ nearFallbackHome(); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(p){
+        nearWaitHome=false;
+        nearOrigin=[p.coords.latitude,p.coords.longitude]; nearOriginKind="gps";
+        nearMsgSet("");
+        $("nearMapBox").classList.remove("hidden");
+        nearRender();
+        if(gmap){ nearSetMe(); gmap.setCenter({lat:nearOrigin[0],lng:nearOrigin[1]}); gmap.setZoom(NEAR_ZOOM); $("nearAgain").classList.add("hidden"); }
+        else nearMapTry();
+      },
+      function(){ nearFallbackHome(); },
+      { enableHighAccuracy:true, timeout:15000, maximumAge:0 }
+    );
+  }
+
+  // ★条件3＝断られたときの道。白い画面にしない。
+  function nearFallbackHome(){
+    if(USER_CTX && USER_CTX.home){
+      nearWaitHome=false;
+      nearOrigin=[USER_CTX.home[0],USER_CTX.home[1]]; nearOriginKind="home";
+      nearMsgSet('<div class="nm-t">お住まいの近くを出しています</div>'
+        +'<div class="nm-s">いまいる場所が分からなかったので、登録していただいたお住まいからの距離で出しています。'
+        +'スマホの位置情報を許していただくと、いまいる場所から出せます。</div>');
+      $("nearMapBox").classList.remove("hidden");
+      nearRender();
+      if(gmap){ nearSetMe(); gmap.setCenter({lat:nearOrigin[0],lng:nearOrigin[1]}); gmap.setZoom(NEAR_ZOOM); }
+      else nearMapTry();
+      return;
+    }
+    // お住まいがまだ届いていない（LINEの中・読み込み中）＝届いたらもう一度ここに来ます
+    if(USER_ID && !nearUserCtxDone){
+      nearWaitHome=true;
+      nearMsgSet('<div class="nm-t">お住まいを確かめています…</div>');
+      return;
+    }
+    // いまいる場所もお住まいも無い＝日本地図へご案内する
+    nearWaitHome=false;
+    nearOrigin=null; nearOriginKind="";
+    nearMsgSet('<div class="nm-t">いまいる場所が分かりませんでした</div>'
+      +'<div class="nm-s">スマホの位置情報を許していただくと、近くのロースターを出せます。<br>'
+      +'お住まいを登録していただいた方は、お住まいからの距離でも出せます。</div>'
+      +'<button class="nm-b" id="nearToMap">ロースターマップ（日本地図）から探す</button>');
+    var b=$("nearToMap"); if(b) b.onclick=function(){ setView("map"); };
+    $("nearSum").innerHTML=""; $("nearSum").classList.add("hidden");
+    $("nearList").innerHTML="";
+    $("nearMapBox").classList.add("hidden");
+  }
+
+  // ★user_context（お住まい）が届いたとき。待っていたらここで出します
+  function nearOnUserContext(){
+    nearUserCtxDone=true;
+    if(nearWaitHome) nearFallbackHome();
+  }
+
+  // 「この場所で再検索」＝地図を動かした先から数え直す
+  function nearAgainClick(){
+    if(!gmap) return;
+    var c=gmap.getCenter();
+    nearOrigin=[c.lat(),c.lng()]; nearOriginKind="center";
+    $("nearAgain").classList.add("hidden");
+    nearMsgSet('<div class="nm-t">この場所のまわりを出しています</div>');
+    nearSetMe();
+    nearRender();
+  }
+
+  function nearChipSync(){
+    $("nearAll").classList.toggle("on",!nearOnlyJoined);
+    $("nearJoined").classList.toggle("on",nearOnlyJoined);
+  }
+
+  function nearBindOnce(){
+    if(nearBound) return; nearBound=true;
+    $("nearQ").addEventListener("input",function(){ nearQuery=(this.value||"").trim().toLowerCase(); nearRender(); });
+    $("nearAgain").onclick=nearAgainClick;
+    $("nearHereBtn").onclick=function(){ nearLocate(); };
+    $("nearAll").onclick=function(){ nearOnlyJoined=false; nearChipSync(); nearRender(); };
+    $("nearJoined").onclick=function(){ nearOnlyJoined=true; nearChipSync(); nearRender(); };
+    // ★見た目の案2 と同じ＝はじめから近い順に並んでいます（並べ替えのボタンではありません）
+    $("nearSort").onclick=function(){ toast("近い順に並んでいます"); };
+    $("nearList").addEventListener("click",function(e){
+      var a=e.target.closest(".nb2");
+      if(a){ var id=a.getAttribute("data-id"); if(id) logOutbound(id,"google_map"); return; }   // 「ここへの経路」はそのまま開く
+      var c=e.target.closest(".ncard"); if(!c) return;
+      var i=+c.getAttribute("data-i");
+      if(i>=0 && SHOPS[i]) openSheet(i);   // ★いまの画面のお店のカードを開く
+    });
+  }
+
+  function nearStart(){
+    if(nearStarted) return;
+    nearStarted=true;
+    nearBindOnce();
+    nearChipSync();
+    nearLoadMap();   // ★鍵が空なら、ここで「地図を準備しています」を出します
+    nearLocate();
+  }
+  /* ===== ここまで「近くを探す」 ===== */
+
   function refresh(){
     // 🆕 2026-09-24（⑧）★お店の数は【お店】を数える。点を数えない。
     //   ★座標が無い11軒は点を出さなくなったので、点を数えると「全331店」と出て、
@@ -1387,6 +1848,11 @@
     buildAreaChips();
     $("status").classList.add("hidden");$("main").classList.remove("hidden");
     buildMap();setGauge();refresh();
+    // ★2026-10-27 最初に開くのは「近くを探す」にしました（審査会 決定）。
+    //   ★buildMap() の【あと】で切り替えます。
+    //     理由＝日本地図を隠した状態で組み立てると、沖縄の丸の位置の計算（snapToLand_）が
+    //     成り立ちません。出ている状態で組み立ててから隠すので、日本地図は前と1つも変わりません。
+    setView("near");
   }
 
   async function loadShops(){
@@ -1521,6 +1987,7 @@
     logAction("view_map");         // ファネル入口＝発見地図を開いた（USER_ID確定後・1回）
     loadNudge();                   // お知らせ箱（並列）
     await loadUserContext();       // 居住地＋来店履歴
+    nearOnUserContext();           // ★2026-10-27 位置情報を断られて、お住まいの到着を待っていたら、ここで出す
     if(USER_CTX.home && $("listView").classList.contains("show")) renderList(); // 表示中の一覧をマイル付きで再描画
     fsPopMaybeShow();              // FIELDSTYLE 先行パックのお知らせ（6県・期間内・2回まで）
   }
