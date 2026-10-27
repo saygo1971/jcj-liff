@@ -208,6 +208,32 @@
   .nearsum .ns-l b{color:var(--accent);font-size:16px}
   .nearsum .ns-n{font-size:12.5px;color:var(--sub);margin-top:3px}
   .nearsum .ns-n b{color:var(--accent);font-size:14px}
+  /* 🗺 ★2026-10-28 案A：地図を画面いっぱいに使う（オーナーさま決定 2026-10-28）
+     ★「近くを探す」を開いているあいだだけ、body に nearmode が付きます。
+       ⇒ ★ロースターマップ と ロースター一覧 のときは、いままでのままです。 */
+  body.nearmode .travelvow,
+  body.nearmode #lineNote,
+  body.nearmode #nudge,
+  body.nearmode .sec-h{ display:none !important; }
+  body.nearmode .wrap{ padding-bottom:0 }
+  body.nearmode #main{ display:flex; flex-direction:column; min-height:100vh; min-height:100dvh }
+  body.nearmode .segbar{ flex:none }
+  body.nearmode .nearwrap{ flex:1; display:flex; flex-direction:column; min-height:0; padding:0 }
+  body.nearmode .nearmapbox{ flex:1; min-height:300px; border-radius:0; border-left:0; border-right:0 }
+  body.nearmode #nearMap{ height:100% }
+  body.nearmode .nearsum{ flex:none; margin:0; border-radius:0; border-left:0; border-right:0 }
+  body.nearmode .nearlist{ display:none }
+  body.nearmode .nearmsg{ margin:0 14px }
+  /* ★「一覧で見る」に切り替えたときは、地図をいつもの高さに戻して、下に一覧を出します */
+  body.nearmode.listmode .nearmapbox{ flex:none; height:300px }
+  body.nearmode.listmode .nearlist{ display:block; padding:2px 14px 18px }
+  body.nearmode.listmode #main{ display:block }
+  /* ★地図の上に浮かせるもの */
+  body.nearmode .nearmapbox > .nearq{ position:absolute; left:10px; right:10px; top:10px; z-index:7; margin:0 }
+  body.nearmode .nearmapbox > .nearq input{ box-shadow:0 2px 10px rgba(50,38,26,.22); border-color:transparent }
+  body.nearmode .nearmapbox > .frow{ position:absolute; left:0; right:0; top:58px; z-index:7; padding:2px 10px }
+  body.nearmode .nearmapbox > .frow .chip{ background:#fff; box-shadow:0 2px 7px rgba(50,38,26,.18); border-color:transparent }
+  body.nearmode .nearmapbox > .frow .chip.on{ background:var(--accent); color:#fff }
   /* 🗺 ★2026-10-28 地図の上に重ねる、横に送るカード（審査会 条件1〜6・10〜13） */
   .nearrail{position:absolute;left:0;right:0;bottom:8px;z-index:6;
     display:flex;gap:9px;padding:0 10px 2px;overflow-x:auto;overflow-y:hidden;
@@ -445,14 +471,16 @@
          ★上の日本地図（ロースターマップ）と下の一覧には1行も触っていません。足しただけです。 -->
     <div class="nearwrap" id="nearView" style="display:none">
       <div class="nearmsg hidden" id="nearMsg"></div>
-      <div class="frow" id="nearChips">
-        <button class="chip on" id="nearAll">全部</button>
-        <button class="chip" id="nearJoined">参加している店だけ</button>
-        <button class="chip" id="nearSort">近い順</button>
-      </div>
-      <div class="nearq"><input id="nearQ" type="search" placeholder="エリア・店名で探す" autocomplete="off"></div>
       <div class="nearmapbox" id="nearMapBox">
         <div id="nearMap"></div>
+        <!-- 🗺 ★2026-10-28 検索としぼり込みを、地図の【上に浮かせます】（案A・オーナーさま決定）。
+             ★サウナイキタイと同じ形＝地図を画面いっぱいに使うためです。 -->
+        <div class="nearq"><input id="nearQ" type="search" placeholder="エリア・店名で探す" autocomplete="off"></div>
+        <div class="frow" id="nearChips">
+          <button class="chip on" id="nearAll">全部</button>
+          <button class="chip" id="nearJoined">参加している店だけ</button>
+          <button class="chip" id="nearSort">近い順</button>
+        </div>
         <!-- ★鍵（GMAP_KEY）が空のあいだ、地図のかわりに出す文（審査会 条件2） -->
         <div class="nearnote hidden" id="nearMapNote">地図を準備しています。一覧はこの下に出ています</div>
         <button class="hidden" id="nearAgain">この場所で再検索</button>
@@ -1205,7 +1233,12 @@
     // ★エリア・こだわりのしぼり込みは、日本地図と一覧のためのものです。
     //   「近くを探す」には自前のしぼり込み（全部／参加している店だけ）があるので隠します。
     $("filtersRow").style.display=(v==="near")?"none":"";
+    // 🗺 ★2026-10-28 案A：「近くを探す」のあいだだけ、上の文字を消して地図を画面いっぱいにします。
+    //   ★ロースターマップ と ロースター一覧 に移ると、いままでの見た目に戻ります。
+    document.body.classList.toggle("nearmode", v==="near");
+    if(v!=="near") document.body.classList.remove("listmode");
     if(v==="near"){
+      document.body.classList.toggle("listmode", !nearRailOn);
       $("emptyView").classList.remove("show");
       nearStart();
       if(gmap&&window.google&&google.maps&&google.maps.event) google.maps.event.trigger(gmap,"resize");
@@ -1819,6 +1852,8 @@
       //     位置が決まってから地図ができるまでに間があり、その間に1回 組み立てると
       //     「地図が無い」と判断されて、いつまでも縦並びのままになります。
       nearRenderRail();
+      document.body.classList.toggle("listmode", !nearRailOn);
+      google.maps.event.trigger(gmap,"resize");
       nearDrawPins();
     }catch(e){
       gmap=null;
@@ -2002,7 +2037,14 @@
              if(gmap && s && s.lat!=null) gmap.panTo({lat:s.lat,lng:s.lng});
              nearDrawPins(); }
     });
-    $("nearRailTog").onclick=function(){ nearRailOn=!nearRailOn; nearRenderRail(); nearDrawPins(); };
+    $("nearRailTog").onclick=function(){
+      nearRailOn=!nearRailOn;
+      // ★縦並びのときは地図をいつもの高さに戻します（地図の上にカードが無くなるため）
+      document.body.classList.toggle("listmode", !nearRailOn);
+      nearRenderRail();
+      if(gmap&&window.google&&google.maps&&google.maps.event) google.maps.event.trigger(gmap,"resize");
+      nearDrawPins();
+    };
     $("nearList").addEventListener("click",function(e){
       var a=e.target.closest(".nb2");
       if(a){ var id=a.getAttribute("data-id"); if(id) logOutbound(id,"google_map"); return; }   // 「ここへの経路」はそのまま開く
