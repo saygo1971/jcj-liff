@@ -679,6 +679,14 @@
       {k:"ro",  url:s.roasterPhoto ||derivePhoto(s.photo,"roaster"),  label:"お店の人", head:s.roaster||"", text:s.roasterVoice}
     ].filter(function(x){return x.url;});   // 写真URLが空の枚はスキップ
 
+    // 🗺 ★2026-10-27 未参加のお店は、写真のかわりに【地図の絵】を1枚だけ出します。
+    //   ★上の3枚（外観・店内・お店の人）は未参加店には来ないので、ここは必ず空です。
+    //   ★絵が読み込めなければ swFail がそのページごと消し、枠も閉じます
+    //     ＝割れた絵は出ません（在るかは確かめずに出してよい理由）。
+    if(s.pending===1 && s.mapImg){
+      slides=[{k:"map", url:s.mapImg, label:"地図", head:"", text:""}];
+    }
+
     if(!slides.length){ box.style.display="none"; track.innerHTML=""; dots.innerHTML=""; return; }
 
     var tok = ++SW_TOKEN;
@@ -1181,7 +1189,12 @@
   //   別の意味を既に持っているので、借りると意味まで借りてしまう（オーナー指摘 2026-09-18）。
   //   ★「NO PHOTO」の文字はやめました。無いものを英語で宣言しないため（オーナー指示 2026-09-24）。
   function ph(s){
-    if(s.pending===1) return "";
+    // 🗺 ★2026-10-27 未参加のお店には【地図の絵】を出します（オーナーさま指示）。
+    //   ★これはお店の写真ではありません。こちらが地図から描いた絵です。
+    //     お店の写真3枚は、いままでどおり1枚も出しません。
+    //   ★絵が無い軒は onerror で絵ごと隠れ、★いままでどおりの空の枠になります
+    //     （2026-10-27 時点で未参加418軒のうち6軒に絵が在りません）。
+    if(s.pending===1) return s.mapImg?'<img src="'+s.mapImg+'" alt="" onerror="this.style.display=\'none\'">':"";
     return s.photo?'<img src="'+s.photo+'" alt="" onerror="this.style.display=\'none\'">':"☕";
   }
   // 定休日ガード：定休日らしい文字だけ表示（キャンペーン文/ハッシュタグ/@等の混入を弾く）
