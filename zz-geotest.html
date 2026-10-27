@@ -3,10 +3,13 @@
 <head>
 <script>
 /* ★確かめ専用。いまいる場所を 中目黒 に決め打ちします。★このファイルは確認後すぐ消します */
-navigator.geolocation = {
-  getCurrentPosition: function(ok){ setTimeout(function(){ ok({coords:{latitude:35.6447,longitude:139.6990,accuracy:20}}); }, 300); },
-  watchPosition: function(){ return 0; }, clearWatch: function(){}
-};
+(function(){
+  function fake(ok){ setTimeout(function(){ ok({coords:{latitude:35.6447,longitude:139.6990,accuracy:20}}); }, 250); }
+  try{ if(window.Geolocation && Geolocation.prototype) Geolocation.prototype.getCurrentPosition = fake; }catch(e){}
+  try{ if(navigator.geolocation) navigator.geolocation.getCurrentPosition = fake; }catch(e){}
+  try{ Object.defineProperty(navigator,'geolocation',{configurable:true,get:function(){
+        return {getCurrentPosition:fake,watchPosition:function(){return 0;},clearWatch:function(){}}; }}); }catch(e){}
+})();
 </script>
 
 <meta charset="utf-8" />
