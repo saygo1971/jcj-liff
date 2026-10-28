@@ -230,7 +230,9 @@
   body.nearmode .segbar{ flex:none }
   body.nearmode .nearwrap{ flex:1; display:flex; flex-direction:column; min-height:0; padding:0 }
   body.nearmode .nearmapbox{ flex:1; min-height:300px; border-radius:0; border-left:0; border-right:0 }
-  body.nearmode #nearMap{ height:100% }
+  /* 🛑★height:100% だと高さが 0 になります（親が flex で、割合の高さを決められないため。
+       2026-10-28 に実物で確認）。★枠いっぱいに貼り付ける指定にします。 */
+  body.nearmode #nearMap{ position:absolute; left:0; right:0; top:0; bottom:0; height:auto; width:auto }
   body.nearmode .nearsum{ flex:none; margin:0; border-radius:0; border-left:0; border-right:0 }
   body.nearmode .nearlist{ display:none }
   body.nearmode .nearmsg{ margin:0 14px }
