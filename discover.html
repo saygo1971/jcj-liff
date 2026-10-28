@@ -1923,6 +1923,13 @@
             fillColor:"#C04A55", fillOpacity:1,
             strokeColor:"#ffffff", strokeWeight: sel?3:2};
   }
+  // ★2026-10-28 選ばれたお店の下に敷く【色の輪】。
+  //   ★大きさだけだと変化が分かりにくい、というオーナーさまのご指摘を受けて足しました。
+  function nearPinHalo(){
+    return {path:google.maps.SymbolPath.CIRCLE, scale:17,
+            fillColor:"#C04A55", fillOpacity:1,
+            strokeColor:"#ffffff", strokeWeight:3.5};
+  }
   function nearPinLogo(id, sel){
     var S = sel?46:34;
     return {url: NEAR_LOGO_BASE + encodeURIComponent(id) + "/logo.png",
@@ -1960,9 +1967,24 @@
       if(joined && nearLogoOK[s.id]===true)      ic=nearPinLogo(s.id, sel);
       else if(joined)                            ic=nearPinJoined(sel);
       else                                       ic=nearPinPending(sel);
+      // ★選ばれたお店の下に、色の輪を1枚 敷きます（押せないようにしておきます）
+      if(sel){
+        gmapMarkers.push(new google.maps.Marker({map:gmap,
+          position:{lat:s.lat,lng:s.lng}, icon:nearPinHalo(),
+          zIndex:998, clickable:false, optimized:false}));
+      }
       var m=new google.maps.Marker({map:gmap,position:{lat:s.lat,lng:s.lng},title:s.name,
-        zIndex: sel?999:(joined?2:1), icon:ic});
+        zIndex: sel?999:(joined?2:1), icon:ic,
+        // ★選ばれていないお店は少し薄く＝どれが選ばれているか 一目で分かります
+        opacity: sel?1:0.68});
       m.addListener("click",function(){ nearSelect(s.idx,true); });
+      // ★選ばれた瞬間に ひと跳ねします（0.8秒でおしまい）
+      if(sel){
+        try{
+          m.setAnimation(google.maps.Animation.BOUNCE);
+          setTimeout(function(){ try{ m.setAnimation(null); }catch(e){} }, 800);
+        }catch(e){}
+      }
       gmapMarkers.push(m); gmapMarkerByIdx[s.idx]=m;
       if(joined && nearLogoOK[s.id]===undefined) nearLogoProbe(s.id);
     });
