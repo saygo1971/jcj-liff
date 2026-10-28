@@ -256,6 +256,13 @@
   .rcard .r-ac{font-size:10.5px;color:#5c4d3d;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rcard .r-km{font-size:14px;font-weight:800;color:var(--accent);margin-top:4px}
   .rcard .r-km small{font-size:9.5px;color:var(--sub);font-weight:700;margin-left:5px}
+  /* ★2026-10-28 カードの中身を増やす（オーナーさま決定 A）。
+     ★定休日・テイクアウト・焼き菓子。★台帳に在るものだけ出します。
+     ★未参加のお店は台帳が空なので、この行ごと出ません。 */
+  .rcard .r-fx{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+  .rcard .r-fx i{font-style:normal;font-size:9.5px;font-weight:700;color:var(--brown-d);
+    background:#f6f1e9;border:1px solid var(--line);border-radius:999px;padding:3px 8px;white-space:nowrap}
+  .rcard .r-fx i.cl{background:#fff;color:#5c4d3d}
   .rcard .r-b{display:flex;gap:6px;margin-top:6px}
   .rcard .r-b a{flex:1;text-align:center;font-size:10.5px;font-weight:800;text-decoration:none;
     padding:6px 2px;border-radius:8px}
@@ -1746,11 +1753,25 @@
       +   '<div class="r-nm">'+esc(s.name)+'</div>'
       +   (s.access?('<div class="r-ac">'+esc(s.access)+'</div>'):'')
       +   '<div class="r-km">'+s._d.toFixed(1)+' km<small>'+from+'</small></div>'
+      +   nearFactsHTML(s)
       +   '<div class="r-b">'
       +     '<a class="rb1">このお店を見る</a>'
       +     '<a class="rb2" href="'+esc(dir)+'" target="_blank" rel="noopener" data-id="'+esc(s.id)+'">経路</a>'
       +   '</div>'
       + '</div></div>';
+  }
+
+  // ★カードに出す小さな印（2026-10-28・オーナーさま決定 A）
+  //   ★定休日 … cd() で「曜」「休」を含む短い文だけ通します（キャンペーン文の混入を弾く）
+  //   ★テイクアウト・焼き菓子 … discover_shops が 1 を返したものだけ
+  //   🛑★深めの焙煎は出しません（カードと同じ理由＝2026-10-08 の申し送り）
+  //   ★未参加のお店は、この3つが台帳に入っていないので、行ごと出ません
+  function nearFactsHTML(s){
+    var h="", c=cd(s);
+    if(c)            h+='<i class="cl">🗓 '+esc(c)+'</i>';
+    if(s.takeout===1) h+='<i>テイクアウト</i>';
+    if(s.sweets===1)  h+='<i>焼き菓子</i>';
+    return h ? ('<div class="r-fx">'+h+'</div>') : "";
   }
 
   function nearRenderRail(){
@@ -2016,7 +2037,13 @@
     $("nearAgain").classList.add("hidden");
     nearMsgSet('<div class="nm-t">この場所のまわりを出しています</div>');
     nearSetMe();
+    // 🗺 ★2026-10-28 選ばれているお店を、いったん外します。
+    //   ★そうしないと、前の場所で選んでいたお店が選ばれたままになり、
+    //     入れ替わったカードの先頭と地図の印が ちぐはぐになります。
+    nearSelIdx=null;
     nearRender();
+    var rail=$("nearRail");
+    if(rail && !rail.classList.contains("hidden")) rail.scrollLeft=0;
   }
 
   function nearChipSync(){
