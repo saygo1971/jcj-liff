@@ -1618,6 +1618,54 @@
        条件6 … 地図に描く丸は【いま見えている範囲】のお店だけ。まとめる仕掛け（クラスタ）は作っていません
      ★座標が入っていないお店（2026-10-27 時点で5軒）は、地図にもお店のカードにも出しません       */
   var NEAR_ZOOM     = 13;    // 地図を開いたときの寄り具合（見た目の案2 と同じ）
+
+  /* 🗺 地図の色（★2026-10-28 審査会 条件つき合格 86.3点・オーナーさま決定）
+     ★決まりの芯＝【緑が見えたら、押せる】。だから地図の中に緑は使いません。
+       緑はお店のピン #2B5D4F だけです。
+     ★地 #EFECE6 と 建物 #E1DACF は 2026-09-28 の仕様書のまま（1文字も変えていません）。
+       変えたのは、仕様書で道に割り当てられていた緑2色です
+       （道 #8FB8A5／太い道 #4E8270 ⇒ グレー3段へ）。
+     ★道は3段。細い道＝白／そのほかの道＝#BDBDBD／太い大きな道＝#8E8E8E（一番濃い）。
+       ★細い道を白のまま残すのは、グレー1色にすると「自分がどこにいるか」が
+         分からなくなるためです（オーナーさま指摘・実物で確認）。
+     ★駅の印は【色を指定しません】。Googleが元から路線ごとの色を持っています
+       （JR=緑／東急=赤／メトロ=水色）。★以前 saturation:-100 で消していたのを外しただけです。
+       ★駅の印を消すと駅名もほとんど消えます（連動している）＝出す方を採りました。
+     ★公園の緑 #CBDCC0 は、ピンの緑 #2B5D4F と はっきり変えてあります。
+       同じ緑にすると、押せない公園を押そうとされるためです。
+     🛑★拡大17まで寄せると、地図が道の種類を渡してこなくなります
+       ⇒ 太い道だけを濃くできません。★広い道を真っ黒に指定しても画面が1ドットも
+         変わらないことで確かめました。拡大13・15では一番濃く出ます。
+     ★ここ1か所にまとめてあります。2か所に書き写さないこと（審査会 攻めの提案・品質）。 */
+  var NEAR_MAP_STYLE = [
+    {elementType:"geometry",             stylers:[{color:"#EFECE6"}]},                 // 地
+    {elementType:"labels.text.fill",     stylers:[{color:"#726A5E"}]},                 // 町名・区名
+    {elementType:"labels.text.stroke",   stylers:[{color:"#EFECE6"},{weight:3}]},
+    {featureType:"poi",                  stylers:[{visibility:"off"}]},                // よその飲食店の印は出さない
+    {featureType:"landscape.man_made",   elementType:"geometry.fill", stylers:[{color:"#E1DACF"}]}, // 建物・区画
+    {featureType:"poi.park",             stylers:[{visibility:"on"}]},                 // 公園は出す
+    {featureType:"poi.park",             elementType:"geometry",          stylers:[{color:"#CBDCC0"}]},
+    {featureType:"poi.park",             elementType:"labels.text.fill",  stylers:[{color:"#587A4C"}]},
+    {featureType:"poi.park",             elementType:"labels.text.stroke",stylers:[{color:"#FFFFFF"},{weight:3}]},
+    {featureType:"poi.park",             elementType:"labels.icon",       stylers:[{visibility:"off"}]},
+    {featureType:"landscape.natural",    elementType:"geometry",          stylers:[{color:"#CBDCC0"}]},
+    {featureType:"road",                 elementType:"labels",            stylers:[{visibility:"off"}]}, // 道の名前は出さない
+    {featureType:"road",                 elementType:"geometry.fill",     stylers:[{color:"#BDBDBD"}]},  // そのほかの道
+    {featureType:"road",                 elementType:"geometry.stroke",   stylers:[{color:"#A9A9A9"}]},
+    {featureType:"road.local",           elementType:"geometry.fill",     stylers:[{color:"#FFFFFF"}]},  // 細い道
+    {featureType:"road.local",           elementType:"geometry.stroke",   stylers:[{color:"#DDD6CE"}]},
+    {featureType:"road.highway",         elementType:"geometry.fill",     stylers:[{color:"#8E8E8E"}]},  // 太い大きな道＝一番濃い
+    {featureType:"road.highway",         elementType:"geometry.stroke",   stylers:[{color:"#7C7C7C"}]},
+    {featureType:"water",                elementType:"geometry",          stylers:[{color:"#B6D7EA"}]},  // 川・水
+    {featureType:"water",                elementType:"labels.text.fill",  stylers:[{color:"#4E88AC"}]},
+    {featureType:"transit.line",         elementType:"geometry",          stylers:[{color:"#D6CEC1"}]},  // 線路
+    {featureType:"transit.line",         elementType:"labels",            stylers:[{visibility:"off"}]},
+    {featureType:"transit.station",      elementType:"geometry",          stylers:[{color:"#D2CABD"}]},
+    {featureType:"transit.station",      elementType:"labels.text.fill",  stylers:[{color:"#3E372E"}]},  // 駅名
+    {featureType:"transit.station",      elementType:"labels.text.stroke",stylers:[{color:"#FFFFFF"},{weight:3}]},
+    {featureType:"transit.station",      elementType:"labels.icon",       stylers:[{visibility:"on"}]},  // ★駅の印＝色は指定しない
+    {featureType:"transit.station.bus",  stylers:[{visibility:"off"}]}                 // バス停の印は出さない
+  ];
   var NEAR_CARD_MAX = 40;    // お店のカードに並べる数（★数は全部のお店で数えます）
   var NEAR_PIN_MAX  = 150;   // 地図に描く丸の数の上限（★見えている範囲がこれを超えたら、中心に近い順）
   var nearOrigin    = null;  // [緯度,経度]＝ここからの距離を出す
@@ -1886,7 +1934,8 @@
     try{
       gmap=new google.maps.Map($("nearMap"),{
         center:{lat:nearOrigin[0],lng:nearOrigin[1]}, zoom:NEAR_ZOOM,
-        disableDefaultUI:true, zoomControl:true, gestureHandling:"greedy", clickableIcons:false
+        disableDefaultUI:true, zoomControl:true, gestureHandling:"greedy", clickableIcons:false,
+        styles: NEAR_MAP_STYLE   // 🗺 ★2026-10-28 地図の色（上の NEAR_MAP_STYLE にまとめてあります）
       });
       // ★動かし終わったときだけ描き直す＝指で動かしているあいだは描きません
       gmap.addListener("idle",function(){ nearDrawPins(); });
