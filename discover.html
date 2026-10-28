@@ -1867,6 +1867,18 @@
     sc.async=true;
     sc.onerror=function(){ gmapLoading=false; nearNoMap("地図を出せませんでした。一覧はこの下に出ています"); };
     document.head.appendChild(sc);
+    // 🛑★2026-10-28 保険。★Googleからの「読み込めました」の合図と、いまいる場所の確定は、
+    //   どちらが先になるか毎回ちがいます。先に合図が来ると、まだ場所が決まっておらず
+    //   地図を作る所が空振りし、★そのまま誰も作り直しません（本番の写しで実際に起きました）。
+    //   ⇒ 0.3秒ごとに12秒まで見て、両方そろった時点で作ります。作れたら止まります。
+    var _t=0;
+    var _iv=setInterval(function(){
+      _t++;
+      if(gmap || _t>40){ clearInterval(_iv); return; }
+      if(window.google && window.google.maps && window.google.maps.Map){
+        gmapLoading=false; gmapApiReady=true; nearMapTry();
+      }
+    },300);
   }
   // 地図は【いまいる場所が決まってから】作ります（決まる前に作ると、よその場所が一瞬 見えるため）
   function nearMapTry(){
