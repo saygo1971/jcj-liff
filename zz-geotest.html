@@ -2,7 +2,6 @@
 <html lang="ja">
 <head>
 <script>
-/* ★確かめ専用。いまいる場所を 中目黒 に決め打ちします。★このファイルは確認後すぐ消します */
 (function(){
   function fake(ok){ setTimeout(function(){ ok({coords:{latitude:35.6447,longitude:139.6990,accuracy:20}}); }, 250); }
   try{ if(window.Geolocation && Geolocation.prototype) Geolocation.prototype.getCurrentPosition = fake; }catch(e){}
@@ -1240,7 +1239,9 @@
     $("seg").classList.toggle("on-list",v==="list");
     $("mapView").style.display=(v==="map")?"block":"none";
     $("listView").classList.toggle("show",v==="list");
-    $("nearView").style.display=(v==="near")?"block":"none";
+    // 🗺 ★2026-10-28 ここで display:block と書くと、画面いっぱいにする指定（nearmode）が負けます。
+    //   ★空にして、CSS に任せます。
+    $("nearView").style.display=(v==="near")?"":"none";
     // ★エリア・こだわりのしぼり込みは、日本地図と一覧のためのものです。
     //   「近くを探す」には自前のしぼり込み（全部／参加している店だけ）があるので隠します。
     $("filtersRow").style.display=(v==="near")?"none":"";
@@ -1864,7 +1865,14 @@
       //     「地図が無い」と判断されて、いつまでも縦並びのままになります。
       nearRenderRail();
       document.body.classList.toggle("listmode", !nearRailOn);
+      // ★形が決まったあとに、もう一度 大きさを知らせます（地図が灰色のままになるのを防ぐ）
       google.maps.event.trigger(gmap,"resize");
+      setTimeout(function(){
+        if(!gmap) return;
+        google.maps.event.trigger(gmap,"resize");
+        if(nearOrigin) gmap.setCenter({lat:nearOrigin[0],lng:nearOrigin[1]});
+        nearDrawPins();
+      },260);
       nearDrawPins();
     }catch(e){
       gmap=null;
