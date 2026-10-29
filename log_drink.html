@@ -77,6 +77,17 @@
     border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
   .beansrow input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--brand-deep);margin:0}
   .beanstx{font-size:14px;font-weight:800;color:var(--ink)}
+  /* ☕ ★2026-10-29 案2（審査会 2026-10-28・86.9点）：選んだ豆が、お店のページの数になることを伝える1行。
+     ★オーナーさま決定の文（3番）。★お店が決まっているときだけ出します。 */
+  .beansnote{font-size:11.5px;color:var(--ink-sub);line-height:1.7;margin:-4px 0 12px 94px}
+  /* ☕ ★2026-10-29 案3（審査会 2026-10-28・86.9点）：ひとことメモの下書き。
+     ★白い入力欄のまま向き合うと、手が止まります。押すと下書きが入るボタンを3つ置きます。
+     🛑★味の言葉（酸っぱい・甘い など）は入れません。
+        ご存じない方が味を推測して書いてしまい、正しくない記録が混ざるためです
+        （2026-09-19の決定＝正確な7%より、濁った60%の方が悪い）。 */
+  .memotips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 8px}
+  .memotip{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:6px 13px;
+    font-size:12.5px;font-weight:700;color:var(--ink-sub);cursor:pointer;font-family:inherit}
   textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:14px;
     font-family:inherit;resize:vertical;min-height:64px;background:var(--bg);color:var(--ink)}
   .btn{background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
@@ -169,6 +180,8 @@
   <div class="row"><span class="lb">飲みもの</span><select id="selDrink"></select></div>
   <div class="row"><span class="lb">生産国</span><select id="selCountry"></select></div>
   <div class="row"><span class="lb">精製方法</span><select id="selProcess"></select></div>
+  <!-- ☕ ★2026-10-29 案2：お店が決まっているときだけ出します（家の一杯はお店のページに出ないため）。 -->
+  <div class="beansnote hidden" id="beansNote">選んでいただいた豆は、このお店のページに足されます。</div>
 
   <!-- ★2026-10-23 オーナー決定：豆を買ったことを、一杯の記録と一緒に残せるようにした。
        ★お店が一覧から決まっているときだけ出す（どのお店で買ったかが分かるため）。 -->
@@ -188,6 +201,12 @@
        ★中身も並び順も変えていない。出しただけ。
        ★審査会（2026-10-04）の「折りたたみの中は7〜10%しか埋まらない」とも向きが合う。 -->
   <div class="sec">ひとことメモ</div>
+  <!-- ☕ ★2026-10-29 案3：押すと下書きが入ります。書き替えられます。 -->
+  <div class="memotips" id="memoTips">
+    <button type="button" class="memotip" data-tx="ひとりで。">だれと</button>
+    <button type="button" class="memotip" data-tx="〇〇の帰りに寄りました。">ついでに</button>
+    <button type="button" class="memotip" data-tx="また来ます。">また来たい</button>
+  </div>
   <textarea id="memo" placeholder="香り・味わい・気づいたこと など"></textarea>
 
   <!-- 写真を追加（任意）＝③体験。撮る/選ぶ→端末側で縮小→プレビュー。保存先(Drive等)はアカウント確定後に結線。 -->
@@ -347,6 +366,25 @@
 
   function showStatus(msg){ $("status").textContent = msg; $("status").classList.remove("hidden"); }
 
+  // ☕ ★2026-10-29 案3：ひとことメモの下書き。押すと、いまの文のうしろに足します（消しません）。
+  //   ★すでに同じ文が入っているときは、二重に足しません。
+  //   ★押したあとは入力欄に入り、文のいちばん後ろにカーソルを置きます（すぐ書き替えられるように）。
+  function setupMemoTips(){
+    const box = $("memoTips"), ta = $("memo");
+    if (!box || !ta) return;
+    box.querySelectorAll(".memotip").forEach(function(b){
+      b.onclick = function(){
+        const tx = b.getAttribute("data-tx") || "";
+        const cur = String(ta.value || "");
+        if (cur.indexOf(tx) < 0) {
+          ta.value = cur ? (cur.replace(/\s+$/, "") + " " + tx) : tx;
+        }
+        ta.focus();
+        try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch(e){}
+      };
+    });
+  }
+
   // 写真を追加（任意）＝端末側で縮小(長辺1280/JPEG0.8)→プレビュー。縮小後データURLを window._photoData に保持。
   // ★保存(Drive等への結線)は「保存先アカウント確定＋GAS受け口配備」後に submit で送る。今はUX＋iPhone選択確認まで。
   window._photoData = "";
@@ -443,6 +481,8 @@
     // ★2026-10-23 「このお店で豆も買いました」＝お店が一覧から決まっているときだけ出す。
     //   ★その他（名前を打っただけ）や うちでは出しません＝どのお店で買ったか分からないため。
     $("beansRow").classList.toggle("hidden", !curShopId);
+    // ☕ ★2026-10-29 案2：豆の印と同じで、お店が決まっているときだけ出します。
+    $("beansNote").classList.toggle("hidden", !curShopId);
     if (!curShopId) $("beansChk").checked = false;   // お店をうちに選び直したら、印も外す
 
     // 抽出ツール・挽き目・湯温＝うちのときだけ
@@ -683,6 +723,7 @@
     paintFields();   // ★2026-10-06 開いた時点の場所に合わせて、選ぶ項目を並べる
     $("submitBtn").addEventListener("click", submit);
     setupPhoto();
+    setupMemoTips();   // ☕ ★2026-10-29 案3 ひとことメモの下書き
     $("laterLink").onclick = function(ev){ ev.preventDefault(); closeApp(); };
     // 旅の記録リンク（履歴LIFF未発行なら隠す）
     if (/^\d+-/.test(HISTORY_LIFF_ID) && HISTORY_LIFF_ID.indexOf("YYYYYYYY")<0){

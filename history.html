@@ -33,6 +33,16 @@
   .summ .s.main span{color:var(--state-done);font-weight:700}
   .mcup{text-align:center;font-size:11.5px;color:var(--ink-sub);margin:-8px 0 16px}
   .mcup b{color:var(--ink);font-weight:900;font-size:13px}
+  /* ☕ ★2026-10-29 案2（審査会 2026-10-28・86.9点）：あなたが飲んだ豆。
+     ★お店のページの「このお店で飲まれた豆」と対です。自分にも返す、という作りにしています。 */
+  .mybn{background:var(--paper);border-radius:12px;padding:11px 12px;margin:0 0 14px}
+  .mybnH{font-size:13px;font-weight:800;color:var(--ink);margin:0 0 7px}
+  .mybnG{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .mybnG:last-child{margin-bottom:0}
+  .mybnL{font-size:10.5px;font-weight:800;color:var(--ink-sub);width:100%;margin-bottom:-2px}
+  .mybnI{font-size:11.5px;font-weight:700;background:var(--bg);border:1px solid var(--line);
+    border-radius:9px;padding:4px 9px;color:var(--ink)}
+  .mybnI b{color:var(--state-done);margin-left:4px}
   /* ★2026-10-17 記録1件ごとの「このお店 ◯回目」。帯の右に小さく置く。 */
   .kindband .seq{float:right;font-weight:900;letter-spacing:0}
   /* 🔒 ★2026-10-18 「…」＝この一杯の設定（自分だけが見る／消す） */
@@ -158,6 +168,8 @@
   </div>
   <!-- ★2026-10-17 今月と先月の杯数。★0杯のときは何も出さない（空の行を出さない）。 -->
   <div class="mcup hidden" id="mcup"></div>
+  <!-- ☕ ★2026-10-29 案2：あなたが飲んだ豆。1つも数が無ければ、まるごと出しません。 -->
+  <div class="mybn hidden" id="mybn"><div class="mybnH">あなたが飲んだ豆</div><div id="mybnBody"></div></div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：お店が決まっていない記録の入口。
        お店を渡さずに記録の画面を開く＝向こうで「どこで飲みましたか？」から選べる。 -->
   <a class="recnew" id="recNewBtn">コーヒー日記に書く</a>
@@ -275,14 +287,24 @@
     $("nVisit").textContent = checkins.length;
     $("nShop").textContent = Object.keys(shops).length;
     $("nPref").textContent = Object.keys(prefs).length;
-    // ★2026-10-17 「残した一杯」＝書いた記録の件数。★ここが、書くたびに1つ増える数。
-    $("nCup").textContent = drinks.length;
+    // ☕ ★★2026-10-29 案1（審査会 2026-10-28・86.9点）で、数え方を変えました。
+    //   前 … 書いた記録の件数だけ（drinks.length）
+    //   後 … ★この一覧に並んでいる一杯の数（rows.length）＝チェックインだけの一杯も1杯と数える
+    //   ★なぜ＝お店でチェックインしても、この数が1つも増えませんでした。
+    //     チェックインした方の4人に3人が、書く画面を開いていません（本番で実測・2026-10-28）。
+    //   ★rows ＝ チェックイン ＋ どのチェックインにも結びつかなかった一杯（家の一杯など）。
+    //     ⇒ ★下の一覧を指で数えた数と、必ず同じになります。
+    //   🛑★パスポートの「◯杯」（passport_api.js の cupCount）と、同じ結びつけ方にしてあります。
+    //     ★片方だけ変えると、2つの画面で違う数が出ます。
+    $("nCup").textContent = rows.length;
 
     // ★2026-10-17 今月と先月の杯数。★どちらも0杯なら、この行ごと出しません（空の行を出さない）。
     const now = new Date();
     const thisM = now.getFullYear() * 12 + now.getMonth();
+    // ☕ ★2026-10-29 案1：上の「残した一杯」と数え方を揃えます（rows＝チェックイン込み）。
+    //   ★ここだけ drinks のままにすると、上の数と足し算が合わなくなります。
     let cupThis = 0, cupLast = 0;
-    drinks.forEach(x => {
+    rows.forEach(x => {
       if (!x.ms) return;
       const d = new Date(x.ms);
       const m = d.getFullYear() * 12 + d.getMonth();
@@ -295,6 +317,39 @@
     } else {
       $("mcup").classList.add("hidden");
     }
+
+    // ☕ ★★2026-10-29 案2（審査会 2026-10-28・86.9点）：あなたが飲んだ豆。
+    //   ★お店のページの「このお店で飲まれた豆」と対にします。
+    //     ★片方（お店のページ）だけだと、見返りが他人のぶんしかありません。
+    //       ⇒ 審査会の行動デザイン役の指摘＝自分に返るものが無いと、人は続けません。
+    //   ★数えるのは【書かれた一杯だけ】です（中身が空の一杯には豆が入っていません）。
+    //   ★「わからない」「その他」は数えません。豆の名前が分からないためです。
+    //     ⇒ GAS側（drinkBeansTally_）と同じ数え方にしてあります。
+    //   ★多い順に6つまで。
+    (function(){
+      const SKIP = { "": 1, "わからない": 1, "その他": 1 };
+      const tally = function(key){
+        const m = {};
+        drinks.forEach(function(x){
+          const v = String(x[key] || "").trim();
+          if (SKIP[v]) return;
+          m[v] = (m[v] || 0) + 1;
+        });
+        return Object.keys(m).map(function(k){ return { name:k, n:m[k] }; })
+                 .sort(function(a,b){ return b.n - a.n || (a.name < b.name ? -1 : 1); });
+      };
+      const country = tally("country"), process = tally("process");
+      if (!country.length && !process.length){ $("mybn").classList.add("hidden"); return; }
+      const grp = function(label, list){
+        if (!list.length) return "";
+        return '<div class="mybnG"><span class="mybnL">'+esc(label)+'</span>' +
+               list.slice(0,6).map(function(x){
+                 return '<span class="mybnI">'+esc(x.name)+'<b>'+x.n+'</b></span>';
+               }).join("") + '</div>';
+      };
+      $("mybnBody").innerHTML = grp("生産国", country) + grp("精製方法", process);
+      $("mybn").classList.remove("hidden");
+    })();
 
     // ★審査会 関門4（2026-09-13・行動デザイン役）＝「あとから戻ってくる場所」を成立させる。
     //   トークのカードはチェックインが増えるほど上へ流れて見つからなくなる。
@@ -386,9 +441,10 @@
         if (dr.grind)   tags += '<span class="tag ctry">'+esc(dr.grind)+'</span>';
         if (dr.temp)    tags += '<span class="tag ctry">'+esc(dr.temp)+'℃</span>';
       } else {
-        // 記録が無い来店＝「記録を追加する」で今日の一杯へ（その店を引き継ぐ）
+        // 中身がまだ空の一杯＝押すと、その一杯に書き足す画面へ（そのお店と日付を引き継ぐ）
+        // ★2026-10-29 オーナーさま決定の言葉に直しました（前＝「＋ 記録を追加する」）。
         const u = "https://liff.line.me/"+LOG_DRINK_LIFF_ID+"?shop="+encodeURIComponent(r.shopId||"")+"&name="+encodeURIComponent(r.shopName||"")+"&date="+encodeURIComponent(r.ms||"");
-        tags += '<a class="tag addrec" href="'+u+'">＋ 記録を追加する</a>';
+        tags += '<a class="tag addrec" href="'+u+'">書き足す</a>';
       }
       if (r.km!=null) tags += '<span class="tag dist">約'+r.km+'km</span>';
       // B案：記録に写真があれば、下に大きく（タップで拡大＝行タップの店詳細とは別動作）

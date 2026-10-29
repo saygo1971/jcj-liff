@@ -395,16 +395,28 @@
     //   ★受付のときだけ「この一杯を記録する」を出しません。
     //   ★ブース（イベント）とふつうのお店では、いままでどおり出ます。
     const isReception = String(r.visitType || "") === "イベント受付";
+    // ☕ ★★2026-10-29 案1（審査会 2026-10-28・86.9点／オーナーさま決定の文）。
+    //   ★チェックインした時点で、コーヒー日記に1杯 立ちます。それを黙って増やさず、ここでお伝えします。
+    //   ★「残りました」ではなく「残ります」＝オーナーさまのご指摘（2026-10-28）
+    //     「チェックインした時にはおそらくまだ飲んでいないから」。過去形で書きません。
+    //   ★受付（JCJの受付）では出しません。コーヒーをお出ししないためです。
+    const cupNoteHtml = isReception ? '' :
+      '<div style="text-align:center;font-size:13px;font-weight:700;color:var(--green,#2F7A57);margin-top:14px;line-height:1.7">' +
+      'コーヒー日記に1杯 残ります。<br>あとから書き足せます。</div>';
     const recordHtml = isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
       '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>';
-    RECORD_HTML = recordHtml;   // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
+    // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
+    //   ☕ ★2026-10-29 案1：そちらの画面にも、同じ1行を一緒に出します（同じ完了の場面のため）。
+    RECORD_HTML = cupNoteHtml + recordHtml;
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       headerHtml +
+      // ☕ ★2026-10-29 案1：チェックインで一杯が1つ立ったことを、お店の名前のすぐ下でお伝えします。
+      cupNoteHtml +
       /*★★2026-10-22 オーナー指示：チケットのまとまりを【上】にしました。
        *  ★理由＝「この一杯を記録する」が上に在ると、先にそちらを押してしまうため。
        *  ★戻すときは、下の3行を recordHtml → areaHtml → ticketHtml の順に戻すだけです。*/

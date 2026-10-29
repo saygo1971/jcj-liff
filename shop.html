@@ -78,6 +78,25 @@
     border-radius:10px;padding:9px 11px;margin-top:8px}
   .sdPhoto{width:100%;border-radius:10px;margin-top:8px;display:block}
   .sdMore{font-size:11.5px;color:var(--ink-sub);text-align:center;padding:4px 0 2px}
+  /* ☕ ★2026-10-29 案2：このお店で飲まれた豆（審査会 2026-10-28・86.9点）。
+     ★お店が決めることではなく、お客さまが実際に飲んだことの数です。
+     ★誰が書いたかは1文字も出しません。数だけです。 */
+  .bnBox{background:var(--paper);border-radius:12px;padding:12px 13px;margin:0 0 12px}
+  .bnH{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 8px}
+  .bnG{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+  .bnG:last-child{margin-bottom:0}
+  .bnL{font-size:11px;font-weight:800;color:var(--ink-sub);width:100%;margin-bottom:-2px}
+  .bnI{font-size:12px;font-weight:700;background:var(--bg);border:1px solid var(--line);
+    border-radius:9px;padding:4px 10px;color:var(--ink)}
+  .bnI b{color:var(--brand-deep);margin-left:4px}
+  /* ☕ ★2026-10-29 案4改（審査会 2026-10-28・86.9点）：まだ一杯の無いお店へのお誘い。
+     ★サウナイキタイの「未入力施設のサウナ情報募集中 残り13施設」を移したものですが、
+       ★数（残り◯軒）は出しません。終わらない数を出すと、宿題に見えるためです（審査会の指摘）。
+     ★そのお店を見ている方に、そのお店のことだけお伝えします。 */
+  .fsBox{background:var(--paper);border-radius:12px;padding:14px 14px 13px;margin:16px 0 10px;text-align:center}
+  .fsT{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.75;margin-bottom:11px}
+  .fsB{display:inline-block;background:var(--brand-deep);color:#fff;text-decoration:none;
+    font-weight:800;font-size:14px;border-radius:11px;padding:11px 24px}
 
   /* 📷 お店の外観写真をお客さまから集める（2026-09-25・設計4章の文をそのまま出す） */
   .spBox{margin:16px 0 10px;background:var(--paper);border-radius:12px;padding:14px}
@@ -115,8 +134,15 @@
     <div class="sdBox hidden" id="sdBox">
       <div class="sdH">このお店で、こんな一杯が。</div>
       <div class="sdS">お立ち寄りになった方が残した記録です。</div>
+      <!-- ☕ ★2026-10-29 案2：このお店で飲まれた豆。1つも数が無ければ、まるごと出しません。 -->
+      <div class="bnBox hidden" id="bnBox"><div class="bnH">このお店で飲まれた豆</div><div id="bnBody"></div></div>
       <div id="sdList"></div>
       <div class="sdMore hidden" id="sdMore"></div>
+    </div>
+    <!-- ☕ ★2026-10-29 案4改：まだ一杯の無いお店だけに出すお誘い。参加店だけに出します。 -->
+    <div class="fsBox hidden" id="fsBox">
+      <div class="fsT">このお店には、まだ一杯がありません。<br>はじめの一杯を残してみよう。</div>
+      <a class="fsB" id="fsBtn" href="#">一杯を残す</a>
     </div>
     <!-- 📷 お店の写真を送っていただく（★設計4章の文をそのまま。★用途の1行を外さない） -->
     <div class="spBox hidden" id="spBox">
@@ -140,6 +166,8 @@
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   const SHARE_LIFF_ID = "2008851980-V8WaCaZw"; // 友だちに教える（テスト）
+  // ☕ ★2026-10-29 案4改：一杯を書く画面（テスト）。★history.html の LOG_DRINK_LIFF_ID と同じ値です。
+  const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0";
   // ロゴ帳/旅の記録が同一オリジンのlocalStorageに置いたuserId（URLに載せない）。無ければ保存は非表示。
   const UID = (function(){ try{ return localStorage.getItem("jcj_uid")||""; }catch(e){ return ""; } })();
   const $ = id => document.getElementById(id);
@@ -348,12 +376,38 @@
     if(m && m[1]) return "https://drive.google.com/thumbnail?id="+m[1]+"&sz=w1200";
     return u;
   }
-  async function loadShopDiary(){
+  // ☕ ★2026-10-29 案4改：1件も無いときに「はじめの一杯」のお誘いを出すため、
+  //   お店の名前と「参加店かどうか」を受け取るようにしました。
+  async function loadShopDiary(shopName, isPending){
     if (!SHOP_ID) return;
+    // ★まだ一杯が無いときに出すお誘い。★参加店だけに出します。
+    //   ★未参加のお店には出しません＝チェックインできないお店に「残してみよう」と誘わないためです。
+    const inviteFirst = function(){
+      if (isPending) return;
+      $("fsBtn").href = "https://liff.line.me/"+LOG_DRINK_LIFF_ID
+                      + "?shop="+encodeURIComponent(SHOP_ID)
+                      + "&name="+encodeURIComponent(shopName||"");
+      $("fsBox").classList.remove("hidden");
+    };
     try{
       const res = await fetch(GAS_URL+"?action=shop_diary&shop="+encodeURIComponent(SHOP_ID)+"&limit=20&_="+Date.now());
       const d = await res.json();
-      if (!d || !d.ok || !d.entries || !d.entries.length) return;   // 1件も無ければ 何も出さない
+      if (!d || !d.ok || !d.entries || !d.entries.length){ inviteFirst(); return; }   // ★まだ一杯が無いお店
+      // ☕ ★2026-10-29 案2：このお店で飲まれた豆。
+      //   ★数は GAS が【そのお店の一杯 ぜんぶ】から作ります（下に並ぶ20件からではありません）。
+      //   ★GASがまだ古くて beans が返ってこないときは、何も出しません（画面は普通に出ます）。
+      //   ★多い順に6つまで。7つ目からは出しません（長い列にすると読まれないため）。
+      if (d.beans && ((d.beans.country||[]).length || (d.beans.process||[]).length)){
+        const grp = function(label, list){
+          if (!list || !list.length) return "";
+          return '<div class="bnG"><span class="bnL">'+esc(label)+'</span>' +
+                 list.slice(0,6).map(function(x){
+                   return '<span class="bnI">'+esc(x.name)+'<b>'+(Number(x.n)||0)+'</b></span>';
+                 }).join("") + '</div>';
+        };
+        $("bnBody").innerHTML = grp("生産国", d.beans.country) + grp("精製方法", d.beans.process);
+        $("bnBox").classList.remove("hidden");
+      }
       $("sdList").innerHTML = d.entries.map(function(x){
         var tags = "";
         if (x.drink)   tags += '<span class="sdTag">'+esc(x.drink)+'</span>';
@@ -372,12 +426,12 @@
         $("sdMore").classList.remove("hidden");
       }
       $("sdBox").classList.remove("hidden");
-    }catch(e){ /* 読めなくても このページは普通に出す */ }
+    }catch(e){ /* 読めなくても このページは普通に出す。★お誘いも出しません（本当に0件か分からないため） */ }
   }
 
   function render(s){
     buildSwipe(s);
-    loadShopDiary();   // ☕ ★2026-10-11 このお店で書かれた一杯（返事を待たずに、あとから差し込む）
+    loadShopDiary(s.name || "", s.pending === 1);   // ☕ ★2026-10-11 このお店で書かれた一杯（返事を待たずに、あとから差し込む）
 
     $("copy").textContent = s.copy || "";
     $("copy").style.display = s.copy ? "" : "none";
