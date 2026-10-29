@@ -27,7 +27,9 @@
   .summ .s{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:12px;text-align:center;padding:10px 4px}
   .summ .s b{display:block;font-size:22px;color:var(--ink);font-weight:900}
   .summ .s span{font-size:10.5px;color:var(--ink-sub)}
-  /* ★2026-10-17 「残した一杯」＝書くたびに増える数。ここだけ色を付けて一番に見えるようにする。 */
+  /* ★2026-10-17 いちばん左の数。ここだけ色を付けて一番に見えるようにする。
+     ★2026-10-29 言葉を「残した一杯」→「飲んだ一杯」に変えました（オーナーさま指定）。
+       ★理由＝「残した一杯」は【飲み残し】に読めるため。 */
   .summ .s.main{background:var(--done-tint);border-color:var(--state-done)}
   .summ .s.main b{color:var(--state-done)}
   .summ .s.main span{color:var(--state-done);font-weight:700}
@@ -158,10 +160,11 @@
   <div id="refresh" class="refresh hidden">最新に更新中…</div>
   <div class="hlead">これまでの一杯と、歩いた道のり。<br>旅の記録も、暮らしの記録も、日付の順に並びます。</div>
   <!-- ★2026-10-17 オーナー指示：書いても上の数が1つも動かなかった（3つとも来店から計算していた）。
-       ⇒ 一番左に「残した一杯」を足す＝★一杯を書くたびに、この数が1つ増える。
+       ⇒ 一番左に数を足す＝★一杯が増えるたびに、この数が1つ増える。
+       ★2026-10-29 言葉は「飲んだ一杯」（オーナーさま指定）。
        ★この画面はご本人だけが見ます（LINEのログインを通り、ご自分のID分だけを取る）。公開されません。 -->
   <div class="summ">
-    <div class="s main"><b id="nCup">0</b><span>残した一杯</span></div>
+    <div class="s main"><b id="nCup">0</b><span>飲んだ一杯</span></div>
     <div class="s"><b id="nVisit">0</b><span>訪問した回数</span></div>
     <div class="s"><b id="nShop">0</b><span>行ったお店</span></div>
     <div class="s"><b id="nPref">0</b><span>行った県</span></div>
@@ -195,7 +198,7 @@
 <div id="empty" class="wrap hidden">
   <div class="emo">☕️</div>
   <div class="t">最初の一杯は、どこで飲みますか？</div>
-  <div class="m">ロースターでチェックインして残した一杯は「旅の記録」、<br>家や出かけた先で残した一杯は「暮らしの記録」として、<br>ここに並んでいきます。</div>
+  <div class="m">ロースターでチェックインして飲んだ一杯は「旅の記録」、<br>家や出かけた先で飲んだ一杯は「暮らしの記録」として、<br>ここに並んでいきます。</div>
   <!-- ★2026-10-05 コーヒー日記（審査会A-1）：★ここを忘れると、家でしか淹れない方は
        1件目がいつまでも書けない（この画面しか出ないため）。 -->
   <a class="recnew" id="recNewBtn2">コーヒー日記に書く</a>
@@ -301,7 +304,7 @@
     // ★2026-10-17 今月と先月の杯数。★どちらも0杯なら、この行ごと出しません（空の行を出さない）。
     const now = new Date();
     const thisM = now.getFullYear() * 12 + now.getMonth();
-    // ☕ ★2026-10-29 案1：上の「残した一杯」と数え方を揃えます（rows＝チェックイン込み）。
+    // ☕ ★2026-10-29 案1：上の「飲んだ一杯」と数え方を揃えます（rows＝チェックイン込み）。
     //   ★ここだけ drinks のままにすると、上の数と足し算が合わなくなります。
     let cupThis = 0, cupLast = 0;
     rows.forEach(x => {
