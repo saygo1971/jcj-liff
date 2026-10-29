@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>共有の試し</title>
+<script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
+<!--
+  ☕ 共有の試し（★2026-10-29・本部のお題）
+  ・オーナーさまのお言葉＝「コーヒー日記をつけたあと、インスタに投稿できるようなボタンはできないか？
+    その時に自動でJCJをメンションできるようにするとか」
+  ・★この画面は【試し専用】です。お客さまには出しません。
+  ・★ほかの画面は1つも変えていません。この1枚だけ新しく作りました。
+  ・★台帳にも本番にも、1文字も触りません。この画面は何も保存しません。
+  ・★押した結果を、その場で日本語で出します。
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:17px;font-weight:800;
+    position:sticky;top:0;z-index:5}
+  .wrap{max-width:520px;margin:0 auto;padding:14px 16px 60px}
+  .lead{font-size:13.5px;line-height:1.85;color:var(--ink);background:var(--paper);
+    border-radius:12px;padding:12px 13px;margin:0 0 16px}
+  h2{font-size:15px;font-weight:800;margin:22px 0 8px;color:var(--ink);
+    border-left:5px solid var(--brand-deep);padding-left:9px}
+  .env{border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:13px;line-height:1.9}
+  .env b{color:var(--brand-deep)}
+  .btn{display:block;width:100%;text-align:left;background:var(--bg);
+    border:1.5px solid var(--brand-deep);color:var(--brand-deep);
+    font-weight:800;font-size:14.5px;border-radius:12px;padding:13px 15px;
+    margin:0 0 7px;cursor:pointer;font-family:inherit}
+  .btn:active{background:var(--paper)}
+  .note{font-size:11.5px;color:var(--ink-sub);line-height:1.7;margin:0 0 16px 2px}
+  .res{font-size:13px;line-height:1.85;border-radius:10px;padding:10px 12px;margin:0 0 16px;
+    white-space:pre-wrap;word-break:break-word;background:#F6F2EE;color:var(--ink)}
+  .res.ok{background:var(--done-tint);color:var(--state-done);font-weight:700}
+  .res.ng{background:#FBECEA;color:var(--state-error);font-weight:700}
+  .res:empty{display:none}
+  canvas{display:block;width:100%;max-width:360px;border:1px solid var(--line);border-radius:12px;margin:8px 0}
+  .foot{font-size:11.5px;color:var(--ink-sub);line-height:1.8;margin-top:26px;
+    border-top:1px solid var(--line);padding-top:12px}
+</style>
+</head>
+<body>
+<div class="bar">共有の試し（試し専用の画面）</div>
+<div class="wrap">
+
+  <div class="lead">
+    この画面は、<b>インスタに投稿するボタンが作れるかどうか</b>を確かめるためだけのものです。<br>
+    <b>上から順に、ボタンを押してください。</b>押すたびに、すぐ下に結果が日本語で出ます。<br>
+    ★何も保存されません。お店のデータにも台帳にも、いっさい触りません。
+  </div>
+
+  <h2>0. この端末の様子（押さなくても出ます）</h2>
+  <div class="env" id="env">調べています…</div>
+
+  <h2>1. 文だけを共有する</h2>
+  <button type="button" class="btn" id="b1">① 文だけを共有する</button>
+  <div class="note">スマホの共有の画面（LINE・インスタなどが並ぶ画面）が出れば成功です。</div>
+  <div class="res" id="r1"></div>
+
+  <h2>2. 絵を作る</h2>
+  <button type="button" class="btn" id="b2">② 一杯の絵を、その場で作る</button>
+  <div class="note">下に絵が出れば成功です。絵の中に @japancoffeejourney を刷り込んであります。</div>
+  <canvas id="cv" width="720" height="720" style="display:none"></canvas>
+  <div class="res" id="r2"></div>
+
+  <h2>3. 絵つきで共有する</h2>
+  <button type="button" class="btn" id="b3">③ 絵つきで共有する</button>
+  <div class="note">★先に②を押してください。共有の画面に絵が付いて出れば成功です。</div>
+  <div class="res" id="r3"></div>
+
+  <h2>4. 文をコピーする</h2>
+  <button type="button" class="btn" id="b4">④ 投稿する文をコピーする</button>
+  <div class="note">成功したら、どこかの入力欄を長押しして「貼り付け」を試してください。</div>
+  <div class="res" id="r4"></div>
+
+  <h2>5. Instagramのアプリを開く</h2>
+  <button type="button" class="btn" id="b5">⑤ Instagramのアプリを開く</button>
+  <div class="note">★押すとこの画面から離れることがあります。<b>戻ってきてから、下の結果を見てください。</b></div>
+  <div class="res" id="r5"></div>
+
+  <h2>6. 絵を保存する</h2>
+  <button type="button" class="btn" id="b6">⑥ 絵を保存する（ダウンロード）</button>
+  <div class="note">★先に②を押してください。写真に保存できるか、端末の動きを見てください。</div>
+  <div class="res" id="r6"></div>
+
+  <div class="foot">
+    ★この画面は試し専用です。お客さまには出していません。<br>
+    ★ほかの画面は1つも変えていません。★本番にも台帳にも触っていません。<br>
+    ★結果は、そのままチャットに書き写してお知らせください。
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  // ★結果の出し方。ok＝緑／ng＝赤／ふつう＝灰色。
+  function say(id, text, kind){
+    const el = $(id);
+    el.textContent = text;
+    el.className = "res" + (kind ? " " + kind : "");
+  }
+
+  // ★試しに使う文。★固定の文字です（お客さまの情報は1つも使いません）。
+  const TEXT = "今日の一杯を記録しました。\n@japancoffeejourney #JapanCoffeeJourney";
+  const URL_ = "https://japancoffeejourney.com/";
+
+  // ===== 0. この端末の様子 =====
+  (function(){
+    const ua = navigator.userAgent || "";
+    const inLine = ua.indexOf("Line/") >= 0;
+    const hasShare = (typeof navigator.share === "function");
+    const hasCanShare = (typeof navigator.canShare === "function");
+    const hasClip = !!(navigator.clipboard && typeof navigator.clipboard.writeText === "function");
+    const secure = (window.isSecureContext === true);
+    let canFile = "試してみないと分かりません";
+    try {
+      if (hasCanShare) {
+        const f = new File([new Blob(["x"],{type:"text/plain"})], "a.txt", {type:"text/plain"});
+        canFile = navigator.canShare({ files: [f] }) ? "使えそうです" : "使えません";
+      } else {
+        canFile = "この端末には、絵つき共有の確かめ方がありません";
+      }
+    } catch(e){ canFile = "確かめられませんでした（" + (e && e.name) + "）"; }
+
+    $("env").innerHTML =
+      "いま開いているところ … <b>" + (inLine ? "LINEの中のブラウザ" : "ふつうのブラウザ") + "</b><br>" +
+      "共有の仕組み … <b>" + (hasShare ? "在ります" : "ありません") + "</b><br>" +
+      "絵つきの共有 … <b>" + canFile + "</b><br>" +
+      "文のコピー … <b>" + (hasClip ? "在ります" : "ありません") + "</b><br>" +
+      "安全なつなぎ方（https） … <b>" + (secure ? "はい" : "いいえ") + "</b>";
+  })();
+
+  // ===== 1. 文だけを共有する =====
+  $("b1").onclick = async function(){
+    if (typeof navigator.share !== "function"){
+      say("r1", "✕ この端末には、共有の仕組みがありません。\n⇒ 「共有ボタン」は、この端末では作れません。", "ng");
+      return;
+    }
+    try {
+      await navigator.share({ title: "Japan Coffee Journey", text: TEXT, url: URL_ });
+      say("r1", "◯ 共有の画面が出て、最後まで進みました。\n⇒ 文だけの共有は、できます。", "ok");
+    } catch(e){
+      const n = (e && e.name) || "";
+      if (n === "AbortError"){
+        say("r1", "△ 共有の画面は出ましたが、途中でやめました。\n⇒ ★画面が出たなら、それで【できる】ということです。", "ok");
+      } else {
+        say("r1", "✕ 断られました。\n理由＝" + n + "／" + ((e && e.message) || "") + "\n⇒ 文だけの共有は、この端末ではできません。", "ng");
+      }
+    }
+  };
+
+  // ===== 2. 絵を作る =====
+  let BLOB = null;
+  $("b2").onclick = function(){
+    try {
+      const cv = $("cv"), g = cv.getContext("2d"), W = cv.width, H = cv.height;
+      g.fillStyle = "#F4EADD"; g.fillRect(0,0,W,H);
+      g.fillStyle = "#CB7B68"; g.fillRect(0,0,W,96);
+      g.fillStyle = "#FFFFFF"; g.font = "bold 40px sans-serif"; g.textBaseline = "middle";
+      g.fillText("今日の一杯", 40, 48);
+      g.fillStyle = "#221C1A"; g.font = "bold 54px sans-serif";
+      g.fillText("COFFEE ROASTERY 101", 40, 210);
+      g.fillStyle = "#6E655E"; g.font = "32px sans-serif";
+      g.fillText("愛知県｜一宮・玉野", 40, 275);
+      g.fillStyle = "#FFFFFF";
+      [["ハンドドリップ",40],["エチオピア",330],["ウォッシュト",600]].forEach(function(t){
+        g.fillRect(t[1], 340, g.measureText(t[0]).width + 44, 62);
+      });
+      g.fillStyle = "#221C1A"; g.font = "bold 30px sans-serif";
+      [["ハンドドリップ",62],["エチオピア",352],["ウォッシュト",622]].forEach(function(t){
+        g.fillText(t[0], t[1], 372);
+      });
+      g.fillStyle = "#C04A55"; g.font = "bold 34px sans-serif";
+      g.fillText("@japancoffeejourney", 40, H - 110);
+      g.fillStyle = "#6E655E"; g.font = "28px sans-serif";
+      g.fillText("コーヒーで日本を旅しよう", 40, H - 56);
+      cv.style.display = "block";
+      cv.toBlob(function(b){
+        BLOB = b;
+        if (!b){ say("r2", "✕ 絵はできましたが、送れる形にできませんでした。", "ng"); return; }
+        say("r2", "◯ 絵ができました（上に出ています）。\n大きさ＝" + Math.round(b.size/1024) + "KB／形式＝" + b.type +
+                  "\n⇒ ③と⑥が試せるようになりました。", "ok");
+      }, "image/png");
+    } catch(e){
+      say("r2", "✕ 絵を作れませんでした。\n理由＝" + ((e && e.name) || "") + "／" + ((e && e.message) || ""), "ng");
+    }
+  };
+
+  // ===== 3. 絵つきで共有する =====
+  $("b3").onclick = async function(){
+    if (!BLOB){ say("r3", "△ 先に②の「一杯の絵を、その場で作る」を押してください。"); return; }
+    if (typeof navigator.share !== "function"){
+      say("r3", "✕ この端末には、共有の仕組みがありません。", "ng"); return;
+    }
+    const file = new File([BLOB], "jcj_cup.png", { type: "image/png" });
+    // ★まず【絵と文の両方】で試し、断られたら【絵だけ】で試します。
+    //   ★どちらが通ったかが、そのまま「何が作れるか」の答えになります。
+    try {
+      await navigator.share({ files: [file], text: TEXT });
+      say("r3", "◯ 絵と文の両方を付けて、共有の画面が出ました。\n⇒ ★いちばん良い形が作れます。", "ok");
+      return;
+    } catch(e1){
+      const n1 = (e1 && e1.name) || "";
+      if (n1 === "AbortError"){
+        say("r3", "△ 絵と文の両方で共有の画面が出ましたが、途中でやめました。\n⇒ ★画面が出たなら【できる】ということです。", "ok");
+        return;
+      }
+      try {
+        await navigator.share({ files: [file] });
+        say("r3", "◯ 絵だけなら、共有の画面が出ました。\n✕ 絵と文の両方は断られました（" + n1 + "）\n⇒ ★絵は渡せます。文は渡せないので、④のコピーと組にします。", "ok");
+      } catch(e2){
+        const n2 = (e2 && e2.name) || "";
+        if (n2 === "AbortError"){
+          say("r3", "△ 絵だけで共有の画面が出ましたが、途中でやめました。\n✕ 絵と文の両方は断られました（" + n1 + "）\n⇒ ★絵は渡せます。", "ok");
+        } else {
+          say("r3", "✕ 絵つきの共有はできませんでした。\n絵と文＝" + n1 + "\n絵だけ＝" + n2 +
+                    "\n⇒ この端末では、絵を共有に渡せません。", "ng");
+        }
+      }
+    }
+  };
+
+  // ===== 4. 文をコピーする =====
+  $("b4").onclick = async function(){
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
+      try {
+        await navigator.clipboard.writeText(TEXT);
+        say("r4", "◯ コピーできました。\nコピーした文＝\n" + TEXT +
+                  "\n\n★どこかの入力欄を長押しして「貼り付け」を試してください。", "ok");
+        return;
+      } catch(e){
+        say("r4", "✕ 新しいやり方では断られました（" + ((e && e.name)||"") + "）。古いやり方を試します…", "ng");
+      }
+    }
+    // ★古いやり方（画面の外に置いた入力欄を選んでコピー）
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = TEXT; ta.setAttribute("readonly","");
+      ta.style.position = "fixed"; ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      say("r4", ok ? "◯ 古いやり方でコピーできました。\n★入力欄を長押しして「貼り付け」を試してください。"
+                   : "✕ 古いやり方でもコピーできませんでした。", ok ? "ok" : "ng");
+    } catch(e){
+      say("r4", "✕ コピーできませんでした。\n理由＝" + ((e && e.name)||"") + "／" + ((e && e.message)||""), "ng");
+    }
+  };
+
+  // ===== 5. Instagramのアプリを開く =====
+  $("b5").onclick = function(){
+    say("r5", "Instagramを開く操作をしました。\n\n★この結果は、機械では分かりません。\n" +
+              "　・Instagramのアプリが開いた ⇒ ◯\n" +
+              "　・何も起きない／エラーが出た ⇒ ✕\n" +
+              "★戻ってきたら、どちらだったか教えてください。");
+    setTimeout(function(){ try { location.href = "instagram://app"; } catch(e){} }, 400);
+  };
+
+  // ===== 6. 絵を保存する =====
+  $("b6").onclick = function(){
+    if (!BLOB){ say("r6", "△ 先に②の「一杯の絵を、その場で作る」を押してください。"); return; }
+    try {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(BLOB);
+      a.download = "jcj_cup.png";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+      say("r6", "保存の操作をしました。\n\n★この結果も、機械では分かりません。\n" +
+                "　・保存された／「写真に追加」などが出た ⇒ ◯\n" +
+                "　・何も起きない ⇒ ✕\n" +
+                "★どちらだったか教えてください。\n" +
+                "★出ない場合は、上の絵を長押しして保存できるかも試してください。");
+    } catch(e){
+      say("r6", "✕ 保存できませんでした。\n理由＝" + ((e && e.name)||"") + "／" + ((e && e.message)||""), "ng");
+    }
+  };
+</script>
+</body>
+</html>
