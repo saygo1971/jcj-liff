@@ -34,6 +34,11 @@
   .hidden{display:none!important}
   .wrap{max-width:520px;margin:0 auto;padding:14px 16px 44px}
   .lead{font-size:12.5px;color:var(--ink);line-height:1.8;margin:0 2px 12px}
+  /* ☕ ★2026-10-29 案C（オーナーさま決定・7番）。誘いの文を【いちばん先に、大きく】読ませます。
+     ★前は「ここに並ぶのは、お名前を決めた方の一杯です。」＝決まりの説明でした。
+     ★誘う文は「〜しよう」で終える（会社の決まり＝00_全社共通/ブランド指針/コピー基準_誘い文.md）。 */
+  .leadBig{font-size:16px;font-weight:800;color:var(--ink);line-height:1.75;margin:4px 2px 6px}
+  .leadSub{font-size:12px;color:var(--ink-sub);line-height:1.8;margin:0 2px 13px}
   .invite{display:block;text-align:center;background:var(--bg);border:1.5px solid var(--brand-deep);
     color:var(--brand-deep);font-size:13px;font-weight:800;border-radius:12px;padding:12px;
     text-decoration:none;margin:0 0 16px}
@@ -64,8 +69,14 @@
        ★★2026-10-25 文を直しました。前の文は nickname.html の文をそのまま借りていたため、
          この画面では「ここ」がお名前を決める画面のことに読めて、ちぐはぐでした。
          ★いまの決まり（お名前を決めた方の一杯だけが並ぶ）を、そのまま1行で書いています。 -->
-  <div class="lead">ここに並ぶのは、お名前（ニックネーム）を決めた方の一杯です。</div>
-  <a class="invite" id="toNick">お名前を決めると、あなたの一杯もここに並びます。</a>
+  <div class="leadBig">日本中のコーヒーの記録を、いっしょにつくろう。</div>
+  <div class="leadSub">一杯 増えるたびに、だれかの次の一軒が決まります。</div>
+  <!-- ☕ ★2026-10-29 押せる所の言葉と行き先は、お名前を決めているかで変わります。
+       ★決めていない方＝「お名前を決めて、はじめる」→ お名前を決める画面
+       ★決めている方　＝「一杯を残す」→ 一杯を書く画面
+       ★分からないうちは「一杯を残す」を出します。
+         ★一杯を書いた直後にもお名前を1回お聞きするので、どちらの方でも先に進めます。 -->
+  <a class="invite" id="toNick">一杯を残す</a>
   <div id="list"></div>
 </div>
 
@@ -94,8 +105,9 @@
       // ★★2026-10-25 審査会の条件3＝少ないと見せないこと。空に見えると、かえって書く気を削ぎます。
       //   ★だから「まだありません」と欠けている言い方をやめ、お誘いの言い方にしています。
       //   ★件数は どこにも出しません。
-      $("list").innerHTML = '<div class="none">お名前を決めた方の一杯が、ここに並びます。<br>'
-                          + 'あなたの一杯から はじまります。</div>';
+      // ☕ ★2026-10-29 ここも「〜しよう」で終える形に揃えました（会社の決まり）。
+      $("list").innerHTML = '<div class="none">まだ ひとつも並んでいません。<br>'
+                          + 'はじめの一杯を残してみよう。</div>';
       return;
     }
     $("list").innerHTML = entries.map(function(x){
@@ -128,8 +140,33 @@
     });
   }
 
+  // ☕ ★2026-10-29 一杯を書く画面（テスト）。★history.html の LOG_DRINK_LIFF_ID と同じ値です。
+  const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0";
+  // ★同じ並びのページが localStorage に置いた userId。★URLには載せません。無ければ空。
+  const UID = (function(){ try{ return localStorage.getItem("jcj_uid")||""; }catch(e){ return ""; } })();
+
+  // ☕ ★2026-10-29 押せる所の言葉と行き先を決めます。
+  //   ★まず「一杯を残す」で出しておきます（どちらの方でも先に進めるため）。
+  //   ★お名前がまだの方だと分かったときだけ、「お名前を決めて、はじめる」に変えます。
+  //   ★この問い合わせは、下の一覧の読み込みと【同時に】走らせます＝待ち時間は増えません。
+  //   ★読めなくても、画面は普通に出ます（「一杯を残す」のままです）。
+  async function setupInvite(){
+    const a = $("toNick");
+    a.href = "https://liff.line.me/" + LOG_DRINK_LIFF_ID;
+    if (!UID) return;
+    try{
+      const r = await fetch(GAS_URL+"?action=nickname_get&userId="+encodeURIComponent(UID)+"&_="+Date.now());
+      const d = await r.json();
+      const nick = d && d.ok ? String(d.nickname || "").trim() : "x";
+      if (!nick){
+        a.textContent = "お名前を決めて、はじめる";
+        a.href = nicknameUrl();
+      }
+    }catch(e){ /* 読めなくても「一杯を残す」のまま */ }
+  }
+
   async function main(){
-    $("toNick").href = nicknameUrl();
+    setupInvite();   // ☕ ★返事を待ちません（一覧の読み込みと同時に走ります）
     try{
       const res = await fetch(GAS_URL+"?action=recent_diary&limit="+SHOW_COUNT+"&_="+Date.now());
       const d = await res.json();
