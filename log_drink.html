@@ -28,7 +28,10 @@
   .row .placeval.empty{color:var(--ink-sub);font-weight:600}
   /* ★2026-10-05 コーヒー日記（審査会A-1）：飲んだ場所を自分で選ぶ所 */
   .chkedit{margin-left:auto;background:#fff;border:1px solid var(--state-done);color:var(--state-done);
-    font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit}
+    font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit;
+    /* ★2026-10-29 言葉が「場所を選び直す」に長くなったので、折り返さず・縮まないようにします。
+       ★お店の名前が長いときは、お店の名前の方が「…」で切れます（placeval 側で切れる作りです）。 */
+    flex:none;white-space:nowrap}
   .picker{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;background:var(--paper)}
   .picker .sec{margin-top:0}
   .pick{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);
@@ -147,18 +150,19 @@
 <div id="main" class="wrap hidden">
   <!-- ★2026-10-05 コーヒー日記（審査会A-1・条件1）：飲んだ場所を自分で選べるようにした。
        チェックインのあと・旅の記録から来たときは、いままでと同じ見た目（お店が決まっている）。
-       「選び直す」を押したときだけ下の選ぶ所がひらき、お店の一覧も押したときだけ読む。 -->
+       「場所を選び直す」を押したときだけ下の選ぶ所がひらき、お店の一覧も押したときだけ読む。 -->
   <div class="q" id="qHead">今日の一杯は？</div>
   <div class="sub" id="subLine">まだ香りが残っているうちに。<br>あとで見返すと、自分の好みが見えてきます。</div>
 
   <!-- ★2026-10-10 オーナー決定：「飲んだ場所」を飲みものより【上】に置く。
        ★前は 画面の一番上の帯（✓ 〈店名〉 に来ました）と、下の「どこで飲みましたか？」で
          場所が2回 出ていた。★1つにまとめた。
-       ★ボタンの言葉も「かえる」→「選び直す」（オーナー指定）。 -->
+       ★ボタンの言葉＝「かえる」→「選び直す」（2026-10-10 オーナー指定）
+         → ★「場所を選び直す」（2026-10-29 オーナー指定）。何を選び直すのかを言葉に入れました。 -->
   <div class="row">
     <span class="lb">飲んだ場所</span>
     <span class="placeval" id="chkLine">えらんでください</span>
-    <button type="button" class="chkedit hidden" id="chkEdit">選び直す</button>
+    <button type="button" class="chkedit hidden" id="chkEdit">場所を選び直す</button>
   </div>
 
   <div class="picker hidden" id="picker">
