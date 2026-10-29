@@ -164,17 +164,26 @@
       g.fillStyle = "#CB7B68"; g.fillRect(0,0,W,96);
       g.fillStyle = "#FFFFFF"; g.font = "bold 40px sans-serif"; g.textBaseline = "middle";
       g.fillText("今日の一杯", 40, 48);
-      g.fillStyle = "#221C1A"; g.font = "bold 54px sans-serif";
-      g.fillText("COFFEE ROASTERY 101", 40, 210);
+      // ★お店の名前は長さがまちまちなので、入る大きさまで小さくします（はみ出し防止）。
+      const PAD = 40, MAXW = W - PAD * 2;
+      const shopName = "COFFEE ROASTERY 101";
+      let fs = 54;
+      g.fillStyle = "#221C1A";
+      do { g.font = "bold " + fs + "px sans-serif"; fs -= 2; }
+      while (g.measureText(shopName).width > MAXW && fs > 24);
+      g.fillText(shopName, PAD, 210);
       g.fillStyle = "#6E655E"; g.font = "32px sans-serif";
-      g.fillText("愛知県｜一宮・玉野", 40, 275);
-      g.fillStyle = "#FFFFFF";
-      [["ハンドドリップ",40],["エチオピア",330],["ウォッシュト",600]].forEach(function(t){
-        g.fillRect(t[1], 340, g.measureText(t[0]).width + 44, 62);
-      });
-      g.fillStyle = "#221C1A"; g.font = "bold 30px sans-serif";
-      [["ハンドドリップ",62],["エチオピア",352],["ウォッシュト",622]].forEach(function(t){
-        g.fillText(t[0], t[1], 372);
+      g.fillText("愛知県｜一宮・玉野", PAD, 275);
+      // ★札は、測った幅から置き場所を決めます。入りきらなければ次の行へ折り返します。
+      const tags = ["ハンドドリップ", "エチオピア", "ウォッシュト"];
+      g.font = "bold 30px sans-serif";
+      let tx = PAD, ty = 340;
+      tags.forEach(function (t) {
+        const bw = g.measureText(t).width + 44;
+        if (tx + bw > W - PAD) { tx = PAD; ty += 76; }
+        g.fillStyle = "#FFFFFF"; g.fillRect(tx, ty, bw, 62);
+        g.fillStyle = "#221C1A"; g.fillText(t, tx + 22, ty + 32);
+        tx += bw + 16;
       });
       g.fillStyle = "#C04A55"; g.font = "bold 34px sans-serif";
       g.fillText("@japancoffeejourney", 40, H - 110);
