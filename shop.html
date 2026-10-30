@@ -128,7 +128,7 @@
     <div class="gciNote" id="gciNote" style="display:none">お店に着いてから押してください</div>
     <div class="gciBox" id="gciBox"></div>
     <button class="btnP" id="saveBtn">行きたいに保存する</button>
-    <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>と、あなたにもマイルがたまります。</div>
+    <div class="refer" id="referBox">保存しました。<b>友だちに教える</b>こともできます。</div>
     <div class="links" id="links"></div>
     <!-- ☕ ★2026-10-11 このお店で書かれた一杯。1件も無いお店では、まるごと出しません。 -->
     <div class="sdBox hidden" id="sdBox">
@@ -580,16 +580,19 @@
       var r=await (await fetch(GAS_URL+"?"+q.toString())).json();
       b.disabled=false; b.textContent="このお店でチェックインする";
       if(r&&r.ok){
+        // 🛑★2026-10-30「マイル」の文字は出しません（オーナーさま決定 2026-09-25「今後使わない」）。
+        //   ★「お店までの距離」への言い換えも、いまはしません。
+        //     理由＝言い換えは2026-09-21の審査会で条件6件つきの宿題のままで、
+        //     画面125ファイル・915か所にマイルが残っています。この1枚だけ先に変えると食い違います。
+        //   ★受け口が返す earnedMile / newTotal も画面に出しません。
         $("gciBox").innerHTML='<div class="gciT">お店に着いたことを、確認しました</div>'
-          + '<div class="gciM" style="text-align:center">'
-          + (r.alreadyToday ? "今日はすでに記録ずみです。" : "旅マイル <b>+"+(r.earnedMile||0)+"</b>　合計 "+(r.newTotal||0)+" マイル")
-          + '</div>';
+          + (r.alreadyToday ? '<div class="gciM" style="text-align:center">今日はすでに記録ずみです。</div>' : '');
         b.style.display="none"; $("gciNote").style.display="none";
         return;
       }
       var e=(r&&r.error)||"failed";
-      if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。","no_geo");
-      else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。","acc_too_large");
+      if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。","no_geo");
+      else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。","acc_too_large");
       else if(e==="too_far")       gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","too_far");
       else if(e==="not_registered")gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
       else if(e==="off")           { b.style.display="none"; $("gciNote").style.display="none"; }
