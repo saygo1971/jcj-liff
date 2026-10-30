@@ -63,6 +63,13 @@
   .sublink{display:block;text-align:center;color:var(--ink-sub);font-size:13.5px;font-weight:600;text-decoration:underline;padding:6px;cursor:pointer}
   /* ☕ ★2026-10-11 オーナー指示「旅の記録を各店舗にぶら下げて公開できるようにしたい」。
      このお店で書かれた一杯を、新しい順に出す。★誰が書いたかは出さない（名前もIDも受け取っていない）。 */
+  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店（1行＋推薦者の声）。
+     ★discover.html と同じ考え方・同じ言葉にそろえています（片方だけ直すと、別の画面が出ます）。 */
+  .recline{font-size:12px;font-weight:800;color:var(--brand-deep);margin:-8px 0 12px;line-height:1.5}
+  .recbox{background:var(--bg);border:1px solid var(--line);border-radius:12px;margin:0 0 14px;padding:13px 14px}
+  .recbox .rb-t{font-size:11.5px;font-weight:700;color:var(--ink-sub)}
+  .recbox .rb-m{font-size:14px;color:var(--ink);margin-top:6px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
+  .recbox .rb-by{font-size:11.5px;color:var(--ink-sub);margin-top:9px;text-align:right}
   .sdBox{margin:16px 0 10px}
   .sdH{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 2px}
   .sdS{font-size:11.5px;color:var(--ink-sub);margin:0 0 10px}
@@ -124,6 +131,17 @@
     <div class="copy" id="copy"></div>
     <div class="name" id="name"></div>
     <div class="place" id="place"></div>
+    <!-- 🙏 ★2026-10-30 お客さまがすすめてくれたお店。
+         ★1行目（recLine）＝誰がすすめてくれたか。推薦から載ったお店にだけ出します。
+         ★枠（recBox）＝「推薦者の声」。声掲載可否がOKで、ひとことが在るときだけ出します。
+         ★「推薦者の声」という言葉は、推薦の入口で承諾をいただいたときの言葉と同じにしています。
+         ★文字は textContent で入れます（innerHTML で組み立てません。お客さまが書いた文だからです）。 -->
+    <div class="recline hidden" id="recLine"></div>
+    <div class="recbox hidden" id="recBox">
+      <div class="rb-t">推薦者の声</div>
+      <div class="rb-m" id="recNote"></div>
+      <div class="rb-by" id="recBy"></div>
+    </div>
     <button class="gciBtn" id="gciBtn" style="display:none">このお店でチェックインする</button>
     <div class="gciNote" id="gciNote" style="display:none">お店に着いてから押してください</div>
     <div class="gciBox" id="gciBox"></div>
@@ -434,6 +452,31 @@
     }catch(e){ /* 読めなくても このページは普通に出す。★お誘いも出しません（本当に0件か分からないため） */ }
   }
 
+  // 🙏 ★2026-10-30 お客さまがすすめてくれたお店の1行と「推薦者の声」。
+  //   お名前が在るとき … 「◯◯さんがすすめてくれたお店」
+  //   お名前が無いとき … 「お客さまがすすめてくれたお店」
+  //   ★推薦から載ったお店でないときは、1行も枠も出しません。
+  function renderRecVoice(s){
+    var line=$("recLine"), box=$("recBox");
+    var by  =String(s.recBy  ||"").trim();
+    var note=String(s.recNote||"").trim();
+    if(!line||!box) return;
+    if(s.rec!==1){
+      line.classList.add("hidden"); line.textContent="";
+      box.classList.add("hidden");  $("recNote").textContent=""; $("recBy").textContent="";
+      return;
+    }
+    line.textContent = by ? (by+"さんがすすめてくれたお店") : "お客さまがすすめてくれたお店";
+    line.classList.remove("hidden");
+    if(note){
+      $("recNote").textContent=note;
+      $("recBy").textContent = by ? (by+"さん") : "";
+      box.classList.remove("hidden");
+    }else{
+      box.classList.add("hidden"); $("recNote").textContent=""; $("recBy").textContent="";
+    }
+  }
+
   function render(s){
     buildSwipe(s);
     loadShopDiary(s.name || "", s.pending === 1);   // ☕ ★2026-10-11 このお店で書かれた一杯（返事を待たずに、あとから差し込む）
@@ -442,6 +485,7 @@
     $("copy").style.display = s.copy ? "" : "none";
     $("name").textContent = s.name || "お店";
     $("place").textContent = s.place || s.pref || "";
+    renderRecVoice(s);                              // 🙏 ★2026-10-30 お客さまがすすめてくれたお店
     if (s.mapUrl){ $("mapBtn").href = s.mapUrl; } else { $("mapBtn").style.display="none"; }
 
     let links="";

@@ -46,6 +46,8 @@
   .voicebox .nick{display:block;margin-top:12px}
   .voicebox .nick .lb2{font-size:12.5px;color:var(--sub);font-weight:700}
   .voicebox .nick input{height:42px;background:#faf6ef;border-radius:10px;margin-top:6px}
+  /* 🙏 ★2026-10-30 どこに出るかを、承諾をいただく所に書きます（審査会 条件R3） */
+  .voicebox .vnote{font-size:11.5px;color:var(--sub);margin-top:11px;line-height:1.7}
 
   .btn{display:block;width:100%;height:52px;line-height:52px;text-align:center;border-radius:14px;border:none;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px}
   .btn.primary{background:var(--accent);color:#fff}
@@ -109,6 +111,11 @@
         <span class="lb2">表示するニックネーム（任意）</span>
         <input id="nickname" type="text" placeholder="例：旅する珈琲好き" maxlength="30">
       </label>
+      <!-- 🙏 ★2026-10-30 審査会 条件R3（オーナーさま決定の文）。
+           ★なぜ足したか＝ここは「声を載せてよいか」だけ伺っていて、
+             お名前（ニックネーム）をどこに出すかを伺っていませんでした。
+             ★承諾の範囲と、実際に出すものをずらさないための1行です。 -->
+      <div class="vnote">ニックネームとひとことを、地図やお店の画面に出すことがあります。</div>
     </div>
 
     <button id="submitBtn" class="btn primary">このロースターを教える</button>

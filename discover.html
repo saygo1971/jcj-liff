@@ -173,6 +173,13 @@
   .card .facts{font-size:11px;color:#5c4d3d;margin-top:5px;line-height:1.55}
   .card .facts div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店の1行（カード・近くを探す 共通の色） */
+  .recline{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:4px;line-height:1.5}
+  /* 🙏 ★2026-10-30 お店の詳細に出す「推薦者の声」 */
+  .recbox{background:#fff;border:1px solid var(--line);border-radius:12px;margin:12px 0 0;padding:13px 14px}
+  .recbox .rb-t{font-size:11.5px;font-weight:700;color:var(--sub)}
+  .recbox .rb-m{font-size:14px;color:var(--ink);margin-top:6px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
+  .recbox .rb-by{font-size:11.5px;color:var(--sub);margin-top:9px;text-align:right}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
   .milerow{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -540,6 +547,16 @@
         <div class="info">
           <div class="irow hidden" id="sdClosedRow"><span class="ic">🗓</span><span>定休日：<span id="sdClosed"></span></span></div>
           <div class="irow hidden" id="sdAddrRow"><span class="ic">📍</span><span id="sdAddr"></span></div>
+        </div>
+        <!-- 🙏 ★2026-10-30 お客さまがすすめてくれたお店の「推薦者の声」。
+             ★「推薦者の声」という言葉は、推薦の入口で承諾をいただいたときの言葉と同じにしています
+               （recommend.html「上のひとことを『推薦者の声』としてお店の紹介に載せてもOK」）。
+             ★声掲載可否がOKでない推薦では、この枠ごと出しません。
+             ★文字は textContent で入れます（innerHTML で組み立てません。お客さまが書いた文だからです）。 -->
+        <div class="recbox hidden" id="sdRecBox">
+          <div class="rb-t">推薦者の声</div>
+          <div class="rb-m" id="sdRecNote"></div>
+          <div class="rb-by" id="sdRecBy"></div>
         </div>
         <!-- ★未参加店だけに出る誘い文（案A確定・2026-09-18）。参加店では要素ごと隠す -->
         <div class="pendbox hidden" id="sdPendBox">
@@ -1043,7 +1060,15 @@
   //   ★1軒ごとの札は出さない（★お店の数だけ同じ言葉が並ぶと、じゃまになるため）。
   //   ★文はこの2つだけに書く。★呼ぶ側に書き写さないこと（片方だけ直って食い違うため）。
   var HDR_JOINED  = "JCJの参加店";
-  var HDR_PENDING = "Japan Coffee Journey がオススメの、まだ登録されていないお店";
+  // 🙏 ★2026-10-30 オーナーさま決定で、この文を短くしました。
+  //   前 … 「Japan Coffee Journey がオススメの、まだ登録されていないお店」
+  //   理由＝この見出しの下に、お客さまの推薦から載ったお店も並ぶようになりました。
+  //         1軒ずつのカードに「◯◯さんがすすめてくれたお店」と出るので、
+  //         ★誰が選んだかは、カードの方で分かります。
+  //   ★見出しの下に小さな1行を足す案も出ましたが、オーナーさま決定で【出しません】
+  //     （カードに出るのに、見出しの下でもう一度 説明すると くどくなるため）。
+  //   ★この文は、下の「…も混ざっています」（近くを探す）でも使われています。
+  var HDR_PENDING = "まだ登録されていないお店";
   //   ★件数は、市区町村でしぼったときだけ足す。★言葉そのものは、どの画面でも同じにする。
   function subhdrHTML_(text, count){
     return '<div class="subhdr">' + esc(text)
@@ -1281,6 +1306,20 @@
     if(s.pending===1) return "";
     return s.beans===1?'<span class="tag b">🫘 豆割あり</span>':"";
   }
+  // 🙏 ★2026-10-30 お客さまがすすめてくれたお店の1行（オーナーさま決定＝「名前を出して、理由は別のところに出したい」）。
+  //   お名前が在るとき … 「◯◯さんがすすめてくれたお店」
+  //   お名前が無いとき … 「お客さまがすすめてくれたお店」
+  //     ★何も出さないと、お客さまの推薦だと分かりません（2026-10-30 オーナーさま決定 4）
+  //   ★理由（推薦のひとこと）は、ここには出しません。カードを押すと開くお店の画面に出します。
+  //   🛑★esc() を必ず通します。お名前はお客さまが書いた文字なので、画面の組み立てに混ぜません。
+  //   ★2026-09-25 の「1軒ごとの札は出さない」決定との関係＝あれは未参加の418軒すべてに
+  //     同じ言葉が並ぶ話で、こちらは推薦から載ったお店だけ・文字もお店ごとに違います。
+  //     ★オーナーさまに確かめて「1軒ごとに違う文字を出してよい」と決まりました（2026-10-30）。
+  function recLineHTML(s){
+    if(s.rec!==1) return "";
+    var by=String(s.recBy||"").trim();
+    return '<div class="recline">'+(by?(esc(by)+'さんがすすめてくれたお店'):'お客さまがすすめてくれたお店')+'</div>';
+  }
   // ★未参加店に「まだ無いもの」を小さく後ろに置く（誘い文の原則＝事務情報は小さく下へ）
   // 写真枠：参加店＝写真（無ければ☕）／★未参加店＝無地の面（2026-09-24 ⑨-1）
   //   ★ロゴ帳と同じ「頭文字」は使わない。頭文字は「ロゴをまだ登録していないお店」という
@@ -1328,6 +1367,7 @@
   function cardHTML(s){
     return '<div class="card" onclick="openSheet('+s.idx+')"><div class="pho'+(s.pending===1?" nophoto":"")+'">'+ph(s)+'</div><div class="in">'+
       '<div class="pref">'+prefCityHTML(s)+'</div><div class="nm">'+s.name+'</div>'+
+      recLineHTML(s)+
       factsHTML(s)+mileHTML(s)+nogeoHTML(s)+'<div class="tags">'+tagHTML(s)+'</div></div></div>';
   }
   // 🆕 2026-09-24（③案え）一覧の中に出す市区町村の段。★地図の段と同じ数え方（cityStatsFor）を使う。
@@ -1408,6 +1448,25 @@
     box.innerHTML=h; box.classList.remove("hidden");
   }
 
+  // 🙏 ★2026-10-30 お店の詳細に「推薦者の声」を出す／出さない。
+  //   出すのは、推薦から載ったお店で【ひとことが在るとき】だけです。
+  //   ★声掲載可否がOKでない推薦では recNote が空で届くので、この枠ごと出ません。
+  //   ★文字は textContent で入れます（innerHTML で組み立てません）。
+  function renderRecVoice(s){
+    var box=$("sdRecBox"); if(!box) return;
+    var note=String(s.recNote||"").trim();
+    var by  =String(s.recBy  ||"").trim();
+    if(s.rec!==1 || !note){
+      box.classList.add("hidden");
+      $("sdRecNote").textContent="";
+      $("sdRecBy").textContent="";
+      return;
+    }
+    $("sdRecNote").textContent=note;
+    $("sdRecBy").textContent=by?(by+"さん"):"";
+    box.classList.remove("hidden");
+  }
+
   function renderPending(s){
     var isP = (s.pending===1);
     ["sdPendBox","sdForShop","sdPendFine"].forEach(function(id){
@@ -1475,6 +1534,7 @@
     setRow("sdClosedRow","sdClosed",cd(s));
     setRow("sdAddrRow","sdAddr",stripZip(s.address));
     renderPending(s);
+    renderRecVoice(s);
     // ★未参加店に出すリンクは【Instagramだけ】（2026-09-18 オーナー決定）。
     //   ・公式サイトとLINEは出さない（承諾のないお店の窓口を、こちらで案内しない）
     //   ・★Instagramが無ければリンクの要素ごと出さない。「準備中」も空のボタンも出さない
@@ -1769,6 +1829,7 @@
     return '<div class="ncard" data-i="'+s.idx+'">'
       + '<div class="nc-pref">'+esc(s.pref)+(city?" "+esc(city):"")+'</div>'
       + '<div class="nc-nm">'+esc(s.name)+'</div>'
+      + recLineHTML(s)
       + (s.access?('<div class="nc-ac">'+esc(s.access)+'</div>'):"")
       + '<div class="nc-km">'+s._d.toFixed(1)+' km'+nearApprox()+'</div>'
       + '<div class="nc-b">'
