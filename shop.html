@@ -397,7 +397,12 @@
       //   ★数は GAS が【そのお店の一杯 ぜんぶ】から作ります（下に並ぶ20件からではありません）。
       //   ★GASがまだ古くて beans が返ってこないときは、何も出しません（画面は普通に出ます）。
       //   ★多い順に6つまで。7つ目からは出しません（長い列にすると読まれないため）。
-      if (d.beanTally && ((d.beanTally.country||[]).length || (d.beanTally.process||[]).length)){
+      // ★2026-10-30 受け口が新しい名前（beanTally）でも、古い名前（beans）でも読めるようにします。
+      //   ★なぜ＝画面と受け口は、別々の操作で届きます。どちらが先に届いても
+      //     「このお店で飲まれた豆」が消えないようにするためです。
+      //   ★受け口が新しい名前になりきったら、この行は beanTally だけにして構いません。
+      const _bt = d.beanTally || d.beans;
+      if (_bt && ((_bt.country||[]).length || (_bt.process||[]).length)){
         const grp = function(label, list){
           if (!list || !list.length) return "";
           return '<div class="bnG"><span class="bnL">'+esc(label)+'</span>' +
@@ -405,7 +410,7 @@
                    return '<span class="bnI">'+esc(x.name)+'<b>'+(Number(x.n)||0)+'</b></span>';
                  }).join("") + '</div>';
         };
-        $("bnBody").innerHTML = grp("生産国", d.beanTally.country) + grp("精製方法", d.beanTally.process);
+        $("bnBody").innerHTML = grp("生産国", _bt.country) + grp("精製方法", _bt.process);
         $("bnBox").classList.remove("hidden");
       }
       $("sdList").innerHTML = d.entries.map(function(x){
