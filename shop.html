@@ -397,7 +397,7 @@
       //   ★数は GAS が【そのお店の一杯 ぜんぶ】から作ります（下に並ぶ20件からではありません）。
       //   ★GASがまだ古くて beans が返ってこないときは、何も出しません（画面は普通に出ます）。
       //   ★多い順に6つまで。7つ目からは出しません（長い列にすると読まれないため）。
-      if (d.beans && ((d.beans.country||[]).length || (d.beans.process||[]).length)){
+      if (d.beanTally && ((d.beanTally.country||[]).length || (d.beanTally.process||[]).length)){
         const grp = function(label, list){
           if (!list || !list.length) return "";
           return '<div class="bnG"><span class="bnL">'+esc(label)+'</span>' +
@@ -405,7 +405,7 @@
                    return '<span class="bnI">'+esc(x.name)+'<b>'+(Number(x.n)||0)+'</b></span>';
                  }).join("") + '</div>';
         };
-        $("bnBody").innerHTML = grp("生産国", d.beans.country) + grp("精製方法", d.beans.process);
+        $("bnBody").innerHTML = grp("生産国", d.beanTally.country) + grp("精製方法", d.beanTally.process);
         $("bnBox").classList.remove("hidden");
       }
       $("sdList").innerHTML = d.entries.map(function(x){
