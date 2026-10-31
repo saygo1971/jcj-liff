@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>試飲チケットを受け取る</title>
+<!--
+  🏬 三越のレジで買っていただいた試飲チケットを、アプリの中の券にする画面
+  ・設計＝docs/2026-10-31_三越_レジで買った券をアプリに入れる_設計.md
+  ・審査＝docs/2026-10-31_三越_設計審査_審査会記録.md（平均86.3点・全員承認・条件付き通過）
+  ・受け口＝GAS の doGet action=dept_claim（dept_claim.js の handleDeptClaim_）
+
+  🔴 審査会の条件のうち、この画面が守るもの2つ
+    ② 引換番号は2つの形で届く ⇒ ?c=… と ?liff.state=%3Fc%3D… の両方（＋#…）を見ます。
+       取れなかったときは「読み取りに失敗しました」と出します（★黙って0枚にしません）。
+    ③ 未登録の方の行き止まりをなくす ⇒ 同じ画面に「登録へ進む」ボタンを出します。
+       ご登録のあと、もう一度QRを読めば券が入ります（引換番号は未使用のままです）。
+
+  🛑 この画面の LINEのID（DEPT_CLAIM_LIFF_ID）は、まだ決まっていません。
+     ★空のままでも真っ白にはなりません（下の guard で、お客さま向けの文を出します）。
+     ★本部が「新しく作る／既存のものを使い回す」を決めたら、ここに入れてください。
+-->
+<style>
+  *{box-sizing:border-box}
+  :root{--paper:#F4EADD;--sub:#6E655E;--brown-d:#221C1A;--accent:#C04A55;--line:#DDD6CE;--green:#2B5D4F}
+  html,body{margin:0;background:#fff;color:var(--brown-d);
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
+  .bar{background:var(--green);color:#fff;padding:13px 16px;font-size:17px;font-weight:800;position:sticky;top:0;z-index:5}
+  #status{text-align:center;padding:80px 20px;color:var(--sub);font-size:14px;line-height:1.9;white-space:pre-line}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  .wrap{max-width:520px;margin:0 auto;padding:22px 16px 44px}
+  .check{text-align:center;font-size:44px;line-height:1;color:var(--green);font-weight:800;margin:6px 0 10px}
+  .num{text-align:center;font-size:32px;font-weight:800;margin:0 0 4px}
+  .headline{text-align:center;font-size:15px;line-height:1.85;margin:0 0 18px}
+  .card{background:var(--paper);border-radius:14px;padding:16px 15px;font-size:13px;line-height:1.9}
+  .card b{font-size:14px}
+  .ng .check{color:var(--accent)}
+  .msg{font-size:14px;line-height:1.9;text-align:center;margin:0 0 16px}
+  .msg.ng{color:var(--accent);font-weight:700}
+  .btn{display:block;width:100%;font-family:inherit;font-size:15px;font-weight:800;padding:14px;border-radius:12px;
+    border:0;margin-top:14px;cursor:pointer;text-align:center;text-decoration:none}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:#fff;border:1.5px solid var(--green);color:var(--green)}
+  .note{font-size:11.5px;color:var(--sub);line-height:1.85;margin:16px 2px 0}
+</style>
+</head>
+<body>
+<div class="bar">試飲チケットを受け取る</div>
+<div id="status"><div class="spin"></div>受け取りの手続きをしています…</div>
+<div id="main" class="wrap hidden"></div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+  // GASの受け口（テスト環境）。★本番へ運ぶときは本番のURLに差し替えます。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+
+  // 🛑 この画面の LINEのID。★まだ決まっていません（本部の決めを待っています）。
+  //   ★ここが空のあいだ、この画面は「ご用意をしています」と出して止まります（真っ白にしません）。
+  //   ★記憶 liff-id-must-exist-or-page-dies ＝ IDが無い・間違っていると画面が真っ白になります。
+  const DEPT_CLAIM_LIFF_ID = "";
+
+  // テスト環境のLINEログインチャネルの番号。この画面のIDは、テストでは必ずこれで始まります。
+  const TEST_LIFF_PREFIX = "2008851980-";
+  // 本番のLINEログインチャネルの番号。
+  const PROD_LIFF_PREFIX = "2010671952-";
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v == null ? "" : v).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  function setStatus(text) {
+    $("status").textContent = text;
+    $("status").classList.remove("hidden");
+    $("main").classList.add("hidden");
+  }
+
+  /** 使ってよいLINEのIDかを見る（空・形ちがいを弾く）。 */
+  function isUsableLiffId(id) {
+    const s = String(id || "").trim();
+    if (!s) return false;
+    return (s.indexOf(TEST_LIFF_PREFIX) === 0 || s.indexOf(PROD_LIFF_PREFIX) === 0);
+  }
+
+  /**
+   * 🔴 審査会の条件② 引換番号は2つの形で届きます。
+   *   ① ふつうの ?c=…         （そのまま届いた形）
+   *   ② ?liff.state=%3Fc%3D… （LINEが包んだ形・2026-10-12 に実測）
+   *   ③ #c=…                  （まれにこの形で届きます）
+   *   ★①だけを見る作りにすると、本番で黙って番号が読めません。
+   */
+  function getParam(name) {
+    const sp = new URLSearchParams(window.location.search);
+    const v = sp.get(name);
+    if (v) return v;
+
+    const st = sp.get("liff.state");
+    if (st) {
+      const inner = st.charAt(0) === "?" ? st.slice(1) : st;
+      const v2 = new URLSearchParams(inner).get(name);
+      if (v2) return v2;
+    }
+
+    const h = String(window.location.hash || "");
+    if (h.charAt(0) === "#") {
+      const v3 = new URLSearchParams(h.slice(1)).get(name);
+      if (v3) return v3;
+    }
+    return "";
+  }
+
+  /** 受け取れたとき（券が入ったとき）の画面。 */
+  function paintDone(data) {
+    const n = Number(data.total || data.issued || 0);
+    $("main").innerHTML =
+      '<div class="check">✓</div>' +
+      '<div class="num">' + n + '枚</div>' +
+      '<div class="headline">試飲チケットを受け取りました。</div>' +
+      '<div class="card">' +
+        'このチケットは、<b>会場のブースでロースターの一杯と交換</b>できます。<br>' +
+        'ブースに置いてあるQRを読み取ってお使いください。<br>' +
+        '受け取ったチケットは、アプリの「購入履歴」からいつでもご確認いただけます。' +
+      '</div>' +
+      '<div class="note">このQRは、もう一度読み取っても枚数は増えません。</div>';
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  /** 受け取れなかったときの画面。登録がまだの方には「登録へ進む」ボタンを出します。 */
+  function paintNg(message, registerUrl) {
+    let html = '<div class="ng"><div class="check">！</div></div>' +
+               '<div class="msg ng">' + esc(message) + '</div>';
+    if (registerUrl) {
+      // 🔴 審査会の条件③ 行き止まりにしません。
+      html += '<a class="btn primary" href="' + esc(registerUrl) + '">登録へ進む（30秒）</a>' +
+              '<div class="note">ご登録が終わったら、カードのQRをもう一度 読み取ってください。' +
+              '引換番号はまだ使われていないので、そのまま券が入ります。</div>';
+    } else {
+      html += '<div class="note">お手数ですが、JCJのブースのスタッフにお声がけください。</div>';
+    }
+    $("main").innerHTML = html;
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  async function claim(code, userId) {
+    const q = new URLSearchParams({ action: "dept_claim", c: code, userId: userId, _: Date.now() });
+    const res = await fetch(GAS_URL + "?" + q.toString());
+    return await res.json();
+  }
+
+  async function main() {
+    // 🛑 LINEのIDが入っていないあいだは、ここで止めます（押しても開かない画面を出しません）。
+    if (!isUsableLiffId(DEPT_CLAIM_LIFF_ID)) {
+      setStatus("ただいま、この画面のご用意をしています。\nお手数をおかけしております。\nJCJのブースのスタッフにお声がけください。");
+      return;
+    }
+
+    // 🔴 条件② 引換番号が取れなかったときは、はっきり出します（黙って0枚にしません）。
+    const code = String(getParam("c") || "").trim();
+    if (!code) {
+      paintNg("読み取りに失敗しました。もう一度、カードのQRを読み取ってください。", "");
+      return;
+    }
+
+    try {
+      await liff.init({ liffId: DEPT_CLAIM_LIFF_ID });
+    } catch (e) {
+      setStatus("LINEの準備ができませんでした。\nこの画面を閉じて、もう一度 QRを読み取ってください。");
+      return;
+    }
+
+    if (liff.isInClient && !liff.isInClient()) {
+      setStatus("LINEアプリの中で開いてください。");
+      return;
+    }
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+
+    let profile;
+    try {
+      profile = await liff.getProfile();
+    } catch (e) {
+      setStatus("お客さまの情報が取れませんでした。\nこの画面を閉じて、もう一度 QRを読み取ってください。");
+      return;
+    }
+
+    let data;
+    try {
+      data = await claim(code, profile.userId);
+    } catch (e) {
+      paintNg("通信がうまくいきませんでした。電波の良い場所で、もう一度 QRを読み取ってください。", "");
+      return;
+    }
+
+    if (data && data.ok) { paintDone(data); return; }
+    paintNg((data && data.message) || "うまく受け取れませんでした。もう一度 QRを読み取ってください。",
+            (data && data.registerUrl) || "");
+  }
+
+  main();
+</script>
+</body>
+</html>
