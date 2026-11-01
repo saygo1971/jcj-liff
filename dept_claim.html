@@ -140,13 +140,18 @@
    *     ＝6枚ぶんのお代をいただいて3枚しかお渡ししていない形でした。
    *   ⇒ 使い方が「何度でも」で、あと1回以上 受け取れるときだけ、文を差し替えます。
    *
-   * 🛑 下の2つの文は【下書き】です。本部にうかがってから決めます
-   *   （★お客さまの画面に出る文を、部屋だけで決めません）。
-   *   ★審査会がお書きくださった案をそのまま置いてあります。
+   * ★2026-11-01 オーナーさま確認ずみ（文6つ・本部経由）。下の文を勝手に変えないでください。
    */
   function doneNote(data) {
     const left = (data && data.timesLeft);
-    if (String(data && data.useKind) !== "何度でも") {
+    const kind = String((data && data.useKind) || "").trim();
+    /* 🔴★2026-11-01【文6】使い方が空で届いたときは、注意書きの行そのものを出しません。
+     *   ★空で届くのは、受け口（GAS）と画面（LIFF）の版が食い違ったときです。
+     *     ★そのとき三越の文に落ちると「もう一度読み取っても枚数は増えません」と出て、
+     *       FIELDSTYLEでは【嘘】になります（2回目も3枚 入るため）。
+     *   ⇒ 分からないときは、何も言いません。 */
+    if (!kind) return "";
+    if (kind !== "何度でも") {
       // 1回だけ（三越）＝番号1つにつき1人・1回。
       return "このQRは、もう一度読み取っても枚数は増えません。";
     }
@@ -164,6 +169,11 @@
     return "お受け取りは完了しました。";
   }
 
+  /** 内部：注意書きの行。★文が空なら、行そのものを出しません（【文6】）。 */
+  function noteHtml(text) {
+    return text ? ('<div class="note">' + esc(text) + '</div>') : '';
+  }
+
   /** 受け取れたとき（券が入ったとき）の画面。 */
   function paintDone(data) {
     const n = Number(data.total || data.issued || 0);
@@ -176,7 +186,7 @@
         'ブースに置いてあるQRを読み取ってお使いください。<br>' +
         '受け取ったチケットは、アプリの「購入履歴」からいつでもご確認いただけます。' +
       '</div>' +
-      '<div class="note">' + doneNote(data) + '</div>';
+      noteHtml(doneNote(data));
     $("status").classList.add("hidden");
     $("main").classList.remove("hidden");
   }
