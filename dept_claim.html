@@ -59,10 +59,13 @@
   // GASの受け口（テスト環境）。★本番へ運ぶときは本番のURLに差し替えます。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
-  // 🛑 この画面の LINEのID。★まだ決まっていません（本部の決めを待っています）。
-  //   ★ここが空のあいだ、この画面は「ご用意をしています」と出して止まります（真っ白にしません）。
+  // この画面の LINEのID。★2026-11-01 テスト環境のぶんを本部からいただいて入れました。
+  //   ★開く先＝https://saygo1971.github.io/jcj-liff/dept_claim.html（この画面そのもの）
+  //   🔴本番のIDは、まだ発行していません。本番へ運ぶときに差し替えてください。
+  //     ★差し替えないまま本番へ出すと、本番のお客さまがテスト環境の画面を開きます。
   //   ★記憶 liff-id-must-exist-or-page-dies ＝ IDが無い・間違っていると画面が真っ白になります。
-  const DEPT_CLAIM_LIFF_ID = "";
+  //     ★ここが空や形ちがいのときは、下の isUsableLiffId で止めて、お客さま向けの文を出します。
+  const DEPT_CLAIM_LIFF_ID = "2008851980-Dv7Ftpr0";
 
   // テスト環境のLINEログインチャネルの番号。この画面のIDは、テストでは必ずこれで始まります。
   const TEST_LIFF_PREFIX = "2008851980-";
