@@ -13,6 +13,12 @@
   ・審査＝docs/2026-10-31_三越_設計審査_審査会記録.md（平均86.3点・全員承認・条件付き通過）
   ・受け口＝GAS の doGet action=dept_claim（dept_claim.js の handleDeptClaim_）
 
+  ★この画面は2つの顔を持ちます（URLの ?count=1 で分かれます）
+    ?c=<番号>            … お客さま向け。券を受け取ります（LINEの中で開きます）
+    ?c=<番号>&count=1    … スタッフ向け。何セット 出たかを見るだけです
+       ★券は1枚も出ません。お客さまの情報も1つも出しません。
+       ★LINEの外（ふつうのブラウザ）でも開けます＝当日スタッフが手元で見られます
+
   🔴 審査会の条件のうち、この画面が守るもの2つ
     ② 引換番号は2つの形で届く ⇒ ?c=… と ?liff.state=%3Fc%3D… の両方（＋#…）を見ます。
        取れなかったときは「読み取りに失敗しました」と出します（★黙って0枚にしません）。
@@ -49,6 +55,14 @@
   .btn.primary{background:var(--accent);color:#fff}
   .btn.ghost{background:#fff;border:1.5px solid var(--green);color:var(--green)}
   .note{font-size:11.5px;color:var(--sub);line-height:1.85;margin:16px 2px 0}
+  /* スタッフが数を見る画面 */
+  .cnt-num{text-align:center;font-size:40px;font-weight:800;line-height:1.1;margin:10px 0 2px}
+  .cnt-sub{text-align:center;font-size:13px;color:var(--sub);margin:0 0 18px}
+  .rows{background:var(--paper);border-radius:14px;padding:6px 15px}
+  .rows div{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .rows div:last-child{border-bottom:0}
+  .rows b{font-weight:800}
+  .stop{color:var(--accent);font-weight:800}
 </style>
 </head>
 <body>
@@ -151,6 +165,42 @@
     $("main").classList.remove("hidden");
   }
 
+  /** スタッフ向け：何セット 出たかを見るだけの画面（券は1枚も出しません）。 */
+  async function paintCount(code) {
+    let d;
+    try {
+      const q = new URLSearchParams({ action: "dept_claim_count", c: code, _: Date.now() });
+      const res = await fetch(GAS_URL + "?" + q.toString());
+      d = await res.json();
+    } catch (e) {
+      setStatus("数を読めませんでした。\n電波の良い場所で、もう一度 開いてください。");
+      return;
+    }
+    if (!d || !d.ok) {
+      setStatus("数を読めませんでした。\n" + esc((d && d.message) || ""));
+      return;
+    }
+    const left = (d.setsLeft === null || d.setsLeft === undefined) ? "制限なし" : (d.setsLeft + "セット");
+    const openNow = (d.receiving && d.periodOk);
+    $("main").innerHTML =
+      '<div class="cnt-num">' + Number(d.setsIssued || 0) + ' / ' + Number(d.setsCap || 0) + '</div>' +
+      '<div class="cnt-sub">お渡しずみ ／ 上限（セット）</div>' +
+      '<div class="rows">' +
+        '<div><span>残り</span><b>' + esc(left) + '</b></div>' +
+        '<div><span>出た券の枚数</span><b>' + Number(d.ticketsIssued || 0) + '枚</b></div>' +
+        '<div><span>1回で入る枚数</span><b>' + Number(d.ticketsPerSet || 0) + '枚</b></div>' +
+        '<div><span>お一人さまの回数</span><b>' + (Number(d.perUserTimes || 0) || "制限なし") + '</b></div>' +
+        '<div><span>受け取れる期間</span><b>' + esc(d.periodStart || "(空)") + ' 〜 ' + esc(d.periodEnd || "(空)") + '</b></div>' +
+        '<div><span>いま受け付けているか</span><b class="' + (openNow ? "" : "stop") + '">' +
+          (openNow ? "はい" : (!d.receiving ? "いいえ（無効にしてあります）" : "いいえ（期間の外です）")) + '</b></div>' +
+      '</div>' +
+      '<div class="note">この画面はスタッフ用です。券は1枚も出ません。お客さまの情報も出しません。<br>' +
+      '上限を増やすときは、CONFIG の fs_cash_sets_cap の数を書き替えてください（その場で増えます）。<br>' +
+      '止めるときは dept_claim のその行の「状態」を 無効 にしてください。</div>';
+    $("status").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
   async function claim(code, userId) {
     const q = new URLSearchParams({ action: "dept_claim", c: code, userId: userId, _: Date.now() });
     const res = await fetch(GAS_URL + "?" + q.toString());
@@ -158,8 +208,9 @@
   }
 
   async function main() {
-    // 🛑 LINEのIDが入っていないあいだは、ここで止めます（押しても開かない画面を出しません）。
-    if (!isUsableLiffId(DEPT_CLAIM_LIFF_ID)) {
+    // 🛑 LINEのIDが入っていないあいだは、お客さま向けの受け取りを止めます
+    //   （押しても開かない画面を出しません）。★数を見るだけの画面はIDが要らないので通します。
+    if (!isUsableLiffId(DEPT_CLAIM_LIFF_ID) && String(getParam("count") || "").trim() !== "1") {
       setStatus("ただいま、この画面のご用意をしています。\nお手数をおかけしております。\nJCJのブースのスタッフにお声がけください。");
       return;
     }
@@ -168,6 +219,13 @@
     const code = String(getParam("c") || "").trim();
     if (!code) {
       paintNg("読み取りに失敗しました。もう一度、カードのQRを読み取ってください。", "");
+      return;
+    }
+
+    // スタッフが数を見るとき＝LINEを通しません（券を出さないので、どなたの番号も要りません）。
+    if (String(getParam("count") || "").trim() === "1") {
+      $("status").textContent = "数を読んでいます…";
+      await paintCount(code);
       return;
     }
 
