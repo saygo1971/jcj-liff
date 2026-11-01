@@ -212,7 +212,7 @@
   async function paintCount(code) {
     let d;
     try {
-      const q = new URLSearchParams({ action: "dept_claim_count", c: code, _: Date.now() });
+      const q = new URLSearchParams({ action: "dept_claim_count", dc: code, _: Date.now() });
       const res = await fetch(GAS_URL + "?" + q.toString());
       d = await res.json();
     } catch (e) {
@@ -245,7 +245,7 @@
   }
 
   async function claim(code, userId) {
-    const q = new URLSearchParams({ action: "dept_claim", c: code, userId: userId, _: Date.now() });
+    const q = new URLSearchParams({ action: "dept_claim", dc: code, userId: userId, _: Date.now() });
     const res = await fetch(GAS_URL + "?" + q.toString());
     return await res.json();
   }
