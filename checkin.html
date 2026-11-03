@@ -164,6 +164,14 @@
   // ★2026-09-26：QRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
   //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
   let EV = params.get("ev") || "";
+  /*★★2026-11-03 追加：旅のほうのチェックインプレート（URLに trip=1）かどうか。
+   *  ★ロースターが出先のイベントへ持って行くための、2つめのチェックインプレートです。
+   *  ★これが付いているときは、トーク画面へ移らず、この画面の中でチェックインを終わらせます。
+   *    ⇒ そうすると、お客さまが いまいる場所を送れます（トーク画面へ移る道では送れません）。
+   *    ⇒ カードは、チェックインのあとに こちらからトーク画面へ送ります（コード.js の apiCheckinDo）。
+   *  ★お店に置いたままのチェックインプレートには、この印を付けません
+   *    ⇒ ★だから、ふだんのお店のチェックインは1文字も変わりません。 */
+  let TRIP = params.get("trip") ? "1" : "";
   let st = null;      // checkin_state の結果
   let count = 1;
   let busy = false;
@@ -243,6 +251,7 @@
     try{
       const extra = { spot: SPOT };
       if (EV) extra.ev = EV;                        // ★2026-09-26：どのイベントかを一緒に送る
+      if (TRIP) extra.trip = TRIP;                  // ★2026-11-03：旅のほうのプレートだと伝える（カードをこちらから送るため）
       if (geo && geo.ok){ extra.lat = geo.lat; extra.lng = geo.lng; extra.acc = geo.acc; }
       else { extra.geo = (geo && geo.reason) ? geo.reason : "unavailable"; }
       const r = await api("checkin_do", extra);
@@ -882,7 +891,10 @@
      *  ★**ふつうのお店（ev が無いQR）は、1文字も変わりません**（★橋渡しもトークのカードもそのまま）。
      *  🔴★**失うもの＝会場ではトークにカードが残りません**（★画面の中で完了して終わり）。
      *    ★オーナー承知のうえでのご決定です（2026-09-26）。★あとから こちらから送る形も足せます。 */
-    if (BRIDGE_TO_MESSAGE && !EV && liff.isInClient && liff.isInClient()) {
+    /*★2026-11-03：旅のほうのチェックインプレート（trip）も、トーク画面へ移りません。
+     *  ★理由＝移ると いまいる場所が1つも送られず、出先でも「お住まい→お店の座標」で数えてしまいます。
+     *  ★カードは、チェックインのあとに こちらから送ります（コード.js の apiCheckinDo）。 */
+    if (BRIDGE_TO_MESSAGE && !EV && !TRIP && liff.isInClient && liff.isInClient()) {
       const nm = String((st && st.shopName) || "").trim();
       if (nm) {
         showLoading("チェックインの画面をひらいています…");
