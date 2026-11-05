@@ -114,6 +114,11 @@
     .freebox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
     .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--green2)}
     .freebtn:disabled{opacity:.5}
+    /*★2026-11-05：会場で「券を買う」をお出しする枠の見た目。
+      ★本番の index.html に在るものと同じ字・同じ数字です（★2つの画面で見た目を分けないため）。*/
+    .buysec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
+    .buytitle{text-align:center;font-size:15px;font-weight:700;color:#222}
+    .buybtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:#BA7517;text-decoration:none}
     .freedone{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
     .freedone .big{font-size:18px;font-weight:800;color:var(--ink2)}
     .freedone .sub{font-size:12px;color:var(--sub2);margin-top:6px;line-height:1.75}
@@ -443,6 +448,10 @@
       // ☕ カップ（2026-09-26）。★最初は空の入れ物だけ。★あとから別の小さな問い合わせで埋めます。
       //   ★理由＝受付の画面を重くしないため。★カップが無い方には、何も出ません。
       '<div id="cupsec"></div>' +
+      /*★2026-11-05：会場で「券を買う」をお出しする枠の置き場所。
+       *  ★最初は空の入れ物だけです。★中身は下の1回の問い合わせ（cup_state）で埋めます。
+       *  ★FIELDSTYLEのQRから開いた方で、券が0枚・何も買っていない方にだけ出ます。*/
+      '<div id="buysec_ev"></div>' +
       refHtml;
 
     /*★★2026-10-22 オーナー指示：会場（イベントのQR）では「あと◯店で◯◯コンプリート」を出しません。
@@ -529,6 +538,7 @@
     renderFreeSection_(s);
     renderTicketSection_(s);
     if (s.cup) renderCupSection_(s);
+    renderEventBuySection_(s);   // ★2026-11-05 足した1行（★戻すときはこの1行を消すだけです）
   }
 
   /* ========================================================================
@@ -681,6 +691,37 @@
           //   ★実際に5つ お持ちの方がいて、文と食い違っていました。
           '<div class="sub">お買い上げのぶんは、すべてお渡しずみです</div>' +
         '</div>' +
+      '</div>';
+  }
+
+  /* ========================================================================
+     ★2026-11-05 オーナーさまご指示：会場で「券を買う」をお出しする枠。
+     ・★FIELDSTYLEのQRから開いた方で、★まだ一杯も飲めない方にだけ出します。
+     ・★出す条件は、3つとも そろったときだけです。
+         ① URLに ev= が付いている（＝FIELDSTYLEのQRから開いた）
+            ★ふだんのお店のチェックインには出しません。
+         ② 使える券が0枚（cup_state の tickets。★無料の1杯もここに入ります）
+         ③ 何も買っていない（cup_state の cup.bought が0。★カップも買っていない）
+     ・🔴★買ったかどうかが読めたか（cup_state の cupReadable）も見ます。
+       ★読めていないときは出しません＝「分からないときは出さない」が会社の決まりです。
+     ・★券をお持ちの方・買われた方には出しません
+       （2026-10-22 オーナーさまご指示「売り込みに見えないように、残りが在る方には出さない」）。
+     ・★文は2026-11-05にオーナーさまがご承認されたものです。★1文字も変えないでください。
+     ・★戻すときは、loadCupSection_ の中の renderEventBuySection_(s); の1行を消すだけです。
+     ======================================================================== */
+  function renderEventBuySection_(s){
+    const el = $("buysec_ev");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!EV) return;                                      // ① FIELDSTYLEのQRから開いていない
+    if (s.cupReadable !== true) return;                   // ★買ったかどうかが読めていない
+    if ((Number(s.tickets) || 0) > 0) return;             // ② 券をお持ちの方
+    const cup = s.cup || {};
+    if ((Number(cup.bought) || 0) > 0) return;            // ③ カップを買われた方
+    el.innerHTML =
+      '<div class="buysec">' +
+        '<div class="buytitle">ロースターの一杯を飲むには<br>試飲チケットが要ります</div>' +
+        '<a class="buybtn" href="https://liff.line.me/2010671952-7skS1QBT">3杯ぶん 1,500円 を買う</a>' +
       '</div>';
   }
 
