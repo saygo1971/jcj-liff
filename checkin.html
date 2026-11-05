@@ -355,8 +355,10 @@
      *    const beansProgHtml = beansProgressHtml(r); に戻すだけです。 */
     const beansProgHtml = "";
 
+    // ★2026-11-05：この店で券を使えるか。★会場のQRのときは false になります（上の説明）。
+    TICKET_ENABLED = !!r.ticketEnabled && !isVenueDeskSpot_();
     let ticketHtml = "";
-    if (r.ticketEnabled && Number(r.ticketBalance) > 0){
+    if (TICKET_ENABLED && Number(r.ticketBalance) > 0){
       const bal = Number(r.ticketBalance);
       ticketHtml = ticketBoxHtml_(bal);   // ★2026-11-05：見た目は ticketBoxHtml_ の1か所にまとめました
     }
@@ -490,8 +492,7 @@
       else location.href = url;
     };
 
-    TICKET_ENABLED = !!r.ticketEnabled;   // ★2026-11-05：あとで券を使う枠を出し直すために覚えます
-    if (r.ticketEnabled && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
+    if (TICKET_ENABLED && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
 
     // ☕ カップ（2026-09-26）。★この画面の他の部分が出そろってから、あとで埋めます。
     loadCupSection_();
@@ -514,6 +515,22 @@
   /*★2026-11-05：この店が試飲チケット対応かどうかを覚えておきます。
    *  ★無料の1杯を受け取ったあとに「券を使う枠」を出し直すのに要ります。*/
   let TICKET_ENABLED = false;
+  /*🛑★2026-11-05 オーナーさまご判断：会場のQR（お店の番号が AIC_FS_AICHI）で開いたときは、
+   *  券を使う枠を出しません。★受付の合言葉つきQRも【同じ会場の番号】です＝どちらも出しません。
+   *  ★理由＝券を1枚 お使いになると、コーヒーをお出ししたロースターさまへ300円 お支払いします。
+   *    その払い先は、お客さまが読んだQRの【お店の番号】で決まります。
+   *    （ticket.js の consumeTickets_ が、その番号をそのまま roaster_pool の
+   *      「ロースターID」の列に書きます。11月末の精算は、その一覧で行います。）
+   *    ⇒ 会場の番号で使われると、払い先が【会場】になり、ロースターさまに1円も入りません。
+   *    ⇒ あとから「どのロースターさまがお出ししたか」を調べる手立てもありません。
+   *  ★受付でコーヒーはお出ししません（2026-10-22 オーナーさまご指示で、受付では
+   *    「今日の一杯は？」も出していません）。だから受付で券をお使いになる場面はありません。
+   *  ★受付では、お持ちの枚数は「チケット ○枚」の枠に いままでどおり出ます。
+   *  ★戻すときは、下の && !isVenueDeskSpot_() を消すだけです。*/
+  const VENUE_DESK_SPOT_ID = "AIC_FS_AICHI";   // ★FIELDSTYLE会場そのものの お店の番号
+  function isVenueDeskSpot_(){
+    return String(SPOT || "").trim().toUpperCase() === VENUE_DESK_SPOT_ID;
+  }
 
   async function loadCupSection_(){
     if (!$("cupsec")) return;
