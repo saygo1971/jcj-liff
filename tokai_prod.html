@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>東海コーヒージャーニー</title>
+<!--
+  東海コーヒージャーニー（FIELDSTYLE EXPO 2026 でご登録いただいた方の旅）
+  設計＝docs/2026-11-16_FIELDSTYLEでご登録の方の東海コーヒージャーニー専用ページ_設計と審査会.md
+  審査会＝2026-11-16 設計審査 86.3点／追加審査 87.3点（どちらも全員承認）
+
+  ★このページは【公開のページ】です。LINEの中でなくても開けます。
+    LINEログインはしません。どなたが開いても、出るのは合計だけです。
+    ⇒ ユーザーID・お名前・ニックネーム・お住まいは、1つも受け取りません。
+
+  ★並び順は 2026-11-16 の追加審査で決めました（水曜20時に読まれる前提）。
+    その時刻はお店が閉まっています ⇒ このページの仕事は
+    「チェックインしていただくこと」ではなく【週末に行く1軒を、その場で決めていただくこと】。
+    だから主役は 数字ではなく【お店の名前と旅コピー】です。
+-->
+<style>
+  /* JCJ カラー仕様（トンマナ）準拠：白基準・数字は本文色・緑は訪ねたお店のみ */
+  :root{
+    --bg:#ffffff;
+    --paper:#F4EADD;     /* ベージュ＝カードの中のブロックだけ */
+    --ink:#221C1A;
+    --ink-sub:#6E655E;
+    --line:#DDD6CE;
+    --brand-deep:#C04A55;/* 深コーラルピンク＝押す */
+    --done:#2F7A57;      /* グリーン＝訪ねたお店 */
+    --track:#E7EAE5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+  .wrap{max-width:440px;margin:0 auto;padding:0 16px 28px}
+
+  .status{color:var(--ink-sub);font-size:14px;padding:60px 0;text-align:center;line-height:1.7}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--done);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hidden{display:none}
+
+  .head{padding:18px 4px 2px;text-align:center}
+  .head .kicker{font-size:11px;color:var(--ink-sub);letter-spacing:.10em;font-weight:700}
+  .head .h1{font-size:21px;font-weight:800;margin-top:5px;line-height:1.35}
+  .head .who{font-size:12.5px;color:var(--ink-sub);margin-top:6px;font-weight:700;line-height:1.6}
+
+  /* ── 進み具合 ── */
+  .meter{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:16px;
+    padding:15px 16px;text-align:center;box-shadow:0 4px 16px rgba(80,70,60,.06)}
+  .meter .big{font-size:32px;font-weight:800;line-height:1.05;letter-spacing:-.01em}
+  .meter .big .u{font-size:15px;font-weight:800;color:var(--ink-sub);margin-left:2px}
+  .meter .cap{font-size:12.5px;color:var(--ink-sub);margin-top:4px;font-weight:700}
+  .track{margin-top:12px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
+  .fill{height:10px;background:var(--done);border-radius:999px;width:0;transition:width .8s ease}
+  .sub{margin-top:12px;background:var(--paper);border-radius:12px;padding:10px 12px;
+    display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .sub .it{font-size:12px;color:var(--ink-sub);font-weight:700}
+  .sub .it b{font-size:17px;color:var(--ink);font-weight:800;margin:0 2px}
+  .meter .why{font-size:11.5px;color:var(--ink-sub);margin-top:10px;line-height:1.6}
+
+  /* まだ0軒のとき（★冷たい0を見せない） */
+  .zero{margin-top:14px;background:var(--paper);border-radius:16px;padding:18px 18px;text-align:center}
+  .zero .t{font-size:17px;font-weight:800;line-height:1.55}
+  .zero .t b{color:var(--done)}
+  .zero .s{font-size:13.5px;color:var(--ink-sub);margin-top:9px;font-weight:700}
+
+  /* ── 県ごと ── */
+  .axis{font-size:12px;font-weight:800;color:var(--ink-sub);letter-spacing:.04em;margin:22px 2px 8px}
+  .prefs{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .prow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid var(--line)}
+  .prow:first-child{border-top:none}
+  .prow .n{font-size:14px;font-weight:800;flex:0 0 74px}
+  .prow .bar{flex:1;height:8px;background:var(--track);border-radius:999px;overflow:hidden}
+  .prow .bar i{display:block;height:8px;background:var(--done);border-radius:999px}
+  .prow .v{font-size:12.5px;color:var(--ink-sub);font-weight:800;flex:0 0 62px;text-align:right}
+
+  /* ── お店の一覧 ── */
+  .shops{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .srow{display:block;text-decoration:none;color:inherit;padding:12px 13px;border-top:1px solid var(--line)}
+  .srow:first-child{border-top:none}
+  .srow .top{display:flex;align-items:baseline;gap:7px}
+  .srow .pref{font-size:11.5px;color:var(--ink-sub);font-weight:700;flex:0 0 auto}
+  .srow .name{font-size:15.5px;font-weight:800;line-height:1.35}
+  .srow .copy{font-size:12.5px;color:var(--ink-sub);margin-top:4px;line-height:1.6}
+  .srow .go{font-size:11.5px;color:var(--brand-deep);font-weight:800;margin-top:6px}
+  .srow.nopage .go{color:var(--ink-sub);font-weight:700}
+  .srow.done{background:#F3F8F5}
+  .srow.done .name{color:var(--done)}
+  .srow .mark{font-size:11.5px;color:var(--done);font-weight:800;margin-top:5px}
+  .first{background:var(--paper);font-size:11.5px;color:var(--ink-sub);font-weight:800;
+    padding:9px 13px;line-height:1.6;border-top:1px solid var(--line)}
+  .first:first-child{border-top:none}
+
+  /* ── お店に着いたら ── */
+  .howto{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
+  .howto .ttl{font-size:16px;font-weight:800}
+  .howto .lead{font-size:13px;color:var(--ink-sub);font-weight:700;margin-top:7px;line-height:1.6}
+  .howto ol{margin:13px 0 0;padding:0;list-style:none;counter-reset:s}
+  .howto li{counter-increment:s;position:relative;padding:0 0 0 34px;margin-bottom:13px;
+    font-size:13.5px;line-height:1.75}
+  .howto li:last-child{margin-bottom:0}
+  .howto li::before{content:counter(s);position:absolute;left:0;top:1px;width:23px;height:23px;
+    border-radius:50%;background:var(--done);color:#fff;font-size:12.5px;font-weight:800;
+    display:flex;align-items:center;justify-content:center}
+  .howto li .n{font-size:12px;color:var(--ink-sub);display:block;margin-top:3px;line-height:1.6}
+
+  /* ── ボタン ── */
+  .cta{display:block;margin-top:22px;background:var(--brand-deep);color:#fff;text-decoration:none;
+    border-radius:14px;padding:16px;text-align:center;font-size:16px;font-weight:800;
+    box-shadow:0 6px 18px rgba(192,74,85,.22)}
+  .foot{margin-top:18px;font-size:11px;color:var(--ink-sub);text-align:center;line-height:1.8}
+  .brand{margin-top:14px;font-size:10px;color:var(--ink-sub);letter-spacing:.12em;text-align:center;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="loading" class="status"><div class="spin"></div>読み込んでいます…</div>
+
+  <div id="err" class="status hidden">
+    いま うまく読み込めませんでした。<br />
+    少し時間をおいて、もう一度 開いてみてください。
+  </div>
+
+  <div id="main" class="hidden">
+
+    <div class="head">
+      <div class="kicker">JAPAN COFFEE JOURNEY</div>
+      <div class="h1">東海コーヒージャーニー</div>
+      <div class="who" id="who"></div>
+    </div>
+
+    <!-- まだ誰も訪ねていないとき（★0を数字で見せない） -->
+    <div id="zero" class="zero hidden">
+      <div class="t">愛知・岐阜・三重・静岡・滋賀の<br /><b id="zeroN">26軒</b> が、<br />まだ誰も訪ねていません。</div>
+      <div class="s">はじめの一人になりませんか。</div>
+    </div>
+
+    <!-- 1軒以上 訪ねたとき -->
+    <div id="meter" class="meter hidden">
+      <div class="big"><span id="mv">0</span><span class="u">／<span id="mt">26</span>軒</span></div>
+      <div class="cap">を、訪ねました</div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="sub">
+        <div class="it"><b id="mp">0</b>人が 旅に出ました</div>
+        <div class="it">合わせて <b id="mk">0</b>km</div>
+      </div>
+      <div class="why">その距離は、ご自分のお住まいからお店までの道のりを、みんなで足したものです。</div>
+    </div>
+
+    <!-- 県ごと（★自分の県の話にするため） -->
+    <div class="axis">県ごとに見る</div>
+    <div class="prefs" id="prefs"></div>
+
+    <!-- まだ誰も訪ねていないお店（★ここで1軒 決めていただく） -->
+    <div class="axis" id="todoTtl">まだ誰も訪ねていないお店</div>
+    <div class="shops" id="todo"></div>
+
+    <!-- 訪ねたお店 -->
+    <div class="axis hidden" id="doneTtl">訪ねたお店</div>
+    <div class="shops hidden" id="done"></div>
+
+    <!-- お店に着いたら -->
+    <div class="howto">
+      <div class="ttl">お店に着いたら</div>
+      <div class="lead">はじめの1軒は、どこでも構いません。</div>
+      <ol>
+        <li>お店に置いてある <b>チェックインプレート</b> に、スマホをかざします。
+          <span class="n">QRコードを読み込むのでも同じです。レジ横や、展示物があるエリアなどに置かれています。</span></li>
+        <li>プレートが見つからないときは、LINEのボタン <b>「その場でチェックイン」</b> から記録できます。
+          <span class="n">その一軒が、あなたのパスポートに旅の記録として残ります。歩いた道のりぶんの距離も一緒に。</span></li>
+        <li>そのあと、そのまま <b>コーヒー日記</b> に残せます。
+          <span class="n">写真を1枚、豆の生産国、ひとことメモ。何も書かなくても構いません。</span></li>
+      </ol>
+    </div>
+
+    <a class="cta" id="cta" href="https://japancoffeejourney.com/discover.html?area=tokai">近くのお店を見てみる</a>
+
+    <div class="foot" id="foot"></div>
+    <div class="brand">JAPAN COFFEE JOURNEY</div>
+  </div>
+
+</div>
+
+<script>
+  // ★★ 本番の受け口。テスト環境は tokai.html の方です（URLが違うだけです）。
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwvdgDo_qITE4Lv6fy0CpQ1LZAmNh1d12-hJwClRBAFURARTqpDZKJsozjEu56nAriDfw/exec";
+  // お店のページの行き先（japancoffeejourney.com は本番・テストで同じものを見ています）
+  const SHOP_PAGE_BASE = "https://japancoffeejourney.com/shop/";
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (n) => (Number(n) || 0).toLocaleString("ja-JP");
+
+  function showError(why) {
+    $("loading").classList.add("hidden");
+    $("err").classList.remove("hidden");
+    if (why) console.log("tokai: " + why);
+  }
+
+  /** お店1軒の行を作る。★webのページが無いお店は、押せないようにします（404に送らないため） */
+  function shopRow(s, isDone) {
+    const pref = esc(s.pref || "");
+    const name = esc(s.name || "");
+    const copy = esc(s.copy || "");
+    const inner =
+      '<div class="top"><span class="pref">' + pref + '</span><span class="name">' + name + '</span></div>' +
+      (copy ? '<div class="copy">' + copy + '</div>' : '') +
+      (isDone && s.last ? '<div class="mark">' + esc(s.last) + ' に訪ねました</div>' : '') +
+      (s.page
+        ? '<div class="go">このお店を見る ›</div>'
+        : '<div class="go">このお店のページは、いま準備しています</div>');
+
+    if (s.page) {
+      const a = document.createElement("a");
+      a.className = "srow" + (isDone ? " done" : "");
+      a.href = SHOP_PAGE_BASE + encodeURIComponent(s.id) + ".html";
+      a.innerHTML = inner;
+      return a;
+    }
+    const d = document.createElement("div");
+    d.className = "srow nopage" + (isDone ? " done" : "");
+    d.innerHTML = inner;
+    return d;
+  }
+
+  function render(d) {
+    const total = Number(d.totalShops) || 0;
+    const visited = Number(d.visitedCount) || 0;
+
+    // 誰のページか（★「みんな」が誰を指すかを、ここで1度だけ はっきりさせます）
+    $("who").textContent =
+      "FIELDSTYLE EXPO 2026 で出会った " + num(d.members) + "人の旅";
+
+    if (visited > 0) {
+      $("meter").classList.remove("hidden");
+      $("mv").textContent = num(visited);
+      $("mt").textContent = num(total);
+      $("mp").textContent = num(d.people);
+      $("mk").textContent = num(d.km);
+      // ★0のときは帯そのものを出しません（中身の無い帯は、壊れていると見えます）
+      $("fill").style.width = (total > 0 ? Math.max(2, Math.round(visited / total * 100)) : 0) + "%";
+    } else {
+      $("zero").classList.remove("hidden");
+      $("zeroN").textContent = num(total) + "軒";
+    }
+
+    // 県ごと
+    const prefs = $("prefs");
+    (d.byPref || []).forEach((p) => {
+      const row = document.createElement("div");
+      row.className = "prow";
+      const pct = (p.total > 0 && p.visited > 0) ? Math.max(3, Math.round(p.visited / p.total * 100)) : 0;
+      row.innerHTML =
+        '<span class="n">' + esc(p.pref) + '</span>' +
+        '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+        '<span class="v">' + num(p.visited) + ' / ' + num(p.total) + '軒</span>';
+      prefs.appendChild(row);
+    });
+
+    const shops = (d.shops || []).slice();
+    const todo = shops.filter((s) => !s.visited);
+    const done = shops.filter((s) => s.visited)
+      .sort((a, b) => (Number(b.lastYmd) || 0) - (Number(a.lastYmd) || 0));   // 新しい順
+
+    // ★会場でお会いした2社を、いちばん上に置きます（会場で飲まれた味が、行ける距離に在るため）
+    const MET_AT_VENUE = ["AIC_101", "SZK_NOMAD"];
+    const atVenue = todo.filter((s) => MET_AT_VENUE.indexOf(s.id) >= 0)
+      .sort((a, b) => MET_AT_VENUE.indexOf(a.id) - MET_AT_VENUE.indexOf(b.id));
+    const others = todo.filter((s) => MET_AT_VENUE.indexOf(s.id) < 0);
+
+    $("todoTtl").textContent = "まだ誰も訪ねていないお店（" + num(todo.length) + "軒）";
+    const todoBox = $("todo");
+    const putGroup = (label, list) => {
+      if (!list.length) return;
+      if (atVenue.length && others.length) {          // 見出しは、2つに分かれるときだけ出す
+        const note = document.createElement("div");
+        note.className = "first";
+        note.textContent = label;
+        todoBox.appendChild(note);
+      }
+      list.forEach((s) => todoBox.appendChild(shopRow(s, false)));
+    };
+    putGroup("FIELDSTYLE の会場でお会いしたお店", atVenue);
+    putGroup("東海のほかのお店", others);
+    if (todo.length === 0) {
+      todoBox.classList.add("hidden");
+      $("todoTtl").classList.add("hidden");
+    }
+
+    if (done.length) {
+      $("doneTtl").classList.remove("hidden");
+      $("doneTtl").textContent = "訪ねたお店（" + num(done.length) + "軒）";
+      const doneBox = $("done");
+      doneBox.classList.remove("hidden");
+      done.forEach((s) => doneBox.appendChild(shopRow(s, true)));
+    }
+
+    // いちばん下の1行
+    let foot = "この数字は、毎朝と毎晩 数え直しています。";
+    if (d.startLabel) foot += "<br />" + esc(d.startLabel) + " から後の記録を数えています。";
+    if (d.updatedAt) {
+      const t = new Date(d.updatedAt);
+      if (!isNaN(t.getTime())) {
+        foot += "<br />" + (t.getMonth() + 1) + "月" + t.getDate() + "日 " +
+          t.getHours() + "時" + ("0" + t.getMinutes()).slice(-2) + "分 現在";
+      }
+    }
+    $("foot").innerHTML = foot;
+
+    $("loading").classList.add("hidden");
+    $("main").classList.remove("hidden");
+  }
+
+  (async () => {
+    try {
+      const res = await fetch(GAS_URL + "?action=tokai_journey", { cache: "no-store" });
+      const d = await res.json();
+      if (!d || d.ok !== true) return showError("ok が true ではありません");
+      if (d.on !== true) return showError("まだ出していません（tokai_fs_on が OFF）");
+      if (d.ready !== true) return showError("まだ1回も数えていません");
+      render(d);
+    } catch (e) {
+      showError(String((e && e.message) || e));
+    }
+  })();
+</script>
+</body>
+</html>
