@@ -119,9 +119,7 @@
     .buysec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
     .buytitle{text-align:center;font-size:15px;font-weight:700;color:#222}
     .buybtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:#BA7517;text-decoration:none}
-    .freedone{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
-    .freedone .big{font-size:18px;font-weight:800;color:var(--ink2)}
-    .freedone .sub{font-size:12px;color:var(--sub2);margin-top:6px;line-height:1.75}
+    /* ★2026-11-16：.freedone（無料の1杯 受け取り済みの枠）は出すのをやめたので、見た目の指定も外しました。 */
     .freenote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -494,6 +492,19 @@
 
     if (TICKET_ENABLED && Number(r.ticketBalance) > 0) wireTicket(Number(r.ticketBalance));
 
+    /*★★2026-11-16：この【1回目の返事】だけで、もう描けるものは描きます。
+     *  🔴★なぜ＝これまでは「無料の1杯」のボタンも、お持ちの枚数も、
+     *    この下の loadCupSection_()（cup_state）の返事を待たないと出ませんでした。
+     *    ★cup_state は実測で5.6〜7.0秒かかります＝お客さまを2回 待たせていました。
+     *  ★r.free は、会場のQRで開いたときだけサーバーが入れてくれます
+     *    （ふつうのお店では null ＝ ここは何もしません）。
+     *  ★このあと loadCupSection_() の返事が来たら、同じ所が上書きされます
+     *    ＝食い違いは残りません。
+     *  ★戻すときは、下の if 2つを消すだけです。*/
+    CHECKIN_BAL = Number(r.ticketBalance) || 0;
+    if (r.free) renderFreeSection_({ free: r.free });
+    if (CHECKIN_BAL > 0) renderTicketSection_({ tickets: CHECKIN_BAL, free: r.free });
+
     // ☕ カップ（2026-09-26）。★この画面の他の部分が出そろってから、あとで埋めます。
     loadCupSection_();
   }
@@ -515,6 +526,16 @@
   /*★2026-11-05：この店が試飲チケット対応かどうかを覚えておきます。
    *  ★無料の1杯を受け取ったあとに「券を使う枠」を出し直すのに要ります。*/
   let TICKET_ENABLED = false;
+  /*★2026-11-16：チェックインの【1回目の返事】が言っていた券の枚数を覚えておきます。
+   *  ★使い道＝あとの返事が0枚でも、いちど出した「使う」枠を消さないため（syncTicketBox_）。*/
+  let CHECKIN_BAL = 0;
+  /*🛑★2026-11-16：この画面で「1杯ぶんの券を受け取る」が通ったかどうか。
+   *  ★なぜ要るか＝受け取ったあとの cup_state が「まだ受け取っていない」と答えることがあります
+   *    （★預かっている最中かどうかを数えられなかったとき）。
+   *    ★そのまま出すと、緑のボタンが もう一度 出て、枚数の枠が消えます
+   *    ＝お客さまには「受け取れたのに、取り消された」ように見えます。
+   *  ★いちど通ったら、この画面では二度と受け取るボタンを出しません。*/
+  let FREE_GRANTED_HERE = false;
   /*🛑★2026-11-05 オーナーさまご判断：会場のQR（お店の番号が AIC_FS_AICHI）で開いたときは、
    *  券を使う枠を出しません。★受付の合言葉つきQRも【同じ会場の番号】です＝どちらも出しません。
    *  ★理由＝券を1枚 お使いになると、コーヒーをお出ししたロースターさまへ300円 お支払いします。
@@ -581,15 +602,34 @@
   function renderTicketSection_(s){
     const el = $("tksec");
     if (!el) return;
-    const n = Number(s.tickets) || 0;
-    if (s.reception !== true || n <= 0){ el.innerHTML = ""; return; }
+    /*★2026-11-16：受け取れたあとは、この画面が知っている枚数を下回らせません。
+     *  ★理由＝台帳に書かれる前は、サーバーが0枚と答えることがあるためです。*/
+    let n = Number(s.tickets) || 0;
+    if (FREE_GRANTED_HERE && CHECKIN_BAL > n) n = CHECKIN_BAL;
+    if (n <= 0){ el.innerHTML = ""; return; }
+    /*★★2026-11-16：ロースターのブースでも、お持ちの枚数を出します。
+     *  🔴★なぜ＝これまでは受付の画面でしか出ていませんでした（s.reception !== true で消していた）。
+     *    ★ブースでは、お客さまご自身が「まだ1枚 持っている」ことを見られませんでした。
+     *  ★ただし「使う」枠が出ているときは、出しません。
+     *    ★理由＝「使う」枠の見出しに（残○枚）と同じことが書いてあります。
+     *      ★同じことを言う枠を2つ並べると、片方だけ古くなったときに食い違います。
+     *  ★会場のQR（ev= が付いている）から開いたときだけです
+     *    ＝ふだんのお店のチェックインは、1文字も変わりません。
+     *  ★戻すときは、下の2行を if (s.reception !== true){ el.innerHTML = ""; return; } に戻すだけです。*/
+    const useBoxShown_ = !!document.querySelector(".tsec");
+    if (s.reception !== true && (!EV || useBoxShown_)){ el.innerHTML = ""; return; }
     el.innerHTML =
       '<div class="tksec">' +
         // ★2026-10-08 オーナー指示：「チケット3枚」と、ひとつづきで出します。
         //   ★小さい見出しはやめました（カップが「カップ／カップ3つ」と二重に出ていたため）。
         '<div class="tkbox">' +
           '<div class="big">チケット ' + n + '枚</div>' +
-          '<div class="sub">ロースターのブースで、一杯と交換できます<br>（無料の1杯を含みます）</div>' +
+          /*★2026-11-16：「（無料の1杯を含みます）」は、本当に含むときだけ出します。
+           *  ★これまでは条件が無く、無料の1杯をお持ちでない方にも出ていました。
+           *  ★この枠をブースでも出すようにしたので、間違った文が出る場所を増やさないために直します。*/
+          '<div class="sub">ロースターのブースで、一杯と交換できます' +
+            (((s.free && s.free.has === true) || FREE_GRANTED_HERE) ? '<br>（無料の1杯を含みます）' : '') +
+          '</div>' +
         '</div>' +
       '</div>';
   }
@@ -612,20 +652,20 @@
      *  ★受付のQRにも ev=FS_AICHI_2026 が付いているので、受付でも いままでどおり出ます。
      *  ★戻すときは、下の if (!EV) の1行を消すだけです。*/
     if (!EV){ el.innerHTML = ""; return; }
+    // 🛑★2026-11-16：この画面で受け取れた方には、もう何も出しません（★後戻りさせない）。
+    if (FREE_GRANTED_HERE){ el.innerHTML = ""; return; }
     const f = s.free || {};
     // ★読めなかったときは、何も出しません（★間違ったことを出すより、出さない方が安全です）。
     if (f.readable !== true){ el.innerHTML = ""; return; }
 
-    if (f.has === true){
-      el.innerHTML =
-        '<div class="freesec">' +
-          '<div class="freedone">' +
-            '<div class="big">無料の1杯 受け取り済み</div>' +
-            '<div class="sub">ロースターのブースでお使いください（おひとり1枚）</div>' +
-          '</div>' +
-        '</div>';
-      return;
-    }
+    /*🛑★2026-11-16：受け取ったあとの「無料の1杯 受け取り済み」の枠を、出すのをやめました。
+     *  ★なぜ＝うすい灰色の枠で、緑のボタンと同じ形・同じ場所に出ていました。
+     *    ⇒ お客さまは「もう使えない」と読まれます。
+     *    ⇒ 会期の実測＝無料の券937枚のうち、ブースで使われたのは188枚（20%）だけでした。
+     *  ★いまお持ちの枚数は「チケット ○枚」の枠と、「使う」枠の（残○枚）に出ます。
+     *    ⇒ 同じことを言う枠を2つ並べません（★片方が灰色だと、必ず誤解されます）。
+     *  ★戻すときは、この下の1行を、もとの freedone の枠を作る文に戻すだけです。*/
+    if (f.has === true){ el.innerHTML = ""; return; }
 
     // ★まだ受け取っていない。★受付から開いていなければ、枠ごと出しません。
     if (f.grantable !== true){ el.innerHTML = ""; return; }
@@ -665,7 +705,22 @@
       if (r && r.reason === "already") loadCupSection_();
       return;
     }
-    // ★入ったあと、★もう一度 読み直してから出します（★画面の数字を自分で作らない）。
+    /*★★2026-11-16：受け取れたと返ってきた時点で、先に画面を進めます。
+     *  🔴★なぜ＝これまでは、この下の loadCupSection_()（cup_state・実測5.6〜7.0秒）の
+     *    返事が来るまで、ボタンが「受け取っています…」のままでした。
+     *    ★受付でもブースでも、お客さまと係の方が、その間ずっと画面を見て待っていました。
+     *  ★やること＝①受け取るボタンの枠を消す ②お持ちの枚数を1枚ふやして出す
+     *    ③ブースなら「使う」枠も出す。
+     *  ★このあと loadCupSection_() の返事で、同じ所が正しい数字に書き直されます
+     *    ＝画面の数字を自分で作りっぱなしにはしません。
+     *  ★戻すときは、下の4行を消すだけです（loadCupSection_() は残します）。*/
+    FREE_GRANTED_HERE = true;
+    CHECKIN_BAL = CHECKIN_BAL + 1;
+    renderFreeSection_({ free: { has: true, grantable: false, readable: true } });
+    syncTicketBox_(CHECKIN_BAL);
+    renderTicketSection_({ tickets: CHECKIN_BAL, free: { has: true } });
+
+    // ★そのあと、サーバーの答えで もう一度 書き直します（★画面の数字を自分で作らない）。
     loadCupSection_();
   }
 
@@ -807,9 +862,19 @@
    *  ★戻すときは、loadCupSection_ の中の syncTicketBox_(s.tickets); の1行を消すだけです。*/
   function syncTicketBox_(n){
     if (!TICKET_ENABLED) return;
-    const bal = Number(n) || 0;
+    let bal = Number(n) || 0;
+    // ★2026-11-16：受け取れたあとは、この画面が知っている枚数を下回らせません（上と同じ理由）。
+    if (FREE_GRANTED_HERE && CHECKIN_BAL > bal) bal = CHECKIN_BAL;
     const box = document.querySelector(".tsec");
-    if (bal <= 0){ if (box) box.remove(); return; }   // ★0枚になったら枠を消します
+    if (bal <= 0){
+      /*🛑★2026-11-16：1回目の返事で「お持ちです」と出ていたときは、ここで枠を消しません。
+       *  ★なぜ＝消してしまうと、券をお持ちなのに使う所が無くなります。
+       *    ★会期では、これで749枚ぶんのコーヒーが記録に残りませんでした。
+       *  ★あとの返事が0枚でも、足りなければサーバーが断ります（画面で先回りして消さない）。
+       *  ★戻すときは、下の1行を if (box) box.remove(); に戻すだけです。*/
+      if (box && CHECKIN_BAL <= 0) box.remove();
+      return;
+    }
     if (!box){
       const anchor = $("recsec");
       if (!anchor) return;                            // ★置き場所が無ければ、何もしません
@@ -901,6 +966,7 @@
        *  ★受付のときは RECORD_HTML が空なので、何も出ません（★2026-10-07 オーナー指示を守ります）。*/
       RECORD_HTML;
     wireRecordBtn_();   // ★置き直したので、押したときの仕掛けを もう一度 付けます
+    CHECKIN_BAL = Number(d.balanceAfter) || 0;   // ★2026-11-16：使ったあとの残りに合わせます
     sendReceiptToTalk(d);  // ★使用直後に「控えカード（レシート）」をトークへ1枚置く（入口B=ticket_use.html と同じ・配信枠を使わない無料の送信）
   }
 
