@@ -77,6 +77,21 @@
   .sub .it b{font-size:17px;color:var(--ink);font-weight:800;margin:0 2px}
   .meter .why{font-size:11.5px;color:var(--ink-sub);margin-top:10px;line-height:1.6}
 
+  /* ── 旅が終わった日の まとめ（★最後まで見ていただく理由にする所） ── */
+  .finish{margin-top:16px;background:var(--pink-deep);color:#fff;border-radius:16px;
+    padding:26px 20px 24px;text-align:center}
+  .finish .lead{font-size:13px;font-weight:700;opacity:.92}
+  .finish .mid{font-size:15px;font-weight:700;margin-top:16px;opacity:.95}
+  .finish .km{font-size:52px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:4px}
+  .finish .km span{font-size:20px;font-weight:800;margin-left:3px}
+  .finish .tail{font-size:15px;font-weight:700;margin-top:4px;opacity:.95}
+  .finish .two{margin-top:20px;background:rgba(255,255,255,.16);border-radius:12px;
+    padding:13px 12px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+  .finish .two .it{font-size:12.5px;font-weight:700}
+  .finish .two .it b{font-size:19px;font-weight:800;margin:0 2px}
+  .thanks{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:15px 16px;text-align:center;font-size:13.5px;line-height:1.8}
+
   /* まだ0軒のとき（★冷たい0を見せない） */
   .zero{margin-top:16px;background:var(--paper);border-radius:16px;padding:19px 18px;text-align:center}
   .zero .t{font-size:17px;font-weight:800;line-height:1.55}
@@ -119,6 +134,9 @@
   /* お店までの距離（★出るのは、いまいる場所を教えていただいたときだけ） */
   .srow .dist{display:inline-block;background:var(--paper);border-radius:999px;
     padding:4px 11px;margin-top:7px;font-size:11.5px;font-weight:800;color:var(--ink)}
+  /* ★2026-11-17 直し＝上の .srow .dist の方が強く、hidden だけでは隠れませんでした。
+     距離を出す前に、中身の無い小さな枠が1つ出てしまっていました。 */
+  .srow .dist.hidden{display:none}
 
   /* ── お店までの距離を出すボタン ── */
   .near{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;
@@ -180,6 +198,22 @@
     <div id="zero" class="zero hidden">
       <div class="t">愛知・岐阜・三重・静岡・滋賀の<br /><b id="zeroN">26軒</b> が、<br />まだ誰も訪ねていません。</div>
       <div class="s">はじめの一人になりませんか。</div>
+    </div>
+
+    <!-- 旅が終わったとき（★終わりの日を過ぎたら、ここだけが出ます） -->
+    <div id="finBox" class="finish hidden">
+      <div class="lead" id="finLead">旅は 1月31日 に終わりました。</div>
+      <div class="mid">みんなで</div>
+      <div class="km"><span id="finKm">0</span><span>km</span></div>
+      <div class="tail">旅しました。</div>
+      <div class="two">
+        <div class="it"><b id="finShops">0</b>/<span id="finTotal">0</span>軒 を訪ねました</div>
+        <div class="it"><b id="finPeople">0</b>人が 旅に出ました</div>
+      </div>
+    </div>
+    <div id="thanks" class="thanks hidden">
+      ここまでの旅を、ありがとうございました。<br />
+      このあとも、お店はいつでもお待ちしています。
     </div>
 
     <!-- 1軒以上 訪ねたとき -->
@@ -306,7 +340,24 @@
       ? "FIELDSTYLE EXPO 2026 で出会った " + num(d.members) + "人の旅"
       : "FIELDSTYLE EXPO 2026 で出会った みなさんの旅";
 
-    if (visited > 0) {
+    // ★旅が終わった日（終わりの日を過ぎた日）＝まとめだけを出します。
+    //   ★「安全弁が閉じている」とは別です。閉じているときは、そもそも中身が来ません。
+    const finished = (d.finished === true);
+    if (finished) {
+      $("finBox").classList.remove("hidden");
+      $("thanks").classList.remove("hidden");
+      $("finLead").textContent = "旅は " + esc(d.endLabel || "") + " に終わりました。";
+      $("finKm").textContent = num(d.km);
+      $("finShops").textContent = num(visited);
+      $("finTotal").textContent = num(total);
+      $("finPeople").textContent = num(d.people);
+      // 旅に出ていただく所は、もう出しません（終わっているため）
+      $("near").classList.add("hidden");
+      document.querySelector(".howto").classList.add("hidden");
+      $("cta").textContent = "お店を見てみる";
+    }
+
+    if (!finished && visited > 0) {
       $("meter").classList.remove("hidden");
       $("mv").textContent = num(visited);
       $("mt").textContent = num(total);
@@ -314,7 +365,7 @@
       $("mk").textContent = num(d.km);
       // ★0のときは帯そのものを出しません（中身の無い帯は、壊れていると見えます）
       $("fill").style.width = (total > 0 ? Math.max(2, Math.round(visited / total * 100)) : 0) + "%";
-    } else {
+    } else if (!finished) {
       $("zero").classList.remove("hidden");
       $("zeroN").textContent = num(total) + "軒";
     }
@@ -345,6 +396,10 @@
 
     $("todoTtl").textContent = "まだ誰も訪ねていないお店（" + num(todo.length) + "軒）";
     const todoBox = $("todo");
+    if (finished) {                      // ★終わったら、この一覧は出しません
+      todoBox.classList.add("hidden");
+      $("todoTtl").classList.add("hidden");
+    }
     const putGroup = (label, list) => {
       if (!list.length) return;
       if (atVenue.length && others.length) {          // 見出しは、2つに分かれるときだけ出す
@@ -355,8 +410,10 @@
       }
       list.forEach((s) => todoBox.appendChild(shopRow(s, false)));
     };
-    putGroup("FIELDSTYLE の会場でお会いしたお店", atVenue);
-    putGroup("東海のほかのお店", others);
+    if (!finished) {
+      putGroup("FIELDSTYLE の会場でお会いしたお店", atVenue);
+      putGroup("東海のほかのお店", others);
+    }
     if (todo.length === 0) {
       todoBox.classList.add("hidden");
       $("todoTtl").classList.add("hidden");
@@ -371,8 +428,13 @@
     }
 
     // いちばん下の1行
-    let foot = "この数字は、毎朝と毎晩 数え直しています。";
-    if (d.startLabel) foot += "<br />" + esc(d.startLabel) + " から後の記録を数えています。";
+    let foot = finished
+      ? "この数字は、" + esc(d.endLabel || "") + " までの記録です。"
+      : "この数字は、毎朝と毎晩 数え直しています。";
+    if (!finished && d.startLabel) {
+      foot += "<br />" + esc(d.startLabel) + " から後の記録を数えています。";
+      if (d.endLabel) foot += "<br />旅は " + esc(d.endLabel) + " までです。";
+    }
     if (d.updatedAt) {
       const t = new Date(d.updatedAt);
       if (!isNaN(t.getTime())) {
