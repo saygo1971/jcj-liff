@@ -417,6 +417,20 @@
     return n;
   }
 
+  /** 許可されなかったときの出し方（★何をすればよいか、その場に書きます） */
+  function showNearDenied() {
+    $("nearBtn").disabled = false;
+    $("nearBtn").textContent = "もう一度ためす";
+    $("nearSub").innerHTML =
+      "<b>いまいる場所が取れませんでした。</b><br />" +
+      "出てくる小さな窓で「<b>許可</b>」を選んでいただくと出せます。<br />" +
+      "一度「許可しない」を選ぶと、次からは窓が出ません。<br />" +
+      "そのときは iPhone の「設定 → Safari → 位置情報」、" +
+      "Android の「設定 → アプリ → Chrome → 権限」から直せます。<br />" +
+      "LINEアプリの「ロースターを探す」でも、" +
+      "ご登録のお住まいからの距離をご覧いただけます。";
+  }
+
   function wireNearButton(shops) {
     const box = $("near"), btn = $("nearBtn"), sub = $("nearSub");
     const haveCoords = shops.filter((s) => Number(s.lat) && Number(s.lng)).length;
@@ -429,6 +443,20 @@
         "ご登録のお住まいからの距離をご覧いただけます。";
       return;
     }
+
+    /* ★2026-11-17 足しました＝いまの許し方を、こちらから調べます。
+       ・もう許してくださっている … ボタンを押さずに、そのまま距離を出します
+       ・まだ聞かれていない       … ボタンを出します（押すと小さな窓が出ます）
+       ・前に断られている         … その場で「どう直すか」を出します
+                                   （押しても小さな窓は もう出ないため）
+       ★navigator.permissions が無い画面（古いiPhoneなど）では、今までどおりボタンだけです。 */
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: "geolocation" }).then((st) => {
+        if (st.state === "granted") { btn.click(); }
+        else if (st.state === "denied") { showNearDenied(); }
+      }).catch(() => {});
+    }
+
     btn.addEventListener("click", () => {
       btn.disabled = true;
       btn.textContent = "いまいる場所を調べています…";
@@ -440,18 +468,7 @@
           $("distDone").textContent =
             n + "軒ぶん、いまいる場所からの距離を出しました。";
         },
-        () => {
-          btn.disabled = false;
-          btn.textContent = "もう一度ためす";
-          sub.innerHTML =
-            "いまいる場所が取れませんでした。<br />" +
-            "出てくる小さな窓で「<b>許可</b>」を選んでいただくと出せます。<br />" +
-            "一度「許可しない」を選ぶと、次からは窓が出ません。<br />" +
-            "そのときは iPhone の「設定 → Safari → 位置情報」、" +
-            "Android の「設定 → アプリ → Chrome → 権限」から直せます。<br />" +
-            "LINEアプリの「ロースターを探す」でも、" +
-            "ご登録のお住まいからの距離をご覧いただけます。";
-        },
+        () => { showNearDenied(); },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
       );
     });
