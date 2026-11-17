@@ -19,19 +19,32 @@
   ★並び順は 2026-11-16 の追加審査で決めました（水曜20時に読まれる前提）。
     その時刻はお店が閉まっています ⇒ このページの仕事は
     「チェックインしていただくこと」ではなく【週末に行く1軒を、その場で決めていただくこと】。
-    だから主役は 数字ではなく【お店の名前と旅コピー】です。
+    だから主役は 数字ではなく【お店の外観の写真と、お店の名前と、旅コピー】です。
+
+  ★2026-11-17 オーナーさまご指示で2つ変えました。
+    ① ロースターさまの外観の写真を、1軒ずつ入れる
+    ② アプリ（緑）ではなく【ピンク主体】にして、旅のページらしくする
+       理由＝FIELDSTYLE EXPO もピンクだったため。
+    ★使った色は、ブランド指針に書いてある2つだけです
+      （#C04A55 深ピンク ／ #CB7B68 コーラルピンク）。新しい色は1つも作っていません。
+      00_全社共通/ブランド指針/JCJ_カラー仕様_トンマナ.md の「1. カラートークン」
+      ＋ docs/2026-11-17_公式webサイト_ピンクの見本_ページぜんぶ.png（見本ア）に合わせています。
+    ★白い小さな文字を載せてよいのは #C04A55 だけです（白との差 4.83）。
+      #CB7B68 は白との差が 3.20 しかないので、白い小さな文字を載せません。
 -->
 <style>
-  /* JCJ カラー仕様（トンマナ）準拠：白基準・数字は本文色・緑は訪ねたお店のみ */
   :root{
-    --bg:#ffffff;
-    --paper:#EFECE6;     /* ベージュ＝カードの中のブロックだけ */
-    --ink:#1A1A1A;
-    --ink-sub:#6E6E6E;
-    --line:#DDD6CE;
-    --brand-deep:#2B5D4F;/* 深コーラルピンク＝押す */
-    --done:#2B5D4F;      /* グリーン＝訪ねたお店 */
-    --track:#E7EAE5;
+    /* ── 地と文字（生成り＝旅の面） ── */
+    --bg:#FFFAF2;        /* 生成り。画面の地 */
+    --card:#FFFFFF;      /* カードの地 */
+    --paper:#F4EADD;     /* ベージュ。カードの中のブロック・見出しの帯 */
+    --ink:#241B15;       /* こい茶色＝本文 */
+    --ink-sub:#6E655E;   /* 補助の文字・単位 */
+    --line:#E6D9CB;      /* 枠線・区切り線 */
+    /* ── ピンク（ブランド指針の2色だけ） ── */
+    --pink-deep:#C04A55; /* 深ピンク。ボタン・数字・✓・帯。白い文字を載せてよい */
+    --pink-base:#CB7B68; /* コーラルピンク。大きい面だけ。白い小さな文字は載せない */
+    --track:#F0E3D6;     /* 進み具合の、まだ進んでいない所 */
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
@@ -39,96 +52,98 @@
   .wrap{max-width:440px;margin:0 auto;padding:0 16px 28px}
 
   .status{color:var(--ink-sub);font-size:14px;padding:60px 0;text-align:center;line-height:1.7}
-  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--done);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--pink-deep);border-radius:50%;margin:0 auto 12px;animation:spin .9s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .hidden{display:none}
 
-  .head{padding:18px 4px 2px;text-align:center}
-  .head .kicker{font-size:11px;color:var(--ink-sub);letter-spacing:.10em;font-weight:700}
-  .head .h1{font-size:21px;font-weight:800;margin-top:5px;line-height:1.35}
-  .head .who{font-size:12.5px;color:var(--ink-sub);margin-top:6px;font-weight:700;line-height:1.6}
+  /* ── いちばん上の帯（★ここがピンクの主役） ── */
+  .hero{margin:0 -16px;background:var(--pink-deep);color:#fff;
+    padding:26px 22px 24px;text-align:center}
+  .hero .kicker{font-size:10.5px;letter-spacing:.18em;font-weight:800;opacity:.92}
+  .hero .h1{font-size:25px;font-weight:800;margin-top:9px;line-height:1.3;letter-spacing:.01em}
+  .hero .who{font-size:12.5px;margin-top:10px;font-weight:700;line-height:1.7;opacity:.94}
 
   /* ── 進み具合 ── */
-  .meter{margin-top:14px;background:var(--bg);border:1px solid var(--line);border-radius:16px;
-    padding:15px 16px;text-align:center;box-shadow:0 4px 16px rgba(80,70,60,.06)}
-  .meter .big{font-size:32px;font-weight:800;line-height:1.05;letter-spacing:-.01em}
+  .meter{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:17px 16px;text-align:center;box-shadow:0 4px 16px rgba(120,80,70,.07)}
+  .meter .big{font-size:34px;font-weight:800;line-height:1.05;letter-spacing:-.01em;color:var(--pink-deep)}
   .meter .big .u{font-size:15px;font-weight:800;color:var(--ink-sub);margin-left:2px}
   .meter .cap{font-size:12.5px;color:var(--ink-sub);margin-top:4px;font-weight:700}
-  .track{margin-top:12px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
-  .fill{height:10px;background:var(--done);border-radius:999px;width:0;transition:width .8s ease}
-  .sub{margin-top:12px;background:var(--paper);border-radius:12px;padding:10px 12px;
+  .track{margin-top:13px;height:10px;background:var(--track);border-radius:999px;overflow:hidden}
+  .fill{height:10px;background:var(--pink-deep);border-radius:999px;width:0;transition:width .8s ease}
+  .sub{margin-top:13px;background:var(--paper);border-radius:12px;padding:11px 12px;
     display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
   .sub .it{font-size:12px;color:var(--ink-sub);font-weight:700}
   .sub .it b{font-size:17px;color:var(--ink);font-weight:800;margin:0 2px}
   .meter .why{font-size:11.5px;color:var(--ink-sub);margin-top:10px;line-height:1.6}
 
   /* まだ0軒のとき（★冷たい0を見せない） */
-  .zero{margin-top:14px;background:var(--paper);border-radius:16px;padding:18px 18px;text-align:center}
+  .zero{margin-top:16px;background:var(--paper);border-radius:16px;padding:19px 18px;text-align:center}
   .zero .t{font-size:17px;font-weight:800;line-height:1.55}
-  .zero .t b{color:var(--done)}
+  .zero .t b{color:var(--pink-deep)}
   .zero .s{font-size:13.5px;color:var(--ink-sub);margin-top:9px;font-weight:700}
 
   /* ── 県ごと ── */
-  .axis{font-size:12px;font-weight:800;color:var(--ink-sub);letter-spacing:.04em;margin:22px 2px 8px}
-  .prefs{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .axis{font-size:12px;font-weight:800;color:var(--ink-sub);letter-spacing:.04em;margin:24px 2px 9px}
+  .prefs{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .prow{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid var(--line)}
   .prow:first-child{border-top:none}
   .prow .n{font-size:14px;font-weight:800;flex:0 0 74px}
   .prow .bar{flex:1;height:8px;background:var(--track);border-radius:999px;overflow:hidden}
-  .prow .bar i{display:block;height:8px;background:var(--done);border-radius:999px}
+  .prow .bar i{display:block;height:8px;background:var(--pink-deep);border-radius:999px}
   .prow .v{font-size:12.5px;color:var(--ink-sub);font-weight:800;flex:0 0 62px;text-align:right}
 
-  /* ── お店の一覧 ── */
-  .shops{border:1px solid var(--line);border-radius:14px;overflow:hidden}
-    /* ★2026-11-17 決まり（2026-09-28 決定#3）＝終わったことには色を使わない。緑の ✓ を1つ付ける。
-     ★訪ねたお店は【行のいちばん左の ✓】で分かるようにしました。
-       ・行のうすい緑の地（#F3F8F5・決まりの外の色）をやめました
-       ・お店の名前は、訪ねていても いなくても 墨 #1A1A1A にしました
-       ・「… に訪ねました」の文は そのまま残し、色だけ補助にしました（緑は ✓ の1つだけ）
-     ★左の空きは 訪ねていない行にも取ってあります＝行の位置がずれないようにするためです。
-     ★測った数字＝✓ 緑 #2B5D4F × 白い地 = 7.55 ／ 名前 墨 × 白い地 = 17.40。
-       前は 行の地どうしの差が 1.07 しか無く、色では ほとんど見分けられていませんでした。 */
-.srow{display:block;text-decoration:none;color:inherit;padding:12px 13px 12px 34px;border-top:1px solid var(--line);position:relative}
-  .srow.done::before{content:"✓";position:absolute;left:10px;top:12px;color:#2B5D4F;font-size:18px;font-weight:900;line-height:1.2}
-  .srow:first-child{border-top:none}
-  .srow .top{display:flex;align-items:baseline;gap:7px}
+  /* ── お店の一覧（★1軒＝1枚のカード。外観の写真を上に置きます） ── */
+  .shops{display:flex;flex-direction:column;gap:11px}
+  .first{background:var(--paper);border-radius:10px;font-size:11.5px;color:var(--ink);font-weight:800;
+    padding:9px 13px;line-height:1.6;margin-top:3px}
+  .srow{display:block;text-decoration:none;color:inherit;background:var(--card);
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 3px 12px rgba(120,80,70,.06)}
+  /* 外観の写真。読み込めなかったときは、その枠ごと出しません（onerror） */
+  .ph{aspect-ratio:16/9;background:var(--paper);overflow:hidden}
+  .ph img{display:block;width:100%;height:100%;object-fit:cover}
+  .body{padding:12px 14px 13px;position:relative}
+  .srow.done .body{padding-left:34px}
+  /* ★2026-11-17 決まり＝訪ねたお店は【いちばん左の ✓】で分かるようにします。
+     行の地の色は変えません（色だけで分けると、ほとんど見分けられないため）。 */
+  .srow.done .body::before{content:"✓";position:absolute;left:12px;top:12px;
+    color:var(--pink-deep);font-size:18px;font-weight:900;line-height:1.2}
+  .srow .top{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
   .srow .pref{font-size:11.5px;color:var(--ink-sub);font-weight:700;flex:0 0 auto}
-  .srow .name{font-size:15.5px;font-weight:800;line-height:1.35}
-  .srow .copy{font-size:12.5px;color:var(--ink-sub);margin-top:4px;line-height:1.6}
-  .srow .go{font-size:11.5px;color:var(--brand-deep);font-weight:800;margin-top:6px}
+  .srow .name{font-size:16px;font-weight:800;line-height:1.35}
+  .srow .copy{font-size:12.5px;color:var(--ink-sub);margin-top:5px;line-height:1.65}
+  .srow .go{font-size:11.5px;color:var(--pink-deep);font-weight:800;margin-top:8px}
   .srow.nopage .go{color:var(--ink-sub);font-weight:700}
-  .srow.done{background:transparent}
-  .srow.done .name{color:#1A1A1A}
-  .srow .mark{font-size:11.5px;color:var(--ink-sub);font-weight:800;margin-top:5px}
-  .first{background:var(--paper);font-size:11.5px;color:var(--ink-sub);font-weight:800;
-    padding:9px 13px;line-height:1.6;border-top:1px solid var(--line)}
-  .first:first-child{border-top:none}
+  .srow .mark{font-size:11.5px;color:var(--ink-sub);font-weight:800;margin-top:6px}
 
   /* ── お店に着いたら ── */
-  .howto{margin-top:22px;border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
+  .howto{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px 16px 15px}
   .howto .ttl{font-size:16px;font-weight:800}
   .howto .lead{font-size:13px;color:var(--ink-sub);font-weight:700;margin-top:7px;line-height:1.6}
-  .howto ol{margin:13px 0 0;padding:0;list-style:none;counter-reset:s}
+  .howto ol{margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
   .howto li{counter-increment:s;position:relative;padding:0 0 0 34px;margin-bottom:13px;
     font-size:13.5px;line-height:1.75}
   .howto li:last-child{margin-bottom:0}
   .howto li::before{content:counter(s);position:absolute;left:0;top:1px;width:23px;height:23px;
-    border-radius:50%;background:var(--done);color:#fff;font-size:12.5px;font-weight:800;
+    border-radius:50%;background:var(--pink-deep);color:#fff;font-size:12.5px;font-weight:800;
     display:flex;align-items:center;justify-content:center}
   .howto li .n{font-size:12px;color:var(--ink-sub);display:block;margin-top:3px;line-height:1.6}
 
   /* ── ボタン ── */
-  .cta{display:block;margin-top:22px;background:var(--brand-deep);color:#fff;text-decoration:none;
-    border-radius:14px;padding:16px;text-align:center;font-size:16px;font-weight:800;
-    box-shadow:0 6px 18px rgba(192,74,85,.22)}
-  .foot{margin-top:18px;font-size:11px;color:var(--ink-sub);text-align:center;line-height:1.8}
-  .brand{margin-top:14px;font-size:10px;color:var(--ink-sub);letter-spacing:.12em;text-align:center;font-weight:700}
+  .cta{display:block;margin-top:24px;background:var(--pink-deep);color:#fff;text-decoration:none;
+    border-radius:14px;padding:17px;text-align:center;font-size:16px;font-weight:800;
+    box-shadow:0 6px 18px rgba(192,74,85,.26)}
+  .foot{margin-top:20px;font-size:11px;color:var(--ink-sub);text-align:center;line-height:1.8}
+  /* いちばん下の帯（コーラルピンク。★小さな白い文字は載せず、こい茶色にしています） */
+  .brand{margin:18px -16px -28px;background:var(--pink-base);color:var(--ink);
+    padding:16px;font-size:10px;letter-spacing:.14em;text-align:center;font-weight:800}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-    <div style="background:#2B5D4F;color:#fff;border-radius:12px;padding:12px 14px;margin-top:14px;text-align:center;line-height:1.7">
+    <div style="background:#C04A55;color:#fff;border-radius:12px;padding:12px 14px;margin:14px 0 16px;text-align:center;line-height:1.7">
     <div style="font-size:14px;font-weight:800">★これは【見本】です</div>
     <div style="font-size:12px;margin-top:5px">3軒 訪ねたあとの【見え方】です。<br>この数字（3軒・4人・263km）は、見本のために入れたものです。</div>
   </div>
@@ -141,7 +156,7 @@
 
   <div id="main" class="hidden">
 
-    <div class="head">
+    <div class="hero">
       <div class="kicker">JAPAN COFFEE JOURNEY</div>
       <div class="h1">東海コーヒージャーニー</div>
       <div class="who" id="who"></div>
@@ -194,9 +209,9 @@
     <a class="cta" id="cta" href="https://japancoffeejourney.com/discover.html?area=tokai">近くのお店を見てみる</a>
 
     <div class="foot" id="foot"></div>
-  <div style="margin-top:18px;text-align:center">
-    <a href="tokai_preview.html" style="display:inline-block;font-size:13px;font-weight:800;color:#2B5D4F;text-decoration:none;border:1px solid #DDD6CE;border-radius:999px;padding:11px 18px">◂ いまの見え方にもどる</a>
-  </div>
+    <div style="margin:18px 0 0;text-align:center">
+      <a href="tokai_preview.html" style="display:inline-block;font-size:13px;font-weight:800;color:#C04A55;text-decoration:none;background:#fff;border:1px solid #E6D9CB;border-radius:999px;padding:11px 18px">◂ いまの見え方にもどる</a>
+    </div>
     <div class="brand">JAPAN COFFEE JOURNEY</div>
   </div>
 
@@ -219,18 +234,26 @@
     if (why) console.log("tokai: " + why);
   }
 
-  /** お店1軒の行を作る。★webのページが無いお店は、押せないようにします（404に送らないため） */
+  /** お店1軒のカードを作る。★webのページが無いお店は、押せないようにします（404に送らないため） */
   function shopRow(s, isDone) {
     const pref = esc(s.pref || "");
     const name = esc(s.name || "");
     const copy = esc(s.copy || "");
-    const inner =
+    // 外観の写真（台帳の「店舗写真」の欄）。空のときは写真の枠を出しません。
+    const photo = String(s.photo || "");
+    const photoHtml = /^https:\/\//.test(photo)
+      ? '<div class="ph"><img src="' + esc(photo) + '" alt="' + name + ' の外観" ' +
+        'loading="lazy" decoding="async" onerror="this.parentNode.style.display=\'none\'"></div>'
+      : '';
+    const inner = photoHtml +
+      '<div class="body">' +
       '<div class="top"><span class="pref">' + pref + '</span><span class="name">' + name + '</span></div>' +
       (copy ? '<div class="copy">' + copy + '</div>' : '') +
       (isDone && s.last ? '<div class="mark">' + esc(s.last) + ' に訪ねました</div>' : '') +
       (s.page
         ? '<div class="go">このお店を見る ›</div>'
-        : '<div class="go">このお店のページは、いま準備しています</div>');
+        : '<div class="go">このお店のページは、いま準備しています</div>') +
+      '</div>';
 
     if (s.page) {
       const a = document.createElement("a");
@@ -335,7 +358,7 @@
 
   (async () => {
     try {
-      const d = {"ok": true, "on": true, "ready": true, "members": 1155, "memberRows": 1156, "totalShops": 26, "visitedCount": 3, "people": 4, "km": 263, "visitRows": 5, "lastVisit": "11月22日", "startLabel": "11月16日", "byPref": [{"pref": "愛知県", "total": 12, "visited": 1}, {"pref": "静岡県", "total": 7, "visited": 1}, {"pref": "三重県", "total": 3, "visited": 1}, {"pref": "岐阜県", "total": 2, "visited": 0}, {"pref": "滋賀県", "total": 2, "visited": 0}], "shops": [{"id": "AIC_101", "name": "COFFEE ROASTERY 101", "pref": "愛知県", "copy": "喫茶の街・一宮。究極にクリーンな基本の味。", "page": 1, "visited": 1, "visits": 2, "lastYmd": 20261122, "last": "11月22日"}, {"id": "AIC_ARCHE", "name": "ARCHE COFFEE", "pref": "愛知県", "copy": "岡崎で、新しい「好き」が始まる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_BISHU", "name": "尾州暁珈琲焙煎所", "pref": "愛知県", "copy": "稲沢の朝、夜明けの名を持つ焙煎所で。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_EAST", "name": "EAST ENDERS coffee & chocolate", "pref": "愛知県", "copy": "豊田で、コーヒーとカカオが出会う一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_FUKUSUKE", "name": "FUKUSUKE COFFEE ROASTERY", "pref": "愛知県", "copy": "安城から福を届ける、情熱溢れる一杯を", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_GLAMS", "name": "Glams Coffee Roastery", "pref": "愛知県", "copy": "豊橋で、焙煎から9日以内の一杯を。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_MILHONEY", "name": "MILHONEY COFFEE", "pref": "愛知県", "copy": "名古屋で、レコードが鳴る部屋の果実のような一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_QOL", "name": "Q.O.L.COFFEE", "pref": "愛知県", "copy": "名古屋のオフィス街で、日々の質を上げる一杯", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_QOL_BREW", "name": "Q.O.L. COFFEE BREWERS", "pref": "愛知県", "copy": "名古屋・栄、一杯から人と街をつなぐコーヒースタンド。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_RIPE", "name": "RipeTimeCoffee", "pref": "愛知県", "copy": "名古屋で、豆一粒ずつの個性を引き出した一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_TAKUSHI", "name": "Takushi coffee house", "pref": "愛知県", "copy": "安城で、木々に囲まれて味わうフルーティーな一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "AIC_WHATS_FUSHIIRO", "name": "what's!? coffee -fushiiro-", "pref": "愛知県", "copy": "“自分の美味しい”に出会う、岡崎の焙煎所", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "GIF_BUTHTUB", "name": "Buthtub", "pref": "岐阜県", "copy": "大正の蔵に灯る、街に開かれた一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "GIF_TASTORY", "name": "TASTORY COFFEE AND ROASTER", "pref": "岐阜県", "copy": "大垣・鶴見町、世界各国のスペシャルティを自家焙煎。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "MIE_KOPE", "name": "焙煎工房コペ", "pref": "三重県", "copy": "名張で、注文してから焼き上がる一杯。", "page": 1, "visited": 1, "visits": 2, "lastYmd": 20261119, "last": "11月19日"}, {"id": "MIE_NAKAMURA", "name": "NAKAMURA COFFEE", "pref": "三重県", "copy": "伊勢の神域、歴史を巡る一杯の旅。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "MIE_REIMEI", "name": "reimeiCOFFEE", "pref": "三重県", "copy": "津の路地裏、元理髪店で出会う一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SHG_MANAKOPE", "name": "Manakope Coffee Roastery", "pref": "滋賀県", "copy": "豆の個性を、また飲みたい一杯に。滋賀・草津", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SHG_YETI", "name": "Yeti Fazenda COFFEE", "pref": "滋賀県", "copy": "彦根、100年の洋館で受け取るブレンド。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_GROUND2", "name": "ground2coffee 本店", "pref": "静岡県", "copy": "島田で、古民家の静けさとともに味わう一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_GROUND2_ENTRATA", "name": "ground2coffee -ENTRATA-", "pref": "静岡県", "copy": "島田で、買い物のとちゅうに寄れる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_GROUND2_OBI", "name": "ground2coffee Roastery -OBI-", "pref": "静岡県", "copy": "島田で、焙煎機の音が聞こえる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_KOUNOTORI", "name": "自家焙煎珈琲 珈ノ鳥", "pref": "静岡県", "copy": "伊豆・伊東、川のほとりで甘やかなコーヒーに出会う。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_NOMAD", "name": "NOMAD COFFEE", "pref": "静岡県", "copy": "浜名湖の風と、毎日に寄り添う誠実な一杯。", "page": 1, "visited": 1, "visits": 1, "lastYmd": 20261121, "last": "11月21日"}, {"id": "SZK_NUMAZU", "name": "NUMAZU COFFEE LAB", "pref": "静岡県", "copy": "沼津・大手町、驚きと発見に出会う浅煎りのコーヒーラボ。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}, {"id": "SZK_TIES", "name": "ties coffee roaster", "pref": "静岡県", "copy": "浜松・三方原、今日の気分で選ぶ10種類。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": ""}], "copyDropped": 0, "updatedAt": "2026-11-22T12:05:00.000Z"};
+      const d = {"ok": true, "on": true, "ready": true, "members": 1155, "memberRows": 1156, "totalShops": 26, "visitedCount": 3, "people": 4, "km": 263, "visitRows": 5, "lastVisit": "11月22日", "startLabel": "11月16日", "byPref": [{"pref": "愛知県", "total": 12, "visited": 1}, {"pref": "静岡県", "total": 7, "visited": 1}, {"pref": "三重県", "total": 3, "visited": 1}, {"pref": "岐阜県", "total": 2, "visited": 0}, {"pref": "滋賀県", "total": 2, "visited": 0}], "shops": [{"id": "AIC_101", "name": "COFFEE ROASTERY 101", "pref": "愛知県", "copy": "喫茶の街・一宮。究極にクリーンな基本の味。", "page": 1, "visited": 1, "visits": 2, "lastYmd": 20261122, "last": "11月22日", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_101/exterior.jpg"}, {"id": "AIC_ARCHE", "name": "ARCHE COFFEE", "pref": "愛知県", "copy": "岡崎で、新しい「好き」が始まる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_ARCHE/exterior.jpg"}, {"id": "AIC_BISHU", "name": "尾州暁珈琲焙煎所", "pref": "愛知県", "copy": "稲沢の朝、夜明けの名を持つ焙煎所で。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_BISHU/exterior.jpg"}, {"id": "AIC_EAST", "name": "EAST ENDERS coffee & chocolate", "pref": "愛知県", "copy": "豊田で、コーヒーとカカオが出会う一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_EAST/exterior.jpg"}, {"id": "AIC_FUKUSUKE", "name": "FUKUSUKE COFFEE ROASTERY", "pref": "愛知県", "copy": "安城から福を届ける、情熱溢れる一杯を", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_FUKUSUKE/exterior.jpg"}, {"id": "AIC_GLAMS", "name": "Glams Coffee Roastery", "pref": "愛知県", "copy": "豊橋で、焙煎から9日以内の一杯を。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_GLAMS/exterior.jpg"}, {"id": "AIC_MILHONEY", "name": "MILHONEY COFFEE", "pref": "愛知県", "copy": "名古屋で、レコードが鳴る部屋の果実のような一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_MILHONEY/exterior.jpg"}, {"id": "AIC_QOL", "name": "Q.O.L.COFFEE", "pref": "愛知県", "copy": "名古屋のオフィス街で、日々の質を上げる一杯", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_QOL/exterior.jpg"}, {"id": "AIC_QOL_BREW", "name": "Q.O.L. COFFEE BREWERS", "pref": "愛知県", "copy": "名古屋・栄、一杯から人と街をつなぐコーヒースタンド。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_QOL_BREW/exterior.jpg"}, {"id": "AIC_RIPE", "name": "RipeTimeCoffee", "pref": "愛知県", "copy": "名古屋で、豆一粒ずつの個性を引き出した一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_RIPE/exterior.jpg"}, {"id": "AIC_TAKUSHI", "name": "Takushi coffee house", "pref": "愛知県", "copy": "安城で、木々に囲まれて味わうフルーティーな一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_TAKUSHI/exterior.jpg"}, {"id": "AIC_WHATS_FUSHIIRO", "name": "what's!? coffee -fushiiro-", "pref": "愛知県", "copy": "“自分の美味しい”に出会う、岡崎の焙煎所", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/AIC_WHATS_FUSHIIRO/exterior.jpg"}, {"id": "GIF_BUTHTUB", "name": "Buthtub", "pref": "岐阜県", "copy": "大正の蔵に灯る、街に開かれた一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/GIF_BUTHTUB/exterior.jpg"}, {"id": "GIF_TASTORY", "name": "TASTORY COFFEE AND ROASTER", "pref": "岐阜県", "copy": "大垣・鶴見町、世界各国のスペシャルティを自家焙煎。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/GIF_TASTORY/exterior.jpg"}, {"id": "MIE_KOPE", "name": "焙煎工房コペ", "pref": "三重県", "copy": "名張で、注文してから焼き上がる一杯。", "page": 1, "visited": 1, "visits": 2, "lastYmd": 20261119, "last": "11月19日", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/MIE_KOPE/exterior.jpg"}, {"id": "MIE_NAKAMURA", "name": "NAKAMURA COFFEE", "pref": "三重県", "copy": "伊勢の神域、歴史を巡る一杯の旅。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/MIE_NAKAMURA/exterior.jpg"}, {"id": "MIE_REIMEI", "name": "reimeiCOFFEE", "pref": "三重県", "copy": "津の路地裏、元理髪店で出会う一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/MIE_REIMEI/exterior.jpg"}, {"id": "SHG_MANAKOPE", "name": "Manakope Coffee Roastery", "pref": "滋賀県", "copy": "豆の個性を、また飲みたい一杯に。滋賀・草津", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SHG_MANAKOPE/exterior.jpg"}, {"id": "SHG_YETI", "name": "Yeti Fazenda COFFEE", "pref": "滋賀県", "copy": "彦根、100年の洋館で受け取るブレンド。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SHG_YETI/exterior.jpg"}, {"id": "SZK_GROUND2", "name": "ground2coffee 本店", "pref": "静岡県", "copy": "島田で、古民家の静けさとともに味わう一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_GROUND2/exterior.jpg"}, {"id": "SZK_GROUND2_ENTRATA", "name": "ground2coffee -ENTRATA-", "pref": "静岡県", "copy": "島田で、買い物のとちゅうに寄れる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_GROUND2_ENTRATA/exterior.jpg"}, {"id": "SZK_GROUND2_OBI", "name": "ground2coffee Roastery -OBI-", "pref": "静岡県", "copy": "島田で、焙煎機の音が聞こえる一杯。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_GROUND2_OBI/exterior.jpg"}, {"id": "SZK_KOUNOTORI", "name": "自家焙煎珈琲 珈ノ鳥", "pref": "静岡県", "copy": "伊豆・伊東、川のほとりで甘やかなコーヒーに出会う。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_KOUNOTORI/exterior.jpg"}, {"id": "SZK_NOMAD", "name": "NOMAD COFFEE", "pref": "静岡県", "copy": "浜名湖の風と、毎日に寄り添う誠実な一杯。", "page": 1, "visited": 1, "visits": 1, "lastYmd": 20261121, "last": "11月21日", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_NOMAD/exterior.jpg"}, {"id": "SZK_NUMAZU", "name": "NUMAZU COFFEE LAB", "pref": "静岡県", "copy": "沼津・大手町、驚きと発見に出会う浅煎りのコーヒーラボ。", "page": 1, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_NUMAZU/exterior.jpg"}, {"id": "SZK_TIES", "name": "ties coffee roaster", "pref": "静岡県", "copy": "浜松・三方原、今日の気分で選ぶ10種類。", "page": 0, "visited": 0, "visits": 0, "lastYmd": 0, "last": "", "photo": "https://japancoffeejourney.com/jcj_passport_img/shop/SZK_TIES/exterior.jpg"}], "copyDropped": 0, "updatedAt": "2026-11-22T12:05:00.000Z", "photoDropped": 0};
       if (!d || d.ok !== true) return showError("ok が true ではありません");
       if (d.on !== true) return showError("まだ出していません（tokai_fs_on が OFF）");
       if (d.ready !== true) return showError("まだ1回も数えていません");
