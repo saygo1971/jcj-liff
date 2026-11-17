@@ -300,8 +300,11 @@
     const visited = Number(d.visitedCount) || 0;
 
     // 誰のページか（★「みんな」が誰を指すかを、ここで1度だけ はっきりさせます）
-    $("who").textContent =
-      "FIELDSTYLE EXPO 2026 で出会った " + num(d.members) + "人の旅";
+    // ★対象の方が0人のときは「0人の旅」と出さず、「みなさんの旅」にします
+    //   （テスト環境では、11/14・15 にご登録の方がいないため0人になります）
+    $("who").textContent = (Number(d.members) > 0)
+      ? "FIELDSTYLE EXPO 2026 で出会った " + num(d.members) + "人の旅"
+      : "FIELDSTYLE EXPO 2026 で出会った みなさんの旅";
 
     if (visited > 0) {
       $("meter").classList.remove("hidden");
