@@ -7,8 +7,8 @@
 <style>
   /* JCJ 新トンマナ8色 */
   *{box-sizing:border-box}
-  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
-    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  :root{--brand-base:#2B5D4F;--brand-deep:#2B5D4F;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#EFECE6;--bg:#FFFFFF;--ink:#1A1A1A;--ink-sub:#6E6E6E;--line:#DDD6CE;--done-tint:#E7F0EB;}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
   .bar{background:var(--brand-base);color:#fff;padding:13px 16px;font-size:18px;font-weight:800;position:sticky;top:0;z-index:5}
@@ -32,7 +32,9 @@
   .place{font-size:12.5px;color:var(--ink-sub);margin-bottom:14px}
   .btnP{display:block;width:100%;background:var(--brand-deep);color:#fff;text-align:center;font-weight:800;font-size:15.5px;
     border-radius:12px;padding:14px;text-decoration:none;box-shadow:0 4px 10px rgba(192,74,85,.25);margin-bottom:10px;border:0;cursor:pointer}
-  .btnP.saved{background:var(--done-tint);color:var(--state-done);box-shadow:none}
+  /* ★2026-11-17 決まり（2026-09-28 決定#3）＝終わったことは緑で塗らない。緑の✓＋墨の文字＋うすい枠 */
+  .btnP.saved{background:#fff;color:#1A1A1A;border:1.5px solid #DDD6CE;box-shadow:none;cursor:default}
+  .btnP.saved::before{content:"✓ ";color:#2B5D4F;font-weight:800}
   /* ★「このお店でチェックインする」と「行きたいに保存する」が近すぎる（オーナー指摘 2026-09-25）。
      ★この2つの間だけ広げる＝0px → 18px。★他の場所の間隔は変えていない。 */
   #saveBtn{margin-top:18px}
@@ -63,13 +65,14 @@
   .sublink{display:block;text-align:center;color:var(--ink-sub);font-size:13.5px;font-weight:600;text-decoration:underline;padding:6px;cursor:pointer}
   /* ☕ ★2026-10-11 オーナー指示「旅の記録を各店舗にぶら下げて公開できるようにしたい」。
      このお店で書かれた一杯を、新しい順に出す。★誰が書いたかは出さない（名前もIDも受け取っていない）。 */
-  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店（1行＋推薦者の声）。
-     ★discover.html と同じ考え方・同じ言葉にそろえています（片方だけ直すと、別の画面が出ます）。 */
-  .recline{font-size:12px;font-weight:800;color:var(--brand-deep);margin:-8px 0 12px;line-height:1.5}
-  .recbox{background:var(--bg);border:1px solid var(--line);border-radius:12px;margin:0 0 14px;padding:13px 14px}
-  .recbox .rb-t{font-size:11.5px;font-weight:700;color:var(--ink-sub)}
-  .recbox .rb-m{font-size:14px;color:var(--ink);margin-top:6px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
-  .recbox .rb-by{font-size:11.5px;color:var(--ink-sub);margin-top:9px;text-align:right}
+  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店。
+     ★この色と大きさは、オーナーさまがモックを見て承認された値です（本部 2026-10-30）。
+       勝手に変えないでください。 */
+  .recline{font-size:11.5px;color:#2B5D4F;font-weight:700;margin:-8px 0 0;line-height:1.5}
+  .recbox{background:#FFFFFF;border:0.5px solid #E1DACF;border-radius:12px;margin:12px 0 14px;padding:13px}
+  .recbox .rb-t{font-size:12px;font-weight:500;color:#2B5D4F}
+  .recbox .rb-m{font-size:13px;color:#3E372E;line-height:1.75;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+  .recbox .rb-by{font-size:11.5px;color:#726A5E;margin-top:9px;text-align:right}
   .sdBox{margin:16px 0 10px}
   .sdH{font-size:15px;font-weight:800;color:var(--ink);margin:0 0 2px}
   .sdS{font-size:11.5px;color:var(--ink-sub);margin:0 0 10px}
@@ -118,7 +121,7 @@
   .spPrev img{max-width:100%;border-radius:10px;border:1px solid var(--line);display:block}
   .spMsg{font-size:12.5px;line-height:1.75;margin-top:9px}
   .spMsg.ng{color:var(--state-error);font-weight:700}
-  .spMsg.ok{color:var(--state-done);font-weight:700}
+  .spMsg.ok{color:#2B5D4F;font-weight:700}
 </style>
 </head>
 <body>
@@ -183,6 +186,11 @@
 </div>
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+  // ★2026-09-29 追加：まだ参加していないお店の地図の置き場所。★写真と同じ形＝<この下>/<ショップID>/map.svg
+  //   🙏★2026-10-30：本番には2026-09-29から在りましたが、テストには入っていませんでした。
+  //     ★本番の実物（https://japancoffeejourney.com/passport/shop.html・33,980バイト・
+  //       md5 6eabb0ff665c46e0f7b2dd76ae8943e4）から、そのまま写しました。
+  const PEND_MAP_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   const SHARE_LIFF_ID = "2008851980-V8WaCaZw"; // 友だちに教える（テスト）
   // ☕ ★2026-10-29 案4改：一杯を書く画面（テスト）。★history.html の LOG_DRINK_LIFF_ID と同じ値です。
   const LOG_DRINK_LIFF_ID = "2008851980-DMVX7HZ0";
@@ -263,6 +271,15 @@
   // 1枚目だけ即読み、2枚目以降は「1枚目が出たら／指が触れたら」読み込む＝開いた瞬間を軽くする
   function buildSwipe(s){
     const track=$("swipe"), dots=$("dots");
+    // ★★2026-09-29：まだ参加していないお店は、写真の代わりに【地図の絵】を1枚 出します。
+    //   🔴★絵が無い軒（404）は、★写真の枠ごと空にします＝いままでと同じ見え方です（画面は壊れません）。
+    //   🙏★2026-10-30：本番の実物からそのまま写しました（テストと本番の見え方を揃えるため）。
+    if (s && s.pending === 1) {
+      const mu = PEND_MAP_BASE + encodeURIComponent(String(s.id||"").trim()) + "/map.svg";
+      track.innerHTML = '<div class="slide" data-k="map"><img class="ph" alt="" decoding="async" src="'+esc(mu)+'" onerror="var t=document.getElementById(\'swipe\');if(t)t.innerHTML=\'\';"></div>';
+      dots.innerHTML = "";
+      return;
+    }
     const slides = [
       {k:"ext", u:s.photo,         t:s.exteriorText, label:"外観"},
       {k:"int", u:s.interiorPhoto, t:s.interiorText, label:"店内"},
@@ -470,7 +487,7 @@
     line.classList.remove("hidden");
     if(note){
       $("recNote").textContent=note;
-      $("recBy").textContent = by ? (by+"さん") : "";
+      $("recBy").textContent = by ? (by+" さん") : "";   // ★「◯◯ さん」＝本部の指定どおり（間に空き）
       box.classList.remove("hidden");
     }else{
       box.classList.add("hidden"); $("recNote").textContent=""; $("recBy").textContent="";
@@ -638,7 +655,7 @@
       if(e==="no_geo")             gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。","no_geo");
       else if(e==="acc_too_large") gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。","acc_too_large");
       else if(e==="too_far")       gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","too_far");
-      else if(e==="not_registered")gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
+      else if(e==="not_registered")gciNg(s,"はじめに登録が必要です","JOURNEY PASSPORTに登録すると、この記録が残せます。");
       else if(e==="off")           { b.style.display="none"; $("gciNote").style.display="none"; }
       else                         gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","failed");
     }catch(err){

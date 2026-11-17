@@ -23,9 +23,9 @@
     button {
       padding: 14px; border-radius: 14px; border: 0;
       font-size: 16px; font-weight: 800; cursor: pointer;
-      background: #06c755; color: #fff; margin-top: 12px;
+      background: #2B5D4F; color: #fff; margin-top: 12px;
     }
-    button:disabled { background:#b7e8c7; opacity: 1; cursor: not-allowed; }
+    button:disabled { background:#fff; color:#6E6E6E; border:1.5px dashed #DDD6CE; opacity: 1; cursor: not-allowed; }
 
     .muted { color:#666; font-size: 12px; }
     .ok { color:#0a7a25; font-weight: 800; }
@@ -139,7 +139,7 @@
         ping(`${GAS_ENDPOINT}?${qs}`);
 
         // ② LINEへお礼（ここが欲しいやつ）
-        await liff.sendMessages([{ type: "text", text: "JCJパスポート登録ありがとう！" }]);
+        await liff.sendMessages([{ type: "text", text: "JOURNEY PASSPORT登録ありがとう！" }]);
 
         setStatus("登録できました。さっそく最初のお店を探しに行きましょう。", true);
         setTimeout(() => { try { liff.closeWindow(); } catch(e) {} }, 600);

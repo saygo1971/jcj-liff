@@ -9,8 +9,8 @@
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
   *{box-sizing:border-box}
-  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
-    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  :root{--brand-base:#2B5D4F;--brand-deep:#2B5D4F;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#EFECE6;--bg:#FFFFFF;--ink:#1A1A1A;--ink-sub:#6E6E6E;--line:#DDD6CE;--done-tint:#E7F0EB;}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
     -webkit-font-smoothing:antialiased}
@@ -24,10 +24,10 @@
   /* ★2026-10-10 場所の値（飲んだ場所の行）。★お店のときだけ先頭に緑の ✓ を出す */
   .row .placeval{flex:1;min-width:0;font-size:15px;font-weight:800;color:var(--ink);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .row .placeval .ok{color:var(--state-done);font-weight:900;margin-right:4px}
+  .row .placeval .ok{color:#2B5D4F;font-weight:900;margin-right:4px}
   .row .placeval.empty{color:var(--ink-sub);font-weight:600}
   /* ★2026-10-05 コーヒー日記（審査会A-1）：飲んだ場所を自分で選ぶ所 */
-  .chkedit{margin-left:auto;background:#fff;border:1px solid var(--state-done);color:var(--state-done);
+  .chkedit{margin-left:auto;background:#fff;border:1px solid #2B5D4F;color:#2B5D4F;
     font-size:11.5px;font-weight:800;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:inherit;
     /* ★2026-10-29 言葉が「場所を選び直す」に長くなったので、折り返さず・縮まないようにします。
        ★お店の名前が長いときは、お店の名前の方が「…」で切れます（placeval 側で切れる作りです）。 */
@@ -107,17 +107,17 @@
   .photobtn:before{content:"＋";font-size:16px;font-weight:900}
   .photoprev{position:relative;display:inline-block;margin-top:10px}
   .photoprev img{max-width:180px;max-height:180px;border-radius:12px;border:1px solid var(--line);display:block}
-  .photox{position:absolute;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;background:#221C1A;color:#fff;
+  .photox{position:absolute;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;background:#1A1A1A;color:#fff;
     border:2px solid #fff;font-size:15px;line-height:1;cursor:pointer}
   .photonote{font-size:11.5px;color:var(--ink-sub);margin-top:9px;line-height:1.6}
   /* 🛑★2026-10-20 この一杯を「出す／自分だけ」の見た目は、使う所ごと外しました。
      ★見た目の決まりも残しません（使っていない決まりを残すと、次に読む人が「まだ在る」と誤解するため）。 */
   #done{text-align:center;padding:70px 24px}
   #done .emo{font-size:44px}
-  #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:var(--state-done)}
+  #done .t{font-size:19px;font-weight:800;margin:14px 0 8px;color:#2B5D4F}
   #done .msg{font-size:13.5px;color:var(--ink-sub);line-height:1.8}
   /* 旅の記録を見る＝副（緑枠）。紹介を主役(テラコッタ)にするためトンマナ上こちらは枠線に。 */
-  #done .goHist{display:inline-block;margin-top:20px;background:#fff;color:var(--state-done);border:1.5px solid var(--state-done);
+  #done .goHist{display:inline-block;margin-top:20px;background:#fff;color:#2B5D4F;border:1.5px solid #2B5D4F;
     text-decoration:none;font-weight:800;border-radius:12px;padding:11px 22px;font-size:14px}
   /* 友だちに紹介する＝主役（テラコッタ・1画面1つ） */
   /* 🏷️ ★2026-10-16 オーナー判定：一杯を書いた直後に、ニックネームを1回だけ聞く。
@@ -139,7 +139,7 @@
   #done .refWrap{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line,#DDD6CE)}
   #done .refBtn{display:inline-block;background:var(--brand-deep);color:#fff;text-decoration:none;font-weight:800;
     border-radius:12px;padding:13px 26px;font-size:15px;box-shadow:0 4px 10px rgba(192,74,85,.25)}
-  #done .refTiny{font-size:11px;color:var(--ink-sub,#6E655E);margin-top:9px}
+  #done .refTiny{font-size:11px;color:var(--ink-sub,#6E6E6E);margin-top:9px}
 </style>
 </head>
 <body>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>パスポート</title>
 <!--
-  🪪 JCJパスポート（LIFFページ版）
+  🪪 JOURNEY PASSPORT（LIFFページ版）
   ・本部v36 2026-09-01・オーナー承認：Flexカード→ページ化（フォント要件でFlex不可のため）。
   ・データは1リクエスト：GAS action=passport（passport_api.js / handlePassport_）。
   ・速度：前回分を先に出す（localStorage）→裏で最新取得。ロゴ帳・旅の記録と同じ体感に揃える。
@@ -19,13 +19,13 @@
   @font-face{font-family:"JCJ-HWY";src:url("fonts/highwaygothic.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
   /* @font-face{font-family:"JCJ-OCRB";src:url("fonts/ocrb.woff2") format("woff2");font-display:swap} */
   *{box-sizing:border-box}
-  :root{--kinari:#F4EADD;--green:#2B5D4F;--green2:#2F7A57;--terra:#C04A55;--pinklt:#EAD0D2;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#F4EADD}
-  html,body{margin:0;background:#ECE7DF;color:#221C1A;
+  :root{--kinari:#EFECE6;--green:#2B5D4F;--green2:#2F7A57;--terra:#2B5D4F;--pinklt:#EAD0D2;--sub:#7A6E5E;--line:#DAD0BE;--empty:#E7DCC7;--bg:#EFECE6}
+  html,body{margin:0;background:#ECE7DF;color:#1A1A1A;
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
   .ocrb{font-family:"JCJ-OCRB","OCR B Std","OCR B","OCRB","OCR-B",Consolas,"Courier New",monospace}
   .hwy{font-family:"JCJ-HWY","Highway Gothic","HighwayGothic","Overpass","Interstate","Arial Narrow",Arial,sans-serif}
   #status{text-align:center;padding:90px 20px;color:var(--sub);font-size:14px}
-  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--green2);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
+  .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:#2B5D4F;border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 14px}
   @keyframes sp{to{transform:rotate(360deg)}}
   .hidden{display:none!important}
   .wrap{max-width:480px;margin:0 auto;padding:12px 12px 30px}
@@ -53,7 +53,7 @@
   .logohd .c small{font-size:12px;color:var(--sub);font-weight:700}
   .circles{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;cursor:pointer}
   .cir{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;overflow:hidden}
-  .cir.got{background:#fff;color:var(--green2);border:1px solid var(--green2);padding:4px}
+  .cir.got{background:#fff;color:#2B5D4F;border:1px solid #2B5D4F;padding:4px}
   .cir.got img{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%}
   .cir.emp{background:var(--empty);border:1.5px dashed #cbbba0}
   .tapnote{text-align:right;font-size:10px;color:var(--sub);margin-top:7px;cursor:pointer}
@@ -61,8 +61,9 @@
   .stalenote{text-align:center;font-size:10.5px;color:var(--sub);margin-top:8px;line-height:1.5}
   /* 行きたいリスト入口（保存したお店へ再訪＝送客）
      ★2026-09-15 変更2点（この1ブロックだけ。他の画面・他のブロックには広げない）
-       ①緑→ピンク：トンマナは「ピンク＝これから起こすこと／グリーン＝終わったこと」。
-         ここは"まだ行っていないお店"＝これから＝ピンク(--terra #C04A55)が正しい。今までは逆だった。
+       ①★2026-11-17 訂正：ここに書いてあった「ピンク＝これから起こすこと／グリーン＝終わったこと」は
+         2026-08-30 の古い決まりです。いまの決まり（2026-09-28 緑1色）に、ピンクは1色も入っていません。
+         ★押せるものは ぜんぶ 決まりの緑 #2B5D4F です。--terra も #2B5D4F になりました。
        ②件数バッジ(.cnt)を追加：他のブロックは全部その人の数字が入るのに、ここだけ固定の文字で
          「3軒保存している人にも0軒の人にも同じ」に見えていた＝空かもしれない箱は押されない。 */
   .wish{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin:12px 0 0;cursor:pointer}
@@ -92,9 +93,9 @@
   .alldist .big .u{font-size:13px;color:var(--green);font-weight:800}
   .alldist .big .ppl{font-size:12px;color:var(--sub);margin-left:8px}
   .earth .lab{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:4px}
-  .earth .lab b{color:var(--green2);font-weight:800}
+  .earth .lab b{color:#2B5D4F;font-weight:800}
   .earth .track{height:9px;border-radius:6px;background:var(--empty);overflow:hidden}
-  .earth .track .fill{height:100%;background:var(--green2);border-radius:6px;transition:width .5s ease}
+  .earth .track .fill{height:100%;background:#2B5D4F;border-radius:6px;transition:width .5s ease}
   .earth .cap{font-size:9.5px;color:var(--sub);margin-top:5px;text-align:center}
   .beans{text-align:center;font-size:11px;color:var(--sub);margin:11px 0 0;text-decoration:underline;cursor:pointer}
   /* お知らせの入口（パスポート内に残る） */
@@ -114,7 +115,7 @@
   /* ★2026-09-17（オーナー指示）帯は白・文字は緑。理由＝深緑だと後ろの暗い画面と被って沈む。
      帯が白／写真の下も白＝上から下まで1枚のカードに見える。 */
   .np-band{flex:0 0 auto;background:#fff;color:var(--green);padding:14px 14px 12px;text-align:center}
-  .np-band .bl{font-size:10.5px;font-weight:800;color:var(--green2);letter-spacing:1.2px;margin-bottom:4px}
+  .np-band .bl{font-size:10.5px;font-weight:800;color:#2B5D4F;letter-spacing:1.2px;margin-bottom:4px}
   .np-band .bn{font-size:15px;font-weight:900;line-height:1.4;color:var(--green)}
   .np-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .np-foot{flex:0 0 auto;background:#fff;padding:0 18px 18px}
@@ -124,7 +125,7 @@
      3:2なら切れるのは最大11%で、いちばん小さい端末(320x568)でもカードがスクロールなしで収まる（実測450→479px）。 */
   .np-photo{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--kinari)}
   .np-lead{font-size:12.5px;font-weight:900;color:var(--terra);margin-bottom:6px}
-  .np-head{font-size:16px;font-weight:900;color:#221C1A;line-height:1.5}
+  .np-head{font-size:16px;font-weight:900;color:#1A1A1A;line-height:1.5}
   /* ★2026-09-16（オーナー指示）＝場所と行き方は「情報」。物語の文章と同じ見た目だと埋もれて読まれない。
      見出し（場所／行き方）を付けて左寄せにする＝読まなくても何の情報か分かる。 */
   .np-info{background:var(--kinari);border-radius:9px;padding:9px 12px;margin:10px 0 2px;text-align:left;
@@ -135,7 +136,7 @@
   .np-body{font-size:12.5px;color:var(--sub);margin:9px 4px 4px;line-height:1.65;white-space:pre-line}  /* ★2026-09-16 pre-line＝GASが改行で渡した行を、行のまま出す（行きたいリストのお知らせ用） */
   .np-push{font-size:12.5px;font-weight:800;color:var(--green);margin:8px 4px 16px}
   .np-go{display:block;background:var(--terra);color:#fff;font-weight:800;font-size:15px;border-radius:12px;padding:14px;text-decoration:none}
-  .np-close{display:block;width:100%;background:var(--kinari);color:var(--sub);font-weight:800;font-size:15px;border-radius:12px;padding:14px;border:1.5px solid var(--line);margin-top:10px;cursor:pointer}
+  .np-close{display:block;width:100%;background:#fff;color:#2B5D4F;font-weight:800;font-size:15px;border-radius:12px;padding:14px;border:1.5px solid #2B5D4F;margin-top:10px;cursor:pointer}
   /* 移動領域 */
   .move{border-top:1px solid var(--line);padding:13px 16px 16px}
   .move .h{font-size:10px;color:var(--sub);text-align:center;margin-bottom:10px;letter-spacing:1px}
@@ -170,8 +171,9 @@
        ★128杯（3けた）でも折り返さないことを、実物の見た目で確かめました（2026-10-25）。 */
   .nav .lb .cup{display:block;font-style:normal;font-size:12px;font-weight:800;margin-top:4px}
   /* ★「買ったもの」＝中に文字を足さない（★足すとボタンの大きさがズレて3つ並びが崩れる）。
-     ★まだ使っていない券か、受け取っていないカップがあるとき【だけ】枠をピンクにする。
-     ★この画面の決まり＝ピンク＝これから起こすこと／緑＝終わったこと。 */
+     ★まだ使っていない券か、受け取っていないカップがあるとき【だけ】枠に色を付ける。
+     ★2026-11-17 その色は 決まりの緑 #2B5D4F です（ピンクは いまの決まりに入っていません）。
+     ★クラス名は .pink のままですが、色は緑です。名前だけ古く残っています。 */
   .nav .second.pink{border-color:var(--terra);color:var(--terra)}
   /* 「買ったもの」の中身（★同じページの中で切り替える。★新しいLIFFの番号は作らない） */
   .subhd{display:flex;align-items:center;gap:9px;padding:14px 16px 4px}
@@ -218,7 +220,7 @@
 
       <!-- 行きたいリスト入口（保存したお店の一覧 saved.html へ）※旧コメントの「案A カルーセル」は廃案＝実際はsaved.htmlへ遷移する -->
       <div class="wish" id="wishList">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#C04A55" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2B5D4F" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
         <span class="tx"><b>行きたいリスト</b><span id="wishSub">保存したお店へ、次の一歩を</span></span>
         <span class="cnt hidden" id="wishCnt"></span>
         <span class="arw">›</span>

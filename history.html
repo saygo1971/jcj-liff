@@ -9,8 +9,8 @@
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
   *{box-sizing:border-box}
-  :root{--brand-base:#CB7B68;--brand-deep:#C04A55;--state-done:#2F7A57;--state-error:#C0392B;
-    --paper:#F4EADD;--bg:#FFFFFF;--ink:#221C1A;--ink-sub:#6E655E;--line:#DDD6CE;--done-tint:#E7F0EB;}
+  :root{--brand-base:#2B5D4F;--brand-deep:#2B5D4F;--state-done:#2F7A57;--state-error:#C0392B;
+    --paper:#EFECE6;--bg:#FFFFFF;--ink:#1A1A1A;--ink-sub:#6E6E6E;--line:#DDD6CE;--done-tint:#E7F0EB;}
   body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;-webkit-font-smoothing:antialiased}
   .bar{background:#2B5D4F;color:#fff;padding:13px 16px;font-size:18px;font-weight:800;
@@ -30,9 +30,10 @@
   /* ★2026-10-17 いちばん左の数。ここだけ色を付けて一番に見えるようにする。
      ★2026-10-29 言葉を「残した一杯」→「飲んだ一杯」に変えました（オーナーさま指定）。
        ★理由＝「残した一杯」は【飲み残し】に読めるため。 */
-  .summ .s.main{background:var(--done-tint);border-color:var(--state-done)}
-  .summ .s.main b{color:var(--state-done)}
-  .summ .s.main span{color:var(--state-done);font-weight:700}
+  /* ★2026-11-17 決まり（2026-09-28）＝終わったことは緑で塗らない。緑の✓＋墨の文字＋うすい枠 */
+  .summ .s.main{background:#fff;border-color:#DDD6CE}
+  .summ .s.main b{color:#2B5D4F}
+  .summ .s.main span{color:#2B5D4F;font-weight:700}
   .mcup{text-align:center;font-size:11.5px;color:var(--ink-sub);margin:-8px 0 16px}
   .mcup b{color:var(--ink);font-weight:900;font-size:13px}
   /* ☕ ★2026-10-29 案2（審査会 2026-10-28・86.9点）：あなたが飲んだ豆。
@@ -44,7 +45,7 @@
   .mybnL{font-size:10.5px;font-weight:800;color:var(--ink-sub);width:100%;margin-bottom:-2px}
   .mybnI{font-size:11.5px;font-weight:700;background:var(--bg);border:1px solid var(--line);
     border-radius:9px;padding:4px 9px;color:var(--ink)}
-  .mybnI b{color:var(--state-done);margin-left:4px}
+  .mybnI b{color:#2B5D4F;margin-left:4px}
   /* ★2026-10-17 記録1件ごとの「このお店 ◯回目」。帯の右に小さく置く。 */
   .kindband .seq{float:right;font-weight:900;letter-spacing:0}
   /* 🔒 ★2026-10-18 「…」＝この一杯の設定（自分だけが見る／消す） */
@@ -63,7 +64,9 @@
   .sheetMsg{font-size:13px;line-height:1.75;color:var(--ink);padding:4px 18px 10px;white-space:pre-line}
   .sheetNote{font-size:11.5px;color:var(--ink-sub);padding:0 18px 8px}
   .hrow{display:flex;flex-direction:column;gap:0;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
-  .hrow.recorded{border:1.5px solid var(--state-done)}
+  /* ★2026-11-17 決まり（2026-09-28）＝終わったことは緑で塗らない。緑の✓＋墨の文字＋うすい枠 */
+  .hrow.recorded{border:1.5px solid #DDD6CE}
+  .hrow.recorded::before{content:"✓";color:#2B5D4F;font-weight:900;font-size:13px;line-height:1;align-self:flex-end;margin-bottom:2px}
   .htop{display:flex;gap:10px}
   /* B案：記録の下に写真を大きく（投稿っぽい）・タップで拡大 */
   .hphoto{margin-top:10px;width:100%;max-height:240px;object-fit:cover;border-radius:10px;display:block;cursor:zoom-in;background:var(--paper)}
@@ -98,7 +101,7 @@
   .tag{font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700}
   .tag.drink{background:var(--paper);color:var(--ink)}
   .tag.ctry{background:var(--bg);border:1px solid var(--line);color:var(--ink-sub)}
-  .tag.dist{background:var(--done-tint);color:var(--state-done)}
+  .tag.dist{background:#2B5D4F;color:#fff}
   /* ★2026-10-06 オーナー指示：1つの「コーヒー日記」にまとめ、1行ずつどちらかの印を付ける。
      旅の記録＝お店で飲んだ一杯（お店が決まっているもの）／暮らしの記録＝お店以外で飲んだ一杯（家・出かけた先など）。
      ★2026-10-11 オーナー決定：自宅だけでなく職場や出かけた先も入るので「おうちの記録」から名前を変えた。 */
@@ -106,13 +109,15 @@
   /* ★2026-10-11 オーナー指摘「差がわかりにくい」。2つの印を どちらも塗りにして、色で分けた。
      旅の記録＝テラコッタ／暮らしの記録＝緑。ほかの印（飲みもの・生産国など）は塗らないので、
      どれが中分類の印かが ひと目で分かる。★距離の印は旅の記録の行にしか出ないので ぶつからない。 */
-  .tag.kind.home{background:var(--state-done);color:#fff;border:0}
+  /* ★2026-11-17 決まり（2026-09-28）＝終わったことは緑で塗らない。緑の✓＋墨の文字＋うすい枠 */
+  .tag.kind.home{background:#fff;color:#1A1A1A;border:1px solid #DDD6CE}
   /* ★2026-10-11 オーナー指示「ひとめではわかりづらい／帯をつけた方がわかりやすい」。
      印（小さな札）をやめて、行のいちばん上に 色のついた帯を置いた。
      旅の記録＝テラコッタ／暮らしの記録＝緑。帯は行の幅いっぱいに出す。 */
   .kindband{margin:-12px -12px 10px;padding:6px 12px;border-radius:11px 11px 0 0;
     font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--brand-base)}
-  .kindband.home{background:var(--state-done)}
+  /* ★2026-11-17 決まり（2026-09-28）＝終わったことは緑で塗らない。緑の✓＋墨の文字＋うすい枠 */
+  .kindband.home{background:#fff;color:#1A1A1A;border-bottom:1px solid #DDD6CE}
   /* ★2026-10-11 オーナー指示「切り替えも欲しい」。すべて／旅の記録／暮らしの記録 で絞り込む。 */
   .kswitch{display:flex;gap:6px;margin:0 0 14px}
   .kswitch button{flex:1;font-family:inherit;font-size:12px;font-weight:800;padding:8px 4px;

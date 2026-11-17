@@ -6,10 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>楽しみ方</title>
 <!--
-  📖 JCJパスポート「楽しみ方」（リッチメニュー「楽しみ方」ボタンの飛び先）
+  📖 JOURNEY PASSPORT「楽しみ方」（リッチメニュー「楽しみ方」ボタンの飛び先）
   ・2026-09-04 オーナー指示：ボタン名・ページ見出しとも「楽しみ方」に統一（旧＝ボタン「使い方」／見出し「遊び方・使い方」）。
   ・本部v39 起票。骨組みはオーナー確定（6ステップ）。
-  ・CSS/レイアウトは mile.html を流用、色はトンマナv1（深緑 #2B5D4F・テラコッタ #C04A55）＝本番5ページと統一。
+  ・CSS/レイアウトは mile.html を流用。★2026-11-17 色は決まりの緑 #2B5D4F 1色にそろえました＝本番5ページと統一。
   ・LIFF SDK 不要（表示だけの静的ページ・パラメータ不要）。
   ・外部リンクは「5.マイルを“豆割”に使う」の2本だけ。主役＝マイルの説明（塗り）、副＝豆割ページ（深緑の枠線・環境で値が違う）。
     ※オーナー指示2026-09-04で主役と副を入れ替え（マイルの話＝重要なのでボタン／豆割は前面に出さない）。
@@ -21,11 +21,11 @@
   :root{
     --green:#2B5D4F;      /* 深緑＝見出し・番号・帯 */
     --green2:#2F7A57;     /* 終わったこと */
-    --terra:#C04A55;      /* これから起こす（リンク・ボタン） */
-    --paper:#F4EADD;      /* ベージュ＝中のブロックだけ */
+    --terra:#2B5D4F;      /* これから起こす（リンク・ボタン） */
+    --paper:#EFECE6;      /* ベージュ＝中のブロックだけ */
     --bg:#FFFFFF;
-    --ink:#221C1A;
-    --ink-sub:#6E655E;
+    --ink:#1A1A1A;
+    --ink-sub:#6E6E6E;
     --line:#DDD6CE;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -62,7 +62,8 @@
   .note p{margin:0; font-size:12.5px; color:var(--ink); line-height:1.85}
   .note p + p{margin-top:11px}
 
-  /* 主役＝塗りのテラコッタ。★1画面に1つだけ（log_drink の #done .refBtn と同じ作り） */
+  /* 主役＝塗りの決まりの緑 #2B5D4F。★1画面に1つだけ（log_drink の #done .refBtn と同じ作り）
+     ★2026-11-17 「テラコッタ」と書かれていましたが、いまの決まりにピンクはありません */
   .btn-main{display:block; text-align:center; text-decoration:none; margin:16px 0 0;
     background:var(--terra); color:#fff; border-radius:12px; padding:14px;
     font-size:15px; font-weight:800; box-shadow:0 4px 10px rgba(192,74,85,.25)}
@@ -83,7 +84,7 @@
 
     <div class="hero">
       <p class="catch">次に会いに行く理由を、集める。</p>
-      <p class="lead">JCJパスポートは、全国のロースターを“旅”するLINEアプリ。スタンプを埋める場所ではなく、次に会いに行く理由が増えていく場所です。</p>
+      <p class="lead">JOURNEY PASSPORTは、全国のロースターを“旅”するLINEアプリ。スタンプを埋める場所ではなく、次に会いに行く理由が増えていく場所です。</p>
     </div>
 
     <section>
@@ -123,7 +124,7 @@
       <p class="catch2">貯まったマイルは、豆に変わる。</p>
       <p class="sec-lead">旅で貯まったマイルは「豆割」に交換できます。お店の値引きではなく、旅したあなたへのごほうびです。</p>
       <!-- ★主役＝マイルの説明（オーナー指示 2026-09-04「マイルの詳しい話は、重要だからボタンがいい」）。
-           塗りのテラコッタ＝このページで1つだけ。飛び先は本番の絶対URL
+           塗りの決まりの緑＝このページで1つだけ。飛び先は本番の絶対URL
            （本番リッチメニュー「マイルについて」と同じ着地先・実クリックで着地確認済み）。 -->
       <a class="btn-main" href="https://japancoffeejourney.com/mile.html">マイルのくわしい話を見る</a>
 

@@ -10,14 +10,14 @@
 <style>
   /* JCJ 新トンマナ8色（00_全社共通/ブランド指針/JCJ_カラー仕様_トンマナ.md） */
   :root{
-    --brand-base:#CB7B68;  /* コーラルピンク：面 */
-    --brand-deep:#C04A55;  /* 深ピンク：主役ボタン・押せる文字 */
+    --brand-base:#2B5D4F;  /* コーラルピンク：面 */
+    --brand-deep:#2B5D4F;  /* 深ピンク：主役ボタン・押せる文字 */
     --state-done:#2F7A57;  /* グリーン：達成・訪問済み */
     --state-error:#C0392B; /* エラー：文字/アイコンだけ */
-    --paper:#F4EADD;       /* ベージュ：カード内ブロック */
+    --paper:#EFECE6;       /* ベージュ：カード内ブロック */
     --bg:#FFFFFF;          /* 画面背景 */
-    --ink:#221C1A;         /* 本文 */
-    --ink-sub:#6E655E;     /* 補助・単位 */
+    --ink:#1A1A1A;         /* 本文 */
+    --ink-sub:#6E6E6E;     /* 補助・単位 */
     --line:#DDD6CE;        /* 枠線・区切り */
   }
   *{box-sizing:border-box}
@@ -55,7 +55,7 @@
 
   /* 登録直後（結果） */
   .phone{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-  .welcome{background:var(--state-done);color:#fff;text-align:center;padding:16px}
+  .welcome{background:#2B5D4F;color:#fff;text-align:center;padding:16px}
   .welcome .t{font-size:16px;font-weight:600}
   .welcome .s{font-size:12px;color:#E1F5EE;margin-top:3px}
   .rbody{padding:16px}
@@ -78,12 +78,12 @@
   .footnote{text-align:center;font-size:11px;color:var(--ink-sub);margin-top:12px;line-height:1.6}
 
   /* 結果②：チェックイン */
-  .civ{color:var(--state-done);font-weight:500;font-size:12px;margin-top:2px}
+  .civ{color:#2B5D4F;font-weight:500;font-size:12px;margin-top:2px}
   .lightblk{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
   .lightblk .t{text-align:center;font-size:13px;font-weight:500}
   .dots{text-align:center;margin-top:8px;line-height:1}
   .dot{width:13px;height:13px;border-radius:50%;display:inline-block;margin:0 1px}
-  .dot.on{background:var(--state-done)}
+  .dot.on{background:#2B5D4F}
   .dot.off{background:var(--paper);border:1px solid var(--line)}
   .areacnt{text-align:center;font-size:11px;color:var(--ink-sub);margin-top:6px}
   .recq{text-align:center;font-size:15px;font-weight:700;margin-top:16px}
@@ -103,7 +103,7 @@
 
   <!-- ① 登録フォーム -->
   <div id="formView" class="hidden">
-    <div class="kicker">JCJパスポート</div>
+    <div class="kicker">JOURNEY PASSPORT</div>
     <h1 id="formTitle">コーヒー旅を始めましょう</h1>
     <p class="lead" id="formLead">最初に、旅の出発点だけ教えてください。</p>
 

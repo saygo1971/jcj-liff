@@ -5,7 +5,7 @@
 <script>/* LINE/webviewのキャッシュ対策：開いた瞬間に最新を取り直す（?t=が無ければ一度だけ付けて再取得。付いていればループしない）*/if(location.search.indexOf('t=')<0){location.replace(location.pathname+(location.search?location.search+'&':'?')+'t='+Date.now());}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-<title>ロースターを探す｜JCJパスポート</title>
+<title>ロースターを探す｜JOURNEY PASSPORT</title>
 <!-- ★2026-10-27 Googleの地図の鍵（APIキー）。★置き場所はこの1か所だけです（審査会 条件2）。
      ★ここに鍵を入れます（本部が後で入れます）。
      ・空のあいだは地図を出さず「地図を準備しています。一覧はこの下に出ています」と出します。
@@ -24,10 +24,46 @@
      その場所を足してください。足さないと地図が出ません。 */</script>
 <style>
   :root{
-    --cream:#FFFFFF; --paper:#ffffff; --ink:#221C1A; --sub:#6E655E;
-    --brown:#6E655E; --brown-d:#221C1A; --accent:#C04A55; --accent-d:#993536;
-    --line:#DDD6CE; --sea:#eef2ef; --land:#EFE7D6; --land-has:#C8A46F; --land-line:#cdbb9f;
-    --sel:#F0997B; --pin:#C04A55; --pin-dim:#d9c3b2; --lit:#CB7B68;
+    --cream:#FFFFFF; --paper:#ffffff; --ink:#1A1A1A; --sub:#6E6E6E;
+    --brown:#6E6E6E; --brown-d:#1A1A1A; --accent:#2B5D4F; --accent-d:#2B5D4F;
+    --line:#DDD6CE; --sea:#FFFFFF; --land:#EFECE6; --land-has:#8FB8A5; --land-line:#DDD6CE;
+    --sel:#F0997B; --pin:#2B5D4F; --pin-dim:#2B5D4F; --lit:#2B5D4F;
+    /* ★2026-11-17 --sel（指で選んだ県）と --lit（一瞬 光る県）は【もう使っていません】。
+       ★消さずに残しています。使うのをやめた理由＝
+         ・決まり（2026-09-28）の11色のうち、県の面に使える色は
+           緑＝お店の丸／薄い緑＝店あり県／板＝まだない県／白＝海／枠線＝県の境 で尽きます。
+         ・墨は文字の色、赤は『面のベタ塗りにしない』、LINE緑は『友だち追加だけ』と決まっています。
+         ・つまり【選んだ県】と【光る県】に当てられる面の色が、1つも残っていません。
+       ★そこで、決まりの考え方（色でなく形で分ける）に合わせ、【県の境の線】で分けることにしました。
+         選んだ県 … 県の境の線を 墨 #1A1A1A で太く（3px）
+         光る県　 … 県の境の線を 緑 #2B5D4F で太く（3.5px）・0.7秒かけて変わる
+       ★測った数字（基準3.0・いちばん低い面で）
+         ・墨の線 = 7.93 ✓ ／ 緑の線 = 3.44 ✓
+         ・🛑 本部のご指示は『枠線 #DDD6CE のまま太く』でしたが、測ると 1.22 で見えません。
+           決まりの中の墨 #1A1A1A に変えました。戻すのは .prefecture.sel の1行だけです。
+         ・墨の線と緑の線どうしの差は 2.31 で基準に届きませんが、太さ（3/3.5px）と
+           光る方だけ動くこと（0.7秒）で見分けます。
+       ★2026-11-17 に直した面の色＝海 #eef2ef→#FFFFFF／まだない県 #EFE7D6→#EFECE6／
+         県の境 #cdbb9f→#DDD6CE（どれも決まりに名ざしで書かれている色です）。
+       🛑 残っている宿題＝地図の面どうしの差は、決まりの9色を総当たりで測っても
+         どの組み合わせも基準3.0に届きません。これは決まりの側の宿題です。
+         （海×まだない県は 1.09 → 1.18。悪くはなっていません） */
+    /* ★2026-11-17 --pin-dim は【もう使っていません】。消さずに残してあります。
+       ★しぼりこみで外れたお店の丸は【色では分けません。大きさで分けます】。
+           参加しているお店    … 緑で塗りつぶし＋白いふち   ふつう=半径7 ／ 外れた=半径4
+           まだ登録されていないお店 … 中抜き（白い中身＋緑のふち） ふつう=半径7 ／ 外れた=半径4
+       ★決まり（2026-09-28）＝色でなく【形】で分ける。薄い緑 #8FB8A5 は『量』の色で、
+         ボタン・タグ・バッジには使わない。外れたお店の丸も【押せます】（県を選んだあと）。
+       ★ここまでの測り（2026-11-17）
+         ・店あり県を 決まりどおり #C8A46F → #8FB8A5 に直しました（あとの決定は在りませんでした）
+         ・ふつうの丸（緑のベタ塗り）× 地図の面 = 3.44〜6.68 ⇒ ぜんぶ基準3.0を超えます（前は 3.23〜6.68）
+         ・外れた丸も【同じ色】なので、同じ 3.44〜6.68 です。見やすさは下がりません
+         ・うすさ(opacity)で分ける案は取りません＝0.8〜0.2 のどれでも、ふつうの丸との差が
+           基準3.0に届かず（最良で 0.20 の 2.78）、しかも うすくするほど丸が地図から消えます
+         ・中抜きで分ける案も取りません＝その形は 167行目 .pin.pend（まだ登録されていないお店）が
+           すでに使っていて、同じにすると見分けが付きません（差 1.00）
+       ★大きさの指定は JS 側です（PIN_R_ON=7 / PIN_R_DIM=4）。拡大しても見た目を保つため、
+         applyPinScale が viewBox の幅に合わせて掛け算します。 */
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -77,23 +113,25 @@
   .mapwrap{padding:6px 14px 14px}
   .mapcard{background:var(--sea);border:1px solid var(--line);border-radius:16px;padding:6px 6px 2px;position:relative}
   .legend{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding:4px 0 6px;font-size:10.5px;color:var(--sub);font-weight:700}
-  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+  /* ★2026-11-17 見本の四角に うすい枠を足しました。
+     ★理由＝「お店がまだない県」の色が 板 #EFECE6 になり、白い画面の上では
+       四角が在るのか無いのか分からなくなるためです（白との差 1.18）。 */
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:-1px;margin-right:4px;border:1px solid var(--line)}
   .jp-map{width:100%;height:auto;display:block}
-  .prefecture{fill:var(--land);stroke:var(--land-line);stroke-width:1.1px;stroke-linejoin:round;transition:fill .18s}
+  .prefecture{fill:var(--land);stroke:var(--land-line);stroke-width:1.1px;stroke-linejoin:round;transition:fill .18s,stroke .3s,stroke-width .3s}
   .prefecture.has{fill:var(--land-has)}
-  .prefecture.sel{fill:var(--sel)}
+  .prefecture.sel{stroke:#1A1A1A;stroke-width:3px}        /* ★2026-11-17 塗りは変えず、県の境の線で分けます */
   .prefecture.dim{opacity:.42}
-  .prefecture.lit{fill:var(--lit) !important;transition:fill .7s ease}
+  .prefecture.lit{stroke:#2B5D4F;stroke-width:3.5px;transition:stroke .7s ease,stroke-width .7s ease}   /* ★2026-11-17 同上 */
   .prefecture,.pin{vector-effect:non-scaling-stroke}   /* 拡大しても線の太さは一定 */
   .zoomback{display:inline-block;font-size:12px;font-weight:800;color:var(--accent);cursor:pointer;padding:5px 2px 8px}
-  .inset-box{fill:none;stroke:#b7a488;stroke-width:1.6;stroke-dasharray:5 4}
-  .inset-label{fill:#6f5b44;font-size:30px;font-weight:700;font-family:"Noto Sans JP",system-ui,sans-serif}
+  .inset-box{fill:none;stroke:#DDD6CE;stroke-width:1.6;stroke-dasharray:5 4}   /* ★2026-11-17 決まりの枠線 */
+  .inset-label{fill:#6E6E6E;font-size:30px;font-weight:700;font-family:"Noto Sans JP",system-ui,sans-serif}
   .pin{fill:var(--pin);stroke:#fff;stroke-width:2px;cursor:pointer;transition:.15s}
-  /* 🆕 2026-09-24（案1）薄いピン＝★枠線も薄くする。★透け具合は 0.45→0.8 に上げました。
-     ★理由＝薄い色 #d9c3b2 は、お店が在る県の地の色 #C8A46F と近く、0.45だと地に溶けて
-       「点が無い」ように見えます（★実測した色の値で判断）。
-     ★参加しているお店のピン＝赤い丸→薄い丸（枠線は白のまま）。 */
-  .pin.dim{fill:var(--pin-dim);stroke:#fff;opacity:.8}
+  /* ★2026-11-17 外れたお店の丸＝ふつうの丸と同じ #2B5D4F で、うすさだけ 0.30 に下げています。
+     ★2026-09-24 に書かれていた「薄い色 #d9c3b2 が 店あり県 #C8A46F と近い」という話は、
+       もう当てはまりません（色も、店あり県の色も、どちらも変わったためです）。 */
+  .pin.dim{fill:var(--pin);stroke:#fff}            /* ★色はふつうの丸と同じ。大きさ（半径4）で分けます */
   .pin.big{stroke-width:2.6px}
   .gauge{margin:2px 6px 6px;background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:9px 11px}
   .gauge .top{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--brown-d);margin-bottom:5px}
@@ -148,8 +186,11 @@
   /* 🆕 2026-09-24（案1）未参加店の薄いピン＝★白い丸のまま、枠線だけ赤→薄い色にする。
      ★前は .pin.pend の「白い塗り」が .pin.dim の指定に勝っていて、
        ★変わるのは透け具合だけ＝色が1つも変わっていませんでした（2026-09-24 実測）。
-     ★白い塗りは残します＝地の色（#C8A46F）との差が大きく、点が消えません。 */
-  .pin.pend.dim{fill:#fff;stroke:var(--pin-dim);stroke-width:2.4px;opacity:.8}
+     ★白い塗りは残しています。★ただし 店あり県の地の色（2026-11-17 に #C8A46F → #8FB8A5 へ）との差は
+       2.19 で、基準3.0には届きません（2026-11-17 実測。直す前の #C8A46F では 2.33 でした）。
+       ★この丸が見分けられるのは、白い中身ではなく【緑のふち】の方です（3.44〜6.68）。
+       （2026-09-24 に「差が大きく、点が消えません」と書かれていましたが、測ると違っていました） */
+  .pin.pend.dim{fill:#fff;stroke:var(--pin);stroke-width:2.4px}   /* ★中抜きのまま。大きさ（半径4）で分けます */
   /* 🆕 2026-09-24 ①全国・エリアを見ているあいだは、お店の丸が指を受け取らない＝県の形だけが押せる */
   .jp-map.nopin .pin{pointer-events:none}
   /* 🆕 2026-09-24 ⑤市区町村のボタンは2段に折り返して全部 見せる（★横に隠さない） */
@@ -157,7 +198,7 @@
   .cityrow .lab{flex:none;align-self:center;font-size:10.5px;color:var(--sub);font-weight:700;padding-right:2px}
   .cityrow .chip{flex:none}
   /* 未参加店の誘い文＝カードの中のベージュブロック（色仕様§3）。枠線は付けない（地の色で分ける） */
-  .pendbox{background:var(--paper,#F4EADD);border-radius:12px;margin:12px 0 0;padding:13px 14px}
+  .pendbox{background:var(--paper,#EFECE6);border-radius:12px;margin:12px 0 0;padding:13px 14px}
   .pendbox .pb-lead{font-size:14.5px;font-weight:700;line-height:1.6;color:var(--ink)}
   .pendbox .pb-body{font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.85}
   .forshop{margin:14px 0 0;padding:11px 0 0;border-top:1px solid var(--line)}
@@ -173,13 +214,14 @@
   .card .facts{font-size:11px;color:#5c4d3d;margin-top:5px;line-height:1.55}
   .card .facts div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店の1行（カード・近くを探す 共通の色） */
-  .recline{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:4px;line-height:1.5}
-  /* 🙏 ★2026-10-30 お店の詳細に出す「推薦者の声」 */
-  .recbox{background:#fff;border:1px solid var(--line);border-radius:12px;margin:12px 0 0;padding:13px 14px}
-  .recbox .rb-t{font-size:11.5px;font-weight:700;color:var(--sub)}
-  .recbox .rb-m{font-size:14px;color:var(--ink);margin-top:6px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
-  .recbox .rb-by{font-size:11.5px;color:var(--sub);margin-top:9px;text-align:right}
+  /* 🙏 ★2026-10-30 お客さまがすすめてくれたお店。
+     ★この色と大きさは、オーナーさまがモックを見て承認された値です（本部 2026-10-30）。
+       勝手に変えないでください。 */
+  .recline{font-size:11.5px;color:#2B5D4F;font-weight:700;margin-top:3px;line-height:1.5}
+  .recbox{background:#FFFFFF;border:0.5px solid #E1DACF;border-radius:12px;margin:12px 0 0;padding:13px}
+  .recbox .rb-t{font-size:12px;font-weight:500;color:#2B5D4F}
+  .recbox .rb-m{font-size:13px;color:#3E372E;line-height:1.75;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+  .recbox .rb-by{font-size:11.5px;color:#726A5E;margin-top:9px;text-align:right}
   .tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px}
   .tag.b{background:#fbeee6;color:var(--accent-d)}
   .milerow{margin-top:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -370,7 +412,7 @@
   .sd .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
   .sd .lk{font-size:12px;font-weight:800;color:var(--brown-d);background:#fff;border:1.3px solid var(--brown);border-radius:9px;padding:6px 13px;text-decoration:none}
   .sd .why{font-size:10.5px;color:var(--sub);text-align:center;margin-top:9px;line-height:1.55}
-  .sd .sheetback{display:block;width:100%;margin-top:9px;height:42px;border-radius:12px;background:#f0e7da;border:none;color:var(--brown-d);font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  .sd .sheetback{display:block;width:100%;margin-top:9px;height:42px;border-radius:12px;background:#fff;border:1.5px solid #2B5D4F;color:#2B5D4F;font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
 
   .verbadge{position:fixed;right:8px;bottom:8px;background:rgba(58,47,37,.72);color:#fff8ee;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;z-index:60;pointer-events:none;letter-spacing:.02em}
   .toast{position:fixed;left:16px;right:16px;bottom:24px;max-width:448px;margin:0 auto;background:var(--ink);color:#fff8ee;font-size:12.5px;font-weight:700;line-height:1.5;padding:11px 14px;border-radius:12px;text-align:center;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:50}
@@ -1113,7 +1155,12 @@
   }
   // ── 地図の拡大（エリア単位）──viewBoxをそのエリアの県の外接範囲へ差し替え。線の太さはCSSで一定、ピンrはviewBox幅に比例させ見た目を一定に。
   var ORIG_VB="0 0 1000 984", ORIG_VB_W=1000, ORIG_VB_H=984, zoomedArea=null, zoomedPref=0;   // 🆕 zoomedPref＝いま県まで拡大している県（0＝していない）
-  function applyPinScale(vbW){ var r=7*(vbW/ORIG_VB_W); pinEls.forEach(function(c){c.setAttribute("r",r);}); }
+  /* ★2026-11-17 外れたお店の丸は【小さくする】ことで分けます（色では分けません）。
+     ★決まり（2026-09-28）＝色でなく形で分ける。ふつう＝半径7／外れた＝半径4。
+     ★うすさ(opacity)は使いません。うすくすると地図の上で丸そのものが見えなくなるためです。 */
+  var PIN_R_ON=7, PIN_R_DIM=4, PIN_SCALE=1;
+  function pinR(c){ return (c.classList.contains("dim")?PIN_R_DIM:PIN_R_ON)*PIN_SCALE; }
+  function applyPinScale(vbW){ PIN_SCALE=vbW/ORIG_VB_W; pinEls.forEach(function(c){c.setAttribute("r",pinR(c));}); }
   function showBack(on){ var b=$("zoomBack"); if(b) b.classList.toggle("hidden",!on); }
   // ── 沖縄の別枠（inset）──全国では左上の元位置。九州・沖縄に拡大したときだけ、別枠（県の形＋枠＋ラベル）と沖縄のピンを“同じ変換”で拡大後の画面の左下へ。九州・沖縄以外の拡大では出さない。ピンのrはapplyPinScaleが統一＝見た目サイズは一定。
   var OKI_REF_W=218, OKI_REF_X0=83, OKI_REF_Y1=241.8, OKI_FRAC=0.20;   // 別枠の基準：幅218/左端83/下端241.8（inset-box基準）。拡大後の枠幅の20%に収める
@@ -1312,8 +1359,9 @@
   //     ★何も出さないと、お客さまの推薦だと分かりません（2026-10-30 オーナーさま決定 4）
   //   ★理由（推薦のひとこと）は、ここには出しません。カードを押すと開くお店の画面に出します。
   //   🛑★esc() を必ず通します。お名前はお客さまが書いた文字なので、画面の組み立てに混ぜません。
-  //   ★2026-09-25 の「1軒ごとの札は出さない」決定との関係＝あれは未参加の418軒すべてに
-  //     同じ言葉が並ぶ話で、こちらは推薦から載ったお店だけ・文字もお店ごとに違います。
+  //   ★2026-09-25 のオーナーさま決定（1軒ごとには出さず、見出しに1回だけ出す）との関係＝
+  //     あれは未参加の418軒すべてに【同じ言葉】が並ぶ話で、
+  //     こちらは推薦から載ったお店だけ・文字もお店ごとに違います。
   //     ★オーナーさまに確かめて「1軒ごとに違う文字を出してよい」と決まりました（2026-10-30）。
   function recLineHTML(s){
     if(s.rec!==1) return "";
@@ -1463,7 +1511,7 @@
       return;
     }
     $("sdRecNote").textContent=note;
-    $("sdRecBy").textContent=by?(by+"さん"):"";
+    $("sdRecBy").textContent=by?(by+" さん"):"";   // ★「◯◯ さん」＝本部の指定どおり（間に空き）
     box.classList.remove("hidden");
   }
 
@@ -1655,7 +1703,7 @@
       if(e==="no_geo")            gciNg(s,"いまの場所が確認できませんでした","お店に置いてある<b>このチェックインプレート</b>にスマホをかざすと、そのままチェックインできます。マイルはそのまま受け取れます。","no_geo");
       else if(e==="acc_too_large")gciNg(s,"場所をうまく読み取れませんでした","お店の中は電波が弱いことがあります。<b>このチェックインプレート</b>にスマホをかざしてください。マイルはそのまま受け取れます。","acc_too_large");
       else if(e==="too_far")      gciNg(s,"このお店の近くにいることが確認できませんでした","お店に着いてから、もう一度どうぞ。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","too_far");
-      else if(e==="not_registered") gciNg(s,"はじめに登録が必要です","JCJパスポートに登録すると、この記録が残せます。");
+      else if(e==="not_registered") gciNg(s,"はじめに登録が必要です","JOURNEY PASSPORTに登録すると、この記録が残せます。");
       else if(e==="off")          { b.style.display="none"; $("sdGciNote").style.display="none"; }
       else                        gciNg(s,"うまくいきませんでした","少し時間をおいて、もう一度お試しください。<b>このチェックインプレート</b>にスマホをかざしてもチェックインできます。","failed");
     }catch(err){
@@ -2050,18 +2098,18 @@
   function nearPinPending(sel){
     return {path:google.maps.SymbolPath.CIRCLE, scale: sel?9:6.5,
             fillColor:"#ffffff", fillOpacity:1,
-            strokeColor:"#C04A55", strokeWeight: sel?3.4:2.4};
+            strokeColor:"#2B5D4F", strokeWeight: sel?3.4:2.4};
   }
   function nearPinJoined(sel){
     return {path:google.maps.SymbolPath.CIRCLE, scale: sel?9.5:7,
-            fillColor:"#C04A55", fillOpacity:1,
-            strokeColor:"#ffffff", strokeWeight: sel?3:2};
+            fillColor:"#2B5D4F", fillOpacity:1,
+            strokeColor:"#ffffff", strokeWeight: sel?3.5:3};
   }
   // ★2026-10-28 選ばれたお店の下に敷く【色の輪】。
   //   ★大きさだけだと変化が分かりにくい、というオーナーさまのご指摘を受けて足しました。
   function nearPinHalo(){
     return {path:google.maps.SymbolPath.CIRCLE, scale:17,
-            fillColor:"#C04A55", fillOpacity:1,
+            fillColor:"#2B5D4F", fillOpacity:1,
             strokeColor:"#ffffff", strokeWeight:3.5};
   }
   function nearPinLogo(id, sel){
@@ -2263,7 +2311,7 @@
     //   ★座標が無い11軒は点を出さなくなったので、点を数えると「全331店」と出て、
     //     一覧の342枚と食い違います（2026-09-24 気づいて直した）。
     var n=SHOPS.filter(shopOK).length;
-    pinEls.forEach(function(c){var s=SHOPS[+c.dataset.i];c.classList.toggle("dim",!shopOK(s));});
+    pinEls.forEach(function(c){var s=SHOPS[+c.dataset.i];c.classList.toggle("dim",!shopOK(s));c.setAttribute("r",pinR(c));});
     [].forEach.call(svg.querySelectorAll(".prefecture"),function(g){var code=+g.getAttribute("data-code");g.classList.toggle("dim",curArea!=="全国"&&CODE2AREA[code]!==curArea);});
     var pc={};SHOPS.filter(shopOK).forEach(function(s){if(s.code)pc[s.code]=1;});
     $("count").textContent="全"+n+"店・"+Object.keys(pc).length+"県";

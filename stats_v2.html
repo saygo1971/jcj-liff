@@ -8,11 +8,17 @@
   <meta http-equiv="Expires" content="0" />
   <title>お店のレポート（Japan Coffee Journey）</title>
   <style>
+    /* ★2026-11-17 決まり（2026-09-28_確定_緑1色トンマナ仕様.md）の色にそろえました。
+       ★面は【ページ＝板／カード＝白／カードの中の小さな枠＝板】と、2色を交互に使って3段を作っています
+         （決まりに面の色は 白 #FFFFFF と 板 #EFECE6 の2つしかないためです）。
+       ★--teal-soft / --green / --pink-bg は どこからも使われていません（消さずに残しています）。
+       🛑 下の2つのかたまり（画面を暗くしているときの色）は【直していません】。
+          決まりに、暗いときの色が1色も書かれていないためです。本部へご連絡しています。 */
     :root{
-      --cream:#F4EDE1; --cream-2:#EDE3D3; --ink:#2E2A26; --ink-soft:#6B6258;
-      --teal:#32595B; --teal-soft:#4C7A7C; --pink:#C04A55; --pink-soft:#E7C3C7;
-      --green:#5E7B3B; --line:#DACFBD; --card:#FBF7F0; --up:#5E7B3B; --down:#B0603A; --flat:#9A8F80;
-      --pink-bg:#F7E7E9; --teal-bg:#E4EEEC;
+      --cream:#EFECE6; --cream-2:#EFECE6; --ink:#1A1A1A; --ink-soft:#6E6E6E;
+      --teal:#2B5D4F; --teal-soft:#2B5D4F; --pink:#2B5D4F; --pink-soft:#DDD6CE;
+      --green:#2B5D4F; --line:#DDD6CE; --card:#FFFFFF; --up:#2B5D4F; --down:#C0392B; --flat:#6E6E6E;
+      --pink-bg:#EFECE6; --teal-bg:#EFECE6;
     }
     @media (prefers-color-scheme: dark){
       :root:not([data-theme="light"]){

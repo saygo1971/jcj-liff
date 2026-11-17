@@ -25,12 +25,12 @@
   /* JCJ カラー仕様（トンマナ）準拠：白基準・数字は本文色・緑は訪ねたお店のみ */
   :root{
     --bg:#ffffff;
-    --paper:#F4EADD;     /* ベージュ＝カードの中のブロックだけ */
-    --ink:#221C1A;
-    --ink-sub:#6E655E;
+    --paper:#EFECE6;     /* ベージュ＝カードの中のブロックだけ */
+    --ink:#1A1A1A;
+    --ink-sub:#6E6E6E;
     --line:#DDD6CE;
-    --brand-deep:#C04A55;/* 深コーラルピンク＝押す */
-    --done:#2F7A57;      /* グリーン＝訪ねたお店 */
+    --brand-deep:#2B5D4F;/* 深コーラルピンク＝押す */
+    --done:#2B5D4F;      /* グリーン＝訪ねたお店 */
     --track:#E7EAE5;
   }
   *{box-sizing:border-box}
@@ -80,7 +80,16 @@
 
   /* ── お店の一覧 ── */
   .shops{border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .srow{display:block;text-decoration:none;color:inherit;padding:12px 13px;border-top:1px solid var(--line)}
+    /* ★2026-11-17 決まり（2026-09-28 決定#3）＝終わったことには色を使わない。緑の ✓ を1つ付ける。
+     ★訪ねたお店は【行のいちばん左の ✓】で分かるようにしました。
+       ・行のうすい緑の地（#F3F8F5・決まりの外の色）をやめました
+       ・お店の名前は、訪ねていても いなくても 墨 #1A1A1A にしました
+       ・「… に訪ねました」の文は そのまま残し、色だけ補助にしました（緑は ✓ の1つだけ）
+     ★左の空きは 訪ねていない行にも取ってあります＝行の位置がずれないようにするためです。
+     ★測った数字＝✓ 緑 #2B5D4F × 白い地 = 7.55 ／ 名前 墨 × 白い地 = 17.40。
+       前は 行の地どうしの差が 1.07 しか無く、色では ほとんど見分けられていませんでした。 */
+.srow{display:block;text-decoration:none;color:inherit;padding:12px 13px 12px 34px;border-top:1px solid var(--line);position:relative}
+  .srow.done::before{content:"✓";position:absolute;left:10px;top:12px;color:#2B5D4F;font-size:18px;font-weight:900;line-height:1.2}
   .srow:first-child{border-top:none}
   .srow .top{display:flex;align-items:baseline;gap:7px}
   .srow .pref{font-size:11.5px;color:var(--ink-sub);font-weight:700;flex:0 0 auto}
@@ -88,9 +97,9 @@
   .srow .copy{font-size:12.5px;color:var(--ink-sub);margin-top:4px;line-height:1.6}
   .srow .go{font-size:11.5px;color:var(--brand-deep);font-weight:800;margin-top:6px}
   .srow.nopage .go{color:var(--ink-sub);font-weight:700}
-  .srow.done{background:#F3F8F5}
-  .srow.done .name{color:var(--done)}
-  .srow .mark{font-size:11.5px;color:var(--done);font-weight:800;margin-top:5px}
+  .srow.done{background:transparent}
+  .srow.done .name{color:#1A1A1A}
+  .srow .mark{font-size:11.5px;color:var(--ink-sub);font-weight:800;margin-top:5px}
   .first{background:var(--paper);font-size:11.5px;color:var(--ink-sub);font-weight:800;
     padding:9px 13px;line-height:1.6;border-top:1px solid var(--line)}
   .first:first-child{border-top:none}
@@ -119,7 +128,7 @@
 <body>
 <div class="wrap">
 
-    <div style="background:#C04A55;color:#fff;border-radius:12px;padding:12px 14px;margin-top:14px;text-align:center;line-height:1.7">
+    <div style="background:#2B5D4F;color:#fff;border-radius:12px;padding:12px 14px;margin-top:14px;text-align:center;line-height:1.7">
     <div style="font-size:14px;font-weight:800">★これは【見本】です</div>
     <div style="font-size:12px;margin-top:5px">3軒 訪ねたあとの【見え方】です。<br>この数字（3軒・4人・263km）は、見本のために入れたものです。</div>
   </div>
@@ -186,7 +195,7 @@
 
     <div class="foot" id="foot"></div>
   <div style="margin-top:18px;text-align:center">
-    <a href="tokai_preview.html" style="display:inline-block;font-size:13px;font-weight:800;color:#C04A55;text-decoration:none;border:1px solid #DDD6CE;border-radius:999px;padding:11px 18px">◂ いまの見え方にもどる</a>
+    <a href="tokai_preview.html" style="display:inline-block;font-size:13px;font-weight:800;color:#2B5D4F;text-decoration:none;border:1px solid #DDD6CE;border-radius:999px;padding:11px 18px">◂ いまの見え方にもどる</a>
   </div>
     <div class="brand">JAPAN COFFEE JOURNEY</div>
   </div>

@@ -23,7 +23,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>JCJ チェックイン</title>
   <style>
-    :root{ --brand:#0F6E56; --brand2:#DCE7D8; --amber:#BA7517; --line:#e6e6e6; --muted:#666; --hint:#999; }
+    :root{ --brand:#2B5D4F; --brand2:#DCE7D8; --amber:#BA7517; --line:#e6e6e6; --muted:#666; --hint:#999; }
     *{box-sizing:border-box}
     body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;margin:0;background:#f4f4f2;color:#222}
     .wrap{max-width:480px;margin:0 auto;padding:14px}
@@ -38,12 +38,19 @@
     /* 記録（今日の一杯）＝この画面の主役。塗りの主役ボタンは画面に1つだけ。 */
     .recsec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
     .rectitle{text-align:center;font-size:15px;font-weight:700;color:#222}
-    .rec{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#C04A55;text-decoration:none}
+    .rec{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F;text-decoration:none}
     .fine{font-size:11px;color:var(--hint);margin-top:8px;text-align:center}
-    .done{padding:18px;text-align:center;color:#fff}
-    .done.ci{background:var(--brand)}
-    .done.today{background:var(--amber)}
+    /* ★2026-11-17 オーナーさまご判定＝終わったことの帯は、ぜんぶ同じ形にします。
+       ★決まり（2026-09-28 決定#3）＝終わったことは色で塗らない。
+         白い地 ＋ 墨の文字 ＋ うすい枠 #DDD6CE ＋ 緑の ✓ を1つ。
+       ★画面に出る文字は1つも変えていません。✓ を1つ足しただけです。
+       ★.done.ci は もともと絵の枠が「✓」なので、そこを緑にしています（✓が2つにならないように）。 */
+    .done{padding:18px;text-align:center;color:#1A1A1A;background:#fff;border:1.5px solid #DDD6CE;border-radius:12px}
     .done .ic{font-size:30px;line-height:1}
+    .done.ci .ic{color:#2B5D4F}
+    .done.today .t::before,
+    .done.hold .t::before,
+    .done.ticket .t::before{content:"✓ ";color:#2B5D4F;font-weight:900}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
     .donecard{width:100%;height:auto;display:block;background:#C9D6DC}
     .refcard{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
@@ -60,7 +67,7 @@
     .stepper button:disabled{opacity:.35}
     .cnt{text-align:center}
     .cnt .n{font-size:26px;font-weight:800}
-    .use{width:100%;margin-top:14px;height:50px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--amber)}
+    .use{width:100%;margin-top:14px;height:50px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
     .use:disabled{opacity:.5}
     .link{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:underline}
     .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
@@ -140,7 +147,7 @@
     $("hero").classList.toggle("hidden", !st.shopImage);
     $("body").classList.remove("hidden");
     $("body").innerHTML =
-      '<div class="brand">JCJパスポート</div>' +
+      '<div class="brand">JOURNEY PASSPORT</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div class="pref">' + esc(st.pref) + '</div>' +
       '<button id="go" class="go">チェックインする</button>';
@@ -353,7 +360,7 @@
   function renderTicketUsed(d){
     const card = document.querySelector(".card");
     const oldB = card.querySelector(".done, #donecard"); if(oldB) oldB.remove();
-    card.insertAdjacentHTML("afterbegin", '<div class="done" style="background:#BA7517"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
+    card.insertAdjacentHTML("afterbegin", '<div class="done ticket"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
@@ -368,7 +375,7 @@
   function renderNeedRegister(){
     $("hero").classList.add("hidden");
     $("body").innerHTML =
-      '<div class="brand">JCJパスポート</div>' +
+      '<div class="brand">JOURNEY PASSPORT</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div class="fine" style="text-align:left;margin:12px 0;line-height:1.8;color:#555;font-size:13px">はじめての方は、先に登録が必要です。<br>登録するとこのお店に自動でチェックインされます。</div>' +
       '<button id="reg" class="go">登録して続ける</button>';

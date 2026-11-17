@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0" />
   <title>JCJ チェックイン</title>
   <style>
-    :root{ --brand:#0F6E56; --coral:#C04A55; --green:#2F7A57; --ink:#221C1A; --paper:#F4EADD; --brand2:#DCE7D8; --amber:#BA7517; --line:#DDD6CE; --muted:#6E655E; --hint:#999;
+    :root{ --brand:#2B5D4F; --coral:#2B5D4F; --green:#2F7A57; --ink:#1A1A1A; --paper:#EFECE6; --brand2:#DCE7D8; --amber:#BA7517; --line:#DDD6CE; --muted:#6E6E6E; --hint:#999;
       /* ★2026-10-07 緑1色トンマナ（docs/2026-09-28_確定_緑1色トンマナ仕様.md）。★色はここだけで決めます。 */
       --green2:#2B5D4F; --panel2:#EFECE6; --line2:#DDD6CE; --ink2:#1A1A1A; --sub2:#6E6E6E; }
     *{box-sizing:border-box}
@@ -26,13 +26,25 @@
     .ask{margin-top:14px;background:#eef6f2;border:1px solid #cfe4da;border-radius:12px;padding:12px 13px;font-size:13.5px;line-height:1.75;color:#215}
     .ask b{color:var(--brand)}
     .asknote{color:#777;font-size:12px}
-    .holdmsg{margin:14px 12px 4px;background:#fff7ea;border:1px solid #f0d9a8;border-radius:12px;padding:12px 13px;font-size:13px;line-height:1.75;color:#6b4c12}
-    .holdmsg b{color:var(--amber)}
-    .done{padding:18px;text-align:center;color:#fff}
-    .done.ci{background:var(--green)}
-    .done.today{background:var(--green2)}   /* ★2026-10-07 トンマナ：橙→決まった緑 #2B5D4F */
-    .done.hold{background:var(--amber)}
+    /* ★2026-11-17 決まりの11色にそろえました。
+       ★この枠の文＝「マイルは確認中です。位置情報が確認できなかったため…もう一度チェックインすると受け取れます」
+         ＝うまくいかなかったことを伝え、やり直していただくお願いです。
+       ★決まり＝赤 #C0392B は『注意と失敗。文字とアイコンだけ。面のベタ塗りにしない』。
+         ⇒ 太字だけ赤、面は板 #EFECE6、枠は #DDD6CE、本文は墨 #1A1A1A にしました。
+       ★前は 面 #fff7ea・枠 #f0d9a8・本文 #6b4c12・太字 #BA7517 で、4つとも決まりの外でした。 */
+    .holdmsg{margin:14px 12px 4px;background:#EFECE6;border:1px solid #DDD6CE;border-radius:12px;padding:12px 13px;font-size:13px;line-height:1.75;color:#1A1A1A}
+    .holdmsg b{color:#C0392B}
+    /* ★2026-11-17 オーナーさまご判定＝終わったことの帯は、ぜんぶ同じ形にします。
+       ★決まり（2026-09-28 決定#3）＝終わったことは色で塗らない。
+         白い地 ＋ 墨の文字 ＋ うすい枠 #DDD6CE ＋ 緑の ✓ を1つ。
+       ★画面に出る文字は1つも変えていません。✓ を1つ足しただけです。
+       ★.done.ci は もともと絵の枠が「✓」なので、そこを緑にしています（✓が2つにならないように）。 */
+    .done{padding:18px;text-align:center;color:#1A1A1A;background:#fff;border:1.5px solid #DDD6CE;border-radius:12px}
     .done .ic{font-size:30px;line-height:1}
+    .done.ci .ic{color:#2B5D4F}
+    .done.today .t::before,
+    .done.hold .t::before,
+    .done.ticket .t::before{content:"✓ ";color:#2B5D4F;font-weight:900}
     .done .t{font-size:16px;font-weight:800;margin-top:4px}
     .donecard{width:100%;height:auto;display:block;background:#C9D6DC}
     .refcard{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
@@ -44,7 +56,7 @@
     .total{font-size:13px;color:var(--muted);text-align:center}
     .bsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
     .btrack{height:12px;background:var(--paper);border-radius:6px;overflow:hidden}
-    .bfill{height:100%;background:#CB7B68;border-radius:6px}
+    .bfill{height:100%;background:#2B5D4F;border-radius:6px}
     .bnote{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
     .bnote b{font-weight:800;color:var(--ink)}
     .bready{font-size:14px;font-weight:800;color:var(--coral);margin-top:10px;text-align:center}
@@ -57,7 +69,7 @@
     .stepper button:disabled{opacity:.35}
     .cnt{text-align:center}
     .cnt .n{font-size:26px;font-weight:800}
-    .use{width:100%;margin-top:14px;height:50px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--amber)}
+    .use{width:100%;margin-top:14px;height:50px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--brand)}
     .use:disabled{opacity:.5}
     .link{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--muted);text-decoration:underline}
     .msg{margin-top:12px;font-size:13px;border-radius:10px;padding:10px 12px}
@@ -86,7 +98,7 @@
     .cupbox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
     .cupbox .big{font-size:20px;font-weight:800;color:var(--ink2)}
     .cupbox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
-    .cupbtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--green2)}
+    .cupbtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F}
     .cupbtn:disabled{opacity:.5}
     /* ★色だけに頼らない＝「お渡し済み」の文字と時刻を必ず添える（会場が暗いことがあるため） */
     .cupdone{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
@@ -96,7 +108,8 @@
     .cupnote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
     /* ★2026-10-06 受付の帯（★受付の紙のQRから開いたときだけ出ます）。
        ★ここに お名前とパスポート番号を出します＝受付の人が「どなたに渡すか」を目で確かめるため。 */
-    .recsec{margin-top:16px;background:var(--green2);border-radius:12px;padding:12px 13px;color:#fff;text-align:center}
+    /* ★2026-11-17 決まり＝押せるものでも上下の帯でもないので、緑で塗りません */
+    .recsec{margin-top:16px;background:#fff;border:1.5px solid #DDD6CE;border-radius:12px;padding:12px 13px;color:#1A1A1A;text-align:center}
     .recsec .lbl{font-size:12px;letter-spacing:.08em;opacity:.85}
     .recsec .nm{font-size:19px;font-weight:800;margin-top:3px}
     .recsec .no{font-size:12.5px;margin-top:4px;opacity:.9;font-variant-numeric:tabular-nums}
@@ -112,13 +125,13 @@
     .freebox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
     .freebox .big{font-size:20px;font-weight:800;color:var(--ink2)}
     .freebox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
-    .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:var(--green2)}
+    .freebtn{width:100%;margin-top:12px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F}
     .freebtn:disabled{opacity:.5}
     /*★2026-11-05：会場で「券を買う」をお出しする枠の見た目。
       ★本番の index.html に在るものと同じ字・同じ数字です（★2つの画面で見た目を分けないため）。*/
     .buysec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px}
     .buytitle{text-align:center;font-size:15px;font-weight:700;color:#222}
-    .buybtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:#BA7517;text-decoration:none}
+    .buybtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F;text-decoration:none}
     /* ★2026-11-16：.freedone（無料の1杯 受け取り済みの枠）は出すのをやめたので、見た目の指定も外しました。 */
     .freenote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
   </style>
@@ -209,7 +222,7 @@
     $("hero").classList.toggle("hidden", atVenue || !st.shopImage);
     $("body").classList.remove("hidden");
     $("body").innerHTML =
-      '<div class="brand">JCJパスポート</div>' +
+      '<div class="brand">JOURNEY PASSPORT</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       (atVenue ? '' : '<div class="pref">' + esc(st.pref) + '</div>') +
       (atVenue ? ''
@@ -402,7 +415,7 @@
     //     「チェックインした時にはおそらくまだ飲んでいないから」。過去形で書きません。
     //   ★受付（JCJの受付）では出しません。コーヒーをお出ししないためです。
     const cupNoteHtml = isReception ? '' :
-      '<div style="text-align:center;font-size:13px;font-weight:700;color:var(--green,#2F7A57);margin-top:14px;line-height:1.7">' +
+      '<div style="text-align:center;font-size:13px;font-weight:700;color:#2B5D4F;margin-top:14px;line-height:1.7">' +
       'コーヒー日記に1杯 残ります。<br>あとから書き足せます。</div>';
     const recordHtml = isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
@@ -955,7 +968,7 @@
   function renderTicketUsed(d){
     const card = document.querySelector(".card");
     const oldB = card.querySelector(".done, #donecard"); if(oldB) oldB.remove();
-    card.insertAdjacentHTML("afterbegin", '<div class="done" style="background:#BA7517"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
+    card.insertAdjacentHTML("afterbegin", '<div class="done ticket"><div class="ic">🎫</div><div class="t">試飲チケット '+(Number(d.consumedCount)||0)+'枚を使いました</div></div>');
     $("body").innerHTML =
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
@@ -1021,7 +1034,7 @@
   function renderNeedRegister(){
     $("hero").classList.add("hidden");
     $("body").innerHTML =
-      '<div class="brand">JCJパスポート</div>' +
+      '<div class="brand">JOURNEY PASSPORT</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div style="text-align:center;margin:12px 0 4px;font-size:15px;font-weight:700;color:var(--ink)">まず登録して、コーヒー旅を始めましょう</div>' +
       '<div class="fine" style="text-align:center;margin:0 0 4px;line-height:1.8;color:var(--muted);font-size:12px">登録すると、このお店に自動でチェックインされます。</div>' +
