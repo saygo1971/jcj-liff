@@ -417,7 +417,9 @@
     sub.textContent = "いまいる場所から、" + num(haveCoords) + "軒それぞれまでの距離が出ます。";
     if (!navigator.geolocation) {
       btn.disabled = true;
-      sub.textContent = "お使いの画面では、いまいる場所を取れませんでした。";
+      sub.innerHTML = "お使いの画面では、いまいる場所を取れません。<br />" +
+        "LINEアプリの「ロースターを探す」でも、" +
+        "ご登録のお住まいからの距離をご覧いただけます。";
       return;
     }
     btn.addEventListener("click", () => {
@@ -434,8 +436,14 @@
         () => {
           btn.disabled = false;
           btn.textContent = "もう一度ためす";
-          sub.textContent =
-            "いまいる場所が取れませんでした。画面で「許可」を選んでいただくと出せます。";
+          sub.innerHTML =
+            "いまいる場所が取れませんでした。<br />" +
+            "出てくる小さな窓で「<b>許可</b>」を選んでいただくと出せます。<br />" +
+            "一度「許可しない」を選ぶと、次からは窓が出ません。<br />" +
+            "そのときは iPhone の「設定 → Safari → 位置情報」、" +
+            "Android の「設定 → アプリ → Chrome → 権限」から直せます。<br />" +
+            "LINEアプリの「ロースターを探す」でも、" +
+            "ご登録のお住まいからの距離をご覧いただけます。";
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
       );
