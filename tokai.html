@@ -116,6 +116,20 @@
   .srow .go{font-size:11.5px;color:var(--pink-deep);font-weight:800;margin-top:8px}
   .srow.nopage .go{color:var(--ink-sub);font-weight:700}
   .srow .mark{font-size:11.5px;color:var(--ink-sub);font-weight:800;margin-top:6px}
+  /* お店までの距離（★出るのは、いまいる場所を教えていただいたときだけ） */
+  .srow .dist{display:inline-block;background:var(--paper);border-radius:999px;
+    padding:4px 11px;margin-top:7px;font-size:11.5px;font-weight:800;color:var(--ink)}
+
+  /* ── お店までの距離を出すボタン ── */
+  .near{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:15px 16px;text-align:center}
+  .near .t{font-size:14.5px;font-weight:800}
+  .near .s{font-size:12px;color:var(--ink-sub);font-weight:700;margin-top:6px;line-height:1.7}
+  .near button{margin-top:11px;width:100%;background:var(--pink-deep);color:#fff;border:0;
+    border-radius:12px;padding:14px;font-size:14.5px;font-weight:800;cursor:pointer;
+    font-family:inherit}
+  .near button:disabled{opacity:.55}
+  .near .note{font-size:11px;color:var(--ink-sub);margin-top:9px;line-height:1.7}
 
   /* ── お店に着いたら ── */
   .howto{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px 16px 15px}
@@ -180,6 +194,18 @@
     <div class="axis">県ごとに見る</div>
     <div class="prefs" id="prefs"></div>
 
+    <!-- お店までの距離（★いまいる場所から。LINEにもどこにも送りません） -->
+    <div class="near" id="near">
+      <div class="t">お店までの距離を出す</div>
+      <div class="s" id="nearSub">いまいる場所から、26軒それぞれまでの距離が出ます。</div>
+      <button id="nearBtn" type="button">いまいる場所から 距離を出す</button>
+      <div class="note">いまいる場所は、この画面の中だけで使います。<br />
+        どこにも送りません。記録もしません。<br />
+        地図のうえで、まっすぐ測った距離です。</div>
+    </div>
+
+    <div class="axis hidden" id="distDone"></div>
+
     <!-- まだ誰も訪ねていないお店（★ここで1軒 決めていただく） -->
     <div class="axis" id="todoTtl">まだ誰も訪ねていないお店</div>
     <div class="shops" id="todo"></div>
@@ -242,6 +268,7 @@
       '<div class="body">' +
       '<div class="top"><span class="pref">' + pref + '</span><span class="name">' + name + '</span></div>' +
       (copy ? '<div class="copy">' + copy + '</div>' : '') +
+      '<div class="dist hidden" data-id="' + esc(s.id) + '"></div>' +
       (isDone && s.last ? '<div class="mark">' + esc(s.last) + ' に訪ねました</div>' : '') +
       (s.page
         ? '<div class="go">このお店を見る ›</div>'
@@ -345,8 +372,74 @@
     }
     $("foot").innerHTML = foot;
 
+    wireNearButton(shops);
+
     $("loading").classList.add("hidden");
     $("main").classList.remove("hidden");
+  }
+
+  /* ── お店までの距離 ───────────────────────────────────────────
+     ★出し方は、LINEアプリの「お店を探す」画面（discover.html）と同じにしています。
+       ・地図のうえで まっすぐ測る（haversine）
+       ・1km未満は 1km。1km以上は 繰り上げ
+       ・言い方は「約◯km先」
+     ★ちがうのは【測りはじめる場所】だけです。
+       アプリ＝ご登録のお住まい ／ このページ＝いまいる場所。
+       このページはLINEの外でも開けるので、どなたが見ているか分かりません。
+       ⇒ だから、いまいる場所を一度たずねます。
+     ★いまいる場所は、この画面の中だけで使います。どこへも送りません。 */
+  function straightKm(lat1, lng1, lat2, lng2) {
+    const R = 6371, rad = Math.PI / 180;
+    const dA = (lat2 - lat1) * rad, dO = (lng2 - lng1) * rad;
+    const h = Math.sin(dA / 2) * Math.sin(dA / 2) +
+      Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dO / 2) * Math.sin(dO / 2);
+    return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  }
+
+  function showDistances(shops, myLat, myLng) {
+    let n = 0;
+    shops.forEach((s) => {
+      if (!(Number(s.lat) && Number(s.lng))) return;
+      const km = Math.max(1, Math.ceil(straightKm(myLat, myLng, Number(s.lat), Number(s.lng))));
+      document.querySelectorAll('.dist[data-id="' + s.id + '"]').forEach((el) => {
+        el.textContent = "ここから 約" + num(km) + "km先";
+        el.classList.remove("hidden");
+      });
+      n++;
+    });
+    return n;
+  }
+
+  function wireNearButton(shops) {
+    const box = $("near"), btn = $("nearBtn"), sub = $("nearSub");
+    const haveCoords = shops.filter((s) => Number(s.lat) && Number(s.lng)).length;
+    if (!haveCoords) { box.classList.add("hidden"); return; }   // 座標が1つも無いときは出しません
+    sub.textContent = "いまいる場所から、" + num(haveCoords) + "軒それぞれまでの距離が出ます。";
+    if (!navigator.geolocation) {
+      btn.disabled = true;
+      sub.textContent = "お使いの画面では、いまいる場所を取れませんでした。";
+      return;
+    }
+    btn.addEventListener("click", () => {
+      btn.disabled = true;
+      btn.textContent = "いまいる場所を調べています…";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const n = showDistances(shops, pos.coords.latitude, pos.coords.longitude);
+          box.classList.add("hidden");
+          $("distDone").classList.remove("hidden");
+          $("distDone").textContent =
+            n + "軒ぶん、いまいる場所からの距離を出しました。";
+        },
+        () => {
+          btn.disabled = false;
+          btn.textContent = "もう一度ためす";
+          sub.textContent =
+            "いまいる場所が取れませんでした。画面で「許可」を選んでいただくと出せます。";
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
+    });
   }
 
   (async () => {
