@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<!-- REL card.html test v3 (お店で配るカードから登録してもらう) | 2026-10-14 |
+     ★v3の直し（FIELDSTYLEの地図のQR）＝会場のときだけ、お店の名前を出す2つの行を出さない。
+       会場の名前は「Japan Coffee Journey FIELDSTYLE AICHI 11/14~15開催!」で、
+       「… に伝わります。」と続けると意味の通らない文になるため。
+       ★会場かどうかは、お店のID（AIC_FS_AICHI）だけで決める。名前の文字では当てない。
+       ★ほかのお店の見え方は、1文字も変わりません。
+     ★v1の直し＝お店の番号を liff.init のあとに読むようにした。
+       v1は liff.init の前に読んでいたため、LINEが ?spot= を liff.state に
+       置き換えて渡したときに読めず「お店が分かりませんでした」が出ていた。
+     このページがすること＝①カードのQRの ?spot= を読む ②LINEのユーザーIDを受け取る
+     ③GASへ「どのお店のカードか」を記録する ④友だち追加のボタンを出す
+     ★マイルもチェックインも さわりません。 -->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JCJパスポート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#faf5ee; --paper:#ffffff; --ink:#3a2f25; --sub:#8a7a68;
+    --brown:#9f866a; --brown-d:#6f5b44; --accent:#c96f3f; --accent-d:#b45c2e;
+    --line:#ece3d6; --green:#2B5D4F;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);
+    font-family:"Noto Sans JP",system-ui,-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;
+    -webkit-font-smoothing:antialiased;padding:0 16px 40px}
+  .wrap{max-width:420px;margin:0 auto}
+  .status{color:var(--sub);font-size:14px;padding:80px 0;text-align:center}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;margin:0 auto 14px;animation:sp .9s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  .kicker{text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;
+    color:var(--brown);margin:34px 0 14px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;
+    overflow:hidden;box-shadow:0 6px 20px rgba(120,95,60,.10)}
+  .pho{width:100%;aspect-ratio:16/10;background:#efe6d8;display:block;object-fit:cover}
+  .pho.none{display:flex;align-items:center;justify-content:center;color:#c3a57c;font-size:34px}
+  .body{padding:18px 18px 20px;text-align:center}
+  .from{font-size:11.5px;color:var(--sub);font-weight:700;margin-bottom:5px}
+  .shop{font-size:20px;font-weight:800;line-height:1.35;margin:0 0 14px}
+  .lead{font-size:13.5px;line-height:1.85;color:var(--brown-d);margin:0}
+
+  .btn{display:block;margin:20px 0 0;background:#06C755;color:#fff;text-decoration:none;
+    font-size:15.5px;font-weight:800;padding:16px;border-radius:14px;text-align:center;
+    box-shadow:0 4px 14px rgba(6,199,85,.30)}
+  .btn.pass{background:var(--accent);box-shadow:0 4px 14px rgba(180,92,46,.30)}
+  .note{font-size:11.5px;color:var(--sub);line-height:1.8;text-align:center;margin:16px 4px 0}
+
+  .err{background:var(--paper);border:1px solid var(--line);border-radius:16px;
+    padding:26px 20px;text-align:center;margin-top:40px}
+  .err h2{font-size:16px;margin:0 0 10px}
+  .err p{font-size:13px;color:var(--sub);line-height:1.9;margin:0}
+  .err .seen{font-size:10.5px;color:#b5a894;line-height:1.7;margin-top:14px;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="view">
+    <div class="status"><div class="spin"></div>読み込んでいます…</div>
+  </div>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+/* ===================================================================
+   🔴 ここだけ、はじめに1回 入れてください
+   LIFF_ID … LINE Developers Console で、このページ用のLIFFアプリを
+             1つ作ると発行される番号です（テストchannel 2008851980 の下）。
+   ===================================================================*/
+const LIFF_ID = "2008851980-2jlOJKuF";
+
+// 本番のGAS（いま動いているものと同じ）
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+
+// 本番のLINE公式アカウント
+const LINE_OFFICIAL_ID = "957zdear";
+const ADD_FRIEND_URL   = "https://line.me/R/ti/p/@" + LINE_OFFICIAL_ID;
+const PASSPORT_URL     = "https://liff.line.me/2008851980-bTunuJ5a";
+
+const $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+function showError(title, body, seen){
+  var extra = seen
+    ? '<p class="seen">届いた住所：<br>'+esc(String(seen).slice(0,300))+'</p>'
+    : '';
+  $("view").innerHTML =
+    '<div class="err"><h2>'+esc(title)+'</h2><p>'+body+'</p>'+extra+'</div>';
+}
+
+// お店の番号を、考えられる3つの形すべてから探す。
+//   ① ふつうのクエリ            …?spot=TKY_ROCA
+//   ② liff.state の中            …?liff.state=%3Fspot%3DTKY_ROCA
+//   ③ # のうしろ                 …#?spot=TKY_ROCA
+function spotFrom(href){
+  try{
+    var u = new URL(href);
+    var v = u.searchParams.get("spot");
+    if (v) return v;
+
+    var st = u.searchParams.get("liff.state");
+    if (st) {
+      var s1 = (st.charAt(0) === "?") ? st : ("?" + st);
+      v = new URLSearchParams(s1).get("spot");
+      if (v) return v;
+    }
+
+    if (u.hash) {
+      var h = u.hash.replace(/^#/, "");
+      var s2 = (h.indexOf("?") >= 0) ? h.slice(h.indexOf("?")) : ("?" + h);
+      v = new URLSearchParams(s2).get("spot");
+      if (v) return v;
+    }
+  }catch(e){}
+  return "";
+}
+
+// ★ページが開いた時点の住所を控えておく。
+//   liff.init が住所を書き換えることがあるため、書き換え前も見られるようにする。
+const URL_AT_LOAD = location.href;
+
+function showShop(shopName, photo, already, spotId){
+  // ★会場（FIELDSTYLEの受付）だけは、お店の名前を出す2つの行を出さない。
+  //   ★名前の文字では当てない。お店のIDで決める。
+  const VENUE_SPOT_ID = "AIC_FS_AICHI";
+  const isVenue = String(spotId == null ? "" : spotId).trim().toUpperCase() === VENUE_SPOT_ID;
+
+  // 写真が無いお店、写真の住所はあるが開けないお店（どちらも実際にあります）。
+  // 開けなかったときは、壊れた絵を出さずに ☕️ に差し替えます。
+  const pho = photo
+    ? '<img class="pho" src="'+esc(photo)+'" alt="" '+
+      'onerror="this.outerHTML=\'<div class=&quot;pho none&quot;>☕️</div>\'">'
+    : '<div class="pho none">☕️</div>';
+
+  if (already) {
+    $("view").innerHTML =
+      '<div class="kicker">JAPAN COFFEE JOURNEY</div>'+
+      '<div class="card">'+pho+
+        '<div class="body">'+
+          (isVenue ? '' : '<div class="from">'+esc(shopName)+' のカードから</div>')+
+          '<h1 class="shop">もう登録がお済みです</h1>'+
+          '<p class="lead">ありがとうございます。<br>パスポートはいつでも開けます。</p>'+
+          '<a class="btn pass" href="'+PASSPORT_URL+'">🎫 パスポートを開く</a>'+
+        '</div>'+
+      '</div>';
+    return;
+  }
+
+  $("view").innerHTML =
+    '<div class="kicker">JAPAN COFFEE JOURNEY</div>'+
+    '<div class="card">'+pho+
+      '<div class="body">'+
+        (isVenue ? '' : '<div class="from">'+esc(shopName)+' から</div>')+
+        '<h1 class="shop">コーヒーで、日本を旅する。</h1>'+
+        '<p class="lead">全国のロースターをめぐるパスポートです。<br>'+
+          'LINEで友だち追加すると、30秒ではじめられます。</p>'+
+        '<a class="btn" href="'+ADD_FRIEND_URL+'">LINEで友だち追加する</a>'+
+      '</div>'+
+    '</div>'+
+    (isVenue ? '' : '<p class="note">このカードから登録されたことが、<br>'+esc(shopName)+' に伝わります。</p>');
+}
+
+(async function(){
+  try{
+    if (LIFF_ID === "PLACEHOLDER_CARD_LIFF_ID") {
+      showError("準備中です", "このページはまだ公開の準備中です。");
+      return;
+    }
+
+    // ★先に liff.init を済ませる。
+    //   LINEは ?spot= を liff.state という形に置き換えて渡すことがあり、
+    //   liff.init がそれを元の形に戻すため。先に読むと見つかりません。
+    try {
+      await liff.init({ liffId: LIFF_ID });
+    } catch (initErr) {
+      showError("LINEアプリで開いてください",
+        "このページはLINEの中で開くものです。<br>" +
+        "カードのQRコードを、スマートフォンのカメラで読み取ってみてください。",
+        URL_AT_LOAD);
+      return;
+    }
+
+    // ★liff.init のあとに、3つの形すべてから探す。
+    const spot = spotFrom(location.href) || spotFrom(URL_AT_LOAD);
+    if (!spot) {
+      showError("お店が分かりませんでした",
+        "カードのQRコードを、もう一度 読み取ってみてください。",
+        location.href);
+      return;
+    }
+
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+
+    const profile = await liff.getProfile();
+    const userId  = profile && profile.userId;
+    if (!userId) {
+      showError("うまく読み取れませんでした", "もう一度 開き直してみてください。");
+      return;
+    }
+
+    const q = new URLSearchParams({ action:"card_entry", userId:userId, spot:spot });
+    const res  = await fetch(GAS_URL + "?" + q.toString(), { method:"GET" });
+    const data = await res.json();
+
+    if (!data || !data.ok) {
+      if (data && data.error === "unknown_spot") {
+        showError("このお店が見つかりませんでした",
+          "お手数ですが、お店の方にお伝えください。");
+      } else {
+        showError("うまく読み取れませんでした", "もう一度 開き直してみてください。");
+      }
+      return;
+    }
+
+    showShop(data.shopName, data.photo, data.already, spot);
+  } catch(e){
+    showError("うまく読み取れませんでした",
+      "通信の具合かもしれません。少し待って、もう一度 開いてみてください。",
+      location.href);
+  }
+})();
+</script>
+</body>
+</html>
