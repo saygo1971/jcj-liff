@@ -36,6 +36,15 @@
   .kicker{font-size:12px;color:var(--ink-sub);font-weight:700;letter-spacing:.06em}
   h1{font-size:22px;margin:4px 0 6px;font-weight:800;line-height:1.35}
   .lead{font-size:13px;color:var(--ink-sub);line-height:1.7;margin:0 0 16px}
+  /* ★★ 2026-11-19 イベントの受付で登録されたときのまとまり */
+  .evbox{margin-top:14px;background:#F7F5F1;border:1px solid #DDD6CE;border-radius:12px;padding:14px 13px;text-align:center}
+  .evbox .big{font-size:20px;font-weight:800;color:#1A1A1A}
+  .evbox .brk{font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;font-weight:600;margin-top:4px}
+  .evbox .sub{font-size:12.5px;color:#6E6E6E;margin-top:6px;line-height:1.75}
+  .evlead{font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;text-align:center;font-weight:600;margin-top:18px}
+  .evcam{width:100%;margin-top:10px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F;display:flex;align-items:center;justify-content:center;gap:8px}
+  .evcam svg{width:20px;height:20px;flex:0 0 auto}
+  .evnote{font-size:13px;line-height:1.9;color:#6E6E6E;margin-top:8px;text-align:center}
   /* ★★ 2026-11-19 イベントの名前（見出しのすぐ下・小さく） */
   .evname{font-size:13px;color:var(--ink-sub);letter-spacing:.04em;margin:-6px 0 14px}
   .card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -185,14 +194,17 @@
           </div>
         </div>
 
-        <div class="lightblk">
-          <div class="t" id="ciLightText">最初の灯りがともりました</div>
+        <!-- ★★ 2026-11-19 イベントの受付から登録されたときだけ出ます -->
+        <div id="ciEventBlock" class="hidden"></div>
+
+        <div class="lightblk" id="ciLightBlk">
+          <div class="t" id="ciLightText">最初の灼りがともりました</div>
           <div class="dots" id="ciDots"></div>
           <div class="areacnt" id="ciAreaCnt"></div>
         </div>
 
-        <div class="recq">今日の一杯は？</div>
-        <div class="recs">まだ香りが残っているうちに。</div>
+        <div class="recq" id="ciRecQ">今日の一杯は？</div>
+        <div class="recs" id="ciRecS">まだ香りが残っているうちに。</div>
         <button class="btn-main" id="ciRecordBtn" style="margin-top:8px">記録する</button>
       </div>
     </div>
@@ -325,13 +337,89 @@
     }
   }
 
+  /*★★ 2026-11-19：イベントの受付から登録されたときの画面。
+   *  ★出すもの … お持ちの一杯（合計＋内わけ）／ブースのQRを読むボタン／券を買い足す所
+   *  ★出さないもの … 「今日の一杯は？」と「記録する」
+   *    （受付ではコーヒーをお出ししません。2026-10-07 のご指示）
+   *  ★イベントかどうかは、登録の道に付いてきた evname で決めます。
+   *  ★戻すときは、この関数の中を return; の1行にするだけです。*/
+  function renderEventAfterRegister_(data, ci){
+    var el = $("ciEventBlock");
+    if (!el) return;
+    var evName = qs("evname");
+    if (!evName) return;   // \u3075\u3060\u3093\u306e\u304a\u5e97\uff1d\u3044\u307e\u307e\u3067\u3069\u304a\u308a
+
+    var t = (data && data.tickets) || null;
+    var total  = t ? (Number(t.total)  || 0) : 0;
+    var free   = t ? (Number(t.free)   || 0) : 0;
+    var bought = t ? (Number(t.bought) || 0) : 0;
+    var other  = t ? (Number(t.other)  || 0) : 0;
+
+    var rows = [];
+    if (free   > 0) rows.push("\u7121\u6599\u306e\u4e00\u676f " + free   + "\u676f");
+    if (bought > 0) rows.push("\u8cb7\u3063\u305f\u5238 "       + bought + "\u676f");
+    if (other  > 0) rows.push("\u305d\u306e\u4ed6\u306e\u5238 " + other  + "\u676f");
+
+    var html = "";
+    if (total > 0) {
+      html += '<div class="evbox">'
+           +    '<div class="big">\u304a\u6301\u3061\u306e\u4e00\u676f ' + total + '\u676f</div>'
+           +    (rows.length ? '<div class="brk">' + rows.join("\u3000\uFF0F\u3000") + '</div>' : '')
+           +    '<div class="sub">\u30ed\u30fc\u30b9\u30bf\u30fc\u306e\u30d6\u30fc\u30b9\u3067\u3001\u4e00\u676f\u3068\u4ea4\u63db\u3067\u304d\u307e\u3059</div>'
+           +  '</div>'
+           +  '<div class="evlead">\u5404\u30d6\u30fc\u30b9\u306b\u3042\u308bQR\u3092\u8aad\u3093\u3067<br>\u30c1\u30b1\u30c3\u30c8\u3092\u304a\u4f7f\u3044\u304f\u3060\u3055\u3044</div>'
+           +  '<button id="evCamBtn" class="evcam"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>\u30ab\u30e1\u30e9\u3067QR\u3092\u8aad\u3080</button>'
+           +  '<div id="evCamMsg" class="evnote"></div>';
+    }
+    html += '<button class="btn-sub" id="evBuyBtn" style="margin-top:12px">\u8a66\u98f2\u30c1\u30b1\u30c3\u30c8\u3092\u8cb7\u3044\u8db3\u3059</button>';
+    el.innerHTML = html;
+    el.classList.remove("hidden");
+
+    // \u53d7\u4ed8\u3067\u306f\u300c\u4eca\u65e5\u306e\u4e00\u676f\u306f\uff1f\u300d\u3092\u51fa\u3057\u307e\u305b\u3093
+    ["ciLightBlk","ciRecQ","ciRecS","ciRecordBtn"].forEach(function(id){
+      var e = $(id); if (e) e.style.display = "none";
+    });
+
+    var cam = $("evCamBtn");
+    if (cam) cam.addEventListener("click", function(){
+      var msg = $("evCamMsg");
+      if (msg) msg.textContent = "";
+      try {
+        if (!liff || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
+        liff.scanCodeV2().then(function(r){
+          var v = (r && r.value) ? String(r.value).trim() : "";
+          if (!v) { if (msg) msg.textContent = "\u8aad\u307f\u53d6\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u3082\u3046\u4e00\u5ea6 \u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002"; return; }
+          if (/^https?:\/\//i.test(v)) { try { liff.openWindow({ url: v, external:false }); } catch(e){ location.href = v; } return; }
+          if (msg) msg.textContent = "\u3053\u306eQR\u306f\u3001\u30d6\u30fc\u30b9\u306eQR\u3067\u306f\u306a\u3044\u3088\u3046\u3067\u3059\u3002";
+        }).catch(function(){
+          if (msg) msg.textContent = "\u3053\u306e\u7aef\u672b\u3067\u306f\u3001\u30a2\u30d7\u30ea\u306e\u4e2d\u3067QR\u3092\u8aad\u3081\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u30b9\u30de\u30fc\u30c8\u30d5\u30a9\u30f3\u306e\u30ab\u30e1\u30e9\u3067\u8aad\u307f\u53d6\u3063\u3066\u304f\u3060\u3055\u3044\u3002";
+        });
+      } catch (e) {
+        if (msg) msg.textContent = "\u3053\u306e\u7aef\u672b\u3067\u306f\u3001\u30a2\u30d7\u30ea\u306e\u4e2d\u3067QR\u3092\u8aad\u3081\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u30b9\u30de\u30fc\u30c8\u30d5\u30a9\u30f3\u306e\u30ab\u30e1\u30e9\u3067\u8aad\u307f\u53d6\u3063\u3066\u304f\u3060\u3055\u3044\u3002";
+      }
+    });
+
+    var buy = $("evBuyBtn");
+    if (buy) buy.addEventListener("click", function(){
+      var url = "https://saygo1971.github.io/jcj-liff/ticket_buy.html";
+      try { liff.openWindow({ url: url, external:false }); } catch(e){ location.href = url; }
+    });
+  }
+
   function renderResult(data, pref, city){
     const startLabel = city || pref;
 
     if(data.entry === "checkin" && data.checkin){
       const ci = data.checkin;
       $("ciWelcomeSub").textContent = startLabel + "を出発点にしました";
-      $("ciRegion").textContent = (ci.pref || pref) + (ci.city ? "｜" + ci.city : "");
+      /*★★ 2026-11-19：「愛知県｜愛知県｜常滑市」と県が2回 出ていました。
+       *  ★ci.city の頭にすでに県が付いていることがあるためです。*/
+      (function(){
+        var pf = String((ci.pref || pref) || "").trim();
+        var ct = String(ci.city || "").trim();
+        if (pf && ct.indexOf(pf) === 0) ct = ct.slice(pf.length).replace(/^[\uFF5C|\s]+/, "");
+        $("ciRegion").textContent = pf + (ct ? "\uFF5C" + ct : "");
+      })();
       $("ciName").textContent = ci.shopName || "";
       if(ci.logo){ $("ciLogo").style.backgroundImage = "url('" + ci.logo + "')"; $("ciLogo").textContent = ""; }
 
@@ -349,6 +437,7 @@
         const url = "https://saygo1971.github.io/jcj-liff/log_drink.html" + (ci.spotId ? ("?spot=" + encodeURIComponent(ci.spotId)) : "");
         try{ liff.openWindow({ url: url, external:false }); }catch(e){ location.href = url; }
       });
+      renderEventAfterRegister_(data, ci);
       show("checkinView");
       return;
     }
