@@ -190,6 +190,14 @@
   // ★2026-09-26：QRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
   //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
   let EV = params.get("ev") || "";
+  /*★★ 2026-11-19：この場所がイベントの場所かを、サーバーが表で決めて渡してくれます。
+   *  ★checkin_state の返事（st.eventPlace）から入ります。"受付" か "ブース" か 空。
+   *  🛑 これまでは QRの ev= だけで決めていたため、ev= の無い道では
+   *    無料の一杯も、トークへの橋渡しの止め方も、効きませんでした。
+   *  ★evp_() は【ev= が付いているか、表がイベントの場所だと言ったとき】true です。
+   *  ★戻すときは、evp_() の中を return !!EV; の1行にするだけです。*/
+  let EV_PLACE = "";
+  function evp_(){ return !!EV || !!EV_PLACE; }
   /*★★2026-11-03 追加：旅のほうのチェックインプレート（URLに trip=1）かどうか。
    *  ★ロースターが出先のイベントへ持って行くための、2つめのチェックインプレートです。
    *  ★これが付いているときは、トーク画面へ移る【前】に、いまいる場所を1回だけサーバーへ送ります。
@@ -266,7 +274,7 @@
     /*★2026-10-08：会場（イベントIDが付いたQR）のときは、現在地を取りに行きません。
      *  ★理由＝会場では位置を見ていません。★許可を聞くだけ無駄で、2.5秒 待たせます。 */
     let geo = null;
-    if (EV) {
+    if (evp_()) {
       b.textContent = "記録しています…";
     } else {
       b.textContent = "位置を確認しています…";
@@ -474,7 +482,7 @@
      *  ★ふつうのお店（ev が付かないQR）では、いままでどおり出ます。
      *  ★戻すときは、下の `if (!EV)` の1行を外すだけです。*/
     // 地域コンプリート進捗＋正しいロゴ（area_progressが logo=R列 と exterior を同梱）。未デプロイ・非対象時は静かに据え置き。
-    if (!EV) (async ()=>{
+    if (!evp_()) (async ()=>{
       try{
         const ap = await api("area_progress", { shopId: st.shopId || SPOT || "" });
         if (!ap) return;
@@ -719,7 +727,7 @@
      *    また、一度 受け取った方には【会期のあとも ずっと】「受け取り済み」が出続けます。
      *  ★受付のQRにも ev=FS_AICHI_2026 が付いているので、受付でも いままでどおり出ます。
      *  ★戻すときは、下の if (!EV) の1行を消すだけです。*/
-    if (!EV){ el.innerHTML = ""; return; }
+    if (!evp_()){ el.innerHTML = ""; return; }
     // 🛑★2026-11-16：この画面で受け取れた方には、もう何も出しません（★後戻りさせない）。
     if (FREE_GRANTED_HERE){ el.innerHTML = ""; return; }
     const f = s.free || {};
@@ -863,7 +871,7 @@
     const el = $("buysec_ev");
     if (!el) return;
     el.innerHTML = "";
-    if (!EV) return;                                      // ① FIELDSTYLEのQRから開いていない
+    if (!evp_()) return;                                  // ① イベントの場所ではない
     if (s.cupReadable !== true) return;                   // ★買ったかどうかが読めていない
     if ((Number(s.tickets) || 0) > 0) return;             // ② 券をお持ちの方
     const cup = s.cup || {};
@@ -1117,6 +1125,7 @@
 
     showLoading("お店を確認しています…");
     st = await api("checkin_state", { spot: SPOT });
+    EV_PLACE = String((st && st.eventPlace) || "").trim();
     if(!st || !st.ok){
       if (st && st.error === "shop_not_found"){ showStatusText("お店が見つかりませんでした。プレートのリンクをご確認ください。"); return; }
       showStatusText("読み込みに失敗しました：" + (st && st.error || "unknown")); return;
@@ -1157,7 +1166,7 @@
       } catch (eTripHere) { /* ★取れなくても、ここで止めません */ }
     }
 
-    if (BRIDGE_TO_MESSAGE && !EV && liff.isInClient && liff.isInClient()) {
+    if (BRIDGE_TO_MESSAGE && !evp_() && liff.isInClient && liff.isInClient()) {
       const nm = String((st && st.shopName) || "").trim();
       if (nm) {
         showLoading("チェックインの画面をひらいています…");
