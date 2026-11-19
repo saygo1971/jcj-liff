@@ -191,6 +191,7 @@
 
   let USER_ID = "";
   let SPOT = "";
+  let WANT_SCAN = false;   // ★?scan=1 で開いたか（トーク画面からの入り口）
   // ★2026-09-26：QRに「?ev=<イベントID>」が付いていたら、そのまま記録へ渡します。
   //   ★無ければ空＝いままでどおり（ふつうのお店への来店として記録されます）。
   let EV = params.get("ev") || "";
@@ -723,6 +724,26 @@
     if (b) b.onclick = doScanQr_;
   }
 
+  /*★★2026-11-19：カメラだけの画面（トーク画面の「次のブースのQRを読む」から来ます）。
+   *  ★お店の番号を持っていないので、チェックインの中身は出しません。
+   *  ★QRを読むと、そのお店のチェックインの画面へ進みます。*/
+  function renderScanOnly_(){
+    const hero = $("hero"); if (hero) hero.classList.add("hidden");
+    $("body").innerHTML =
+      '<div class="brand">JOURNEY PASSPORT</div>' +
+      '<div style="text-align:center;font-size:15px;font-weight:700;line-height:2.0;letter-spacing:.04em;margin-top:14px">' +
+        'チケットを使うブースで<br>QRを読んでチェックインします</div>' +
+      '<button id="camBtn" class="go" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">' +
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>' +
+        '<circle cx="12" cy="13" r="4"/></svg>カメラでQRを読む</button>' +
+      '<div id="cammsg" class="fine" style="text-align:center;margin-top:10px;line-height:1.9"></div>';
+    const b = $("camBtn");
+    if (b) b.onclick = doScanQr_;
+    /*★すぐカメラを開きます。★断られても、上のボタンから押し直せます。*/
+    setTimeout(function(){ try { doScanQr_(); } catch (eAuto) { } }, 300);
+  }
+
   async function doScanQr_(){
     const msg = $("cammsg");
     if (msg) msg.textContent = "";
@@ -1139,6 +1160,17 @@
             { type:"separator", margin:"lg", color:"#EFE7D6" },
             { type:"text", margin:"md", size:"xxs", color:"#8c6e50", wrap:true,
               text:"お店の方へ：この控えは記録用です。ご注文の確認はお客様の画面でお願いします。" }
+          ] },
+        /*★★2026-11-19 オーナーさまご指示：トーク画面からも進めるようにします。
+         *  🛑 これまで、トーク画面に残るのは この控えだけで、次へ進む所がありませんでした。
+         *    ★アプリの画面を閉じてしまうと、もう一度ブースのQRを読むしか手がありませんでした。
+         *  ★このボタンは、アプリの中でカメラを開きます（お店の番号は要りません）。
+         *  ★戻すときは、この footer を丸ごと消すだけです。*/
+        footer:{ type:"box", layout:"vertical", paddingAll:"12px",
+          contents:[
+            { type:"button", style:"primary", color:"#2B5D4F", height:"sm",
+              action:{ type:"uri", label:"次のブースのQRを読む",
+                       uri:"https://liff.line.me/" + LIFF_ID + "?scan=1" } }
           ] }
       }
     };
@@ -1183,7 +1215,7 @@
        *  ★登録の画面は、登録・お住まい・会場のチェックイン・無料の一杯まで
        *    画面の中で終えます。トーク画面を一度も通りません。
        *  🛑 これまではトーク画面へ落としていました。
-       *    ★オーナーさまが仙った「登録までのストレス」は、それでした。
+       *    ★オーナーさまが仰った「登録までのストレス」は、それでした。
        *  ★登録の画面の番号が無い環境では、いままでどおりトークへ落ちます。*/
       const regUrl = String((st && st.registerUrl) || "").trim();
       if (regUrl) { location.href = regUrl; return; }
@@ -1203,7 +1235,13 @@
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
     SPOT = params.get("spot") || params.get("spotId") || "";
+    WANT_SCAN = (String(params.get("scan") || "") === "1");
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
+    /*★★2026-11-19 オーナーさまご指示：トーク画面からの入り口。
+     *  ★?scan=1 で開いたときは、お店の番号が無くてもカメラだけの画面を出します。
+     *  ★ブースのQRを読むと、そのお店のチェックインの画面へ進みます（いままでと同じ道）。
+     *  ★戻すときは、下の if (WANT_SCAN) のまとまりを消すだけです。*/
+    if(!SPOT && WANT_SCAN){ renderScanOnly_(); return; }
     if(!SPOT){ showStatusText("店番号がURLにありません。プレートのリンクをご確認ください。"); return; }
 
     showLoading("お店を確認しています…");
