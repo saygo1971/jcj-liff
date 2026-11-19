@@ -1126,6 +1126,15 @@
        *  ★直し＝【「◯◯ に来ました」を入れた状態で】トークを開きます。
        *    ★お客さまは送るボタンを押すだけで、登録のご案内が返ってきます。
        *  ★戻すときは、下の oa を "https://line.me/R/ti/p/@" + LINE_OA_ID に戻すだけです。*/
+      /*★★ 2026-11-19：ここからは【登録の画面】へ直接 お連れします。
+       *  ★登録の画面は、登録・お住まい・会場のチェックイン・無料の一杯まで
+       *    画面の中で終えます。トーク画面を一度も通りません。
+       *  🛑 これまではトーク画面へ落としていました。
+       *    ★オーナーさまが仙った「登録までのストレス」は、それでした。
+       *  ★登録の画面の番号が無い環境では、いままでどおりトークへ落ちます。*/
+      const regUrl = String((st && st.registerUrl) || "").trim();
+      if (regUrl) { location.href = regUrl; return; }
+
       const nm = String((st && st.shopName) || "").trim();
       const oa = nm
         ? ("https://line.me/R/oaMessage/@" + LINE_OA_ID + "/?" + encodeURIComponent(nm + " に来ました"))
