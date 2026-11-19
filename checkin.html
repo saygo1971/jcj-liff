@@ -435,7 +435,7 @@
     //   ★受付（JCJの受付）では出しません。コーヒーをお出ししないためです。
     const cupNoteHtml = isReception ? '' :
       '<div style="text-align:center;font-size:13px;font-weight:700;color:#2B5D4F;margin-top:14px;line-height:1.7">' +
-      'コーヒー日記に一杯が残ります。<br>あとから書き足せます。</div>';
+      'コーヒー日記に一杯が記録されます。<br>あとから書き足せます。</div>';
     const recordHtml = isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
@@ -448,7 +448,8 @@
      *    ⇒ だから「残ります」ではなく「記録されました」。
      *  ★「この一杯を記録する」は、そこに飲みもの・メモを書き足すためのものです。
      *  🛑 チェックインしたばかりの画面（cupNoteHtml）は 2026-11-05 にお決まりの
-     *    「コーヒー日記に一杯が残ります。」のままです。★そちらは変えません。*/
+     *    「コーヒー日記に一杯が記録されます。」です（2026-11-19 23:12 オーナーさまが
+     *    ご自身で「残ります」→「記録されます」にお変えになりました）。★そちらとは文が違います。*/
     RECORD_HTML = (isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:#2B5D4F;margin-top:16px;line-height:2.0;letter-spacing:.04em">' +
       'コーヒー日記に記録されました。</div>' +
