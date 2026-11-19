@@ -63,6 +63,10 @@
     .bnext{font-size:11px;color:var(--muted);margin-top:6px;text-align:center}
     .bbtn{display:block;text-align:center;text-decoration:none;margin-top:10px;height:48px;line-height:48px;border-radius:12px;color:#fff;background:var(--coral);font-weight:700;font-size:15px}
     .tsec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
+    /*★2026-11-19：券を使う枠を1つにまとめたときの見た目。*/
+    .tsec .tkhead{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:13px 12px;text-align:center;font-size:19px;font-weight:800;letter-spacing:.02em}
+    .tsec .tkbreak{text-align:center;font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;font-weight:600;margin-top:6px}
+    .tsec .tkuse{text-align:center;font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;margin-top:12px}
     .thd{font-size:14px;color:#444;font-weight:700;display:flex;align-items:center;gap:6px}
     .stepper{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
     .stepper button{width:46px;height:46px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px}
@@ -611,6 +615,8 @@
    *  ★代わりに、サーバーが返す「区分」（店舗／イベント／イベント受付）を使います。
    *  ★区分を決めているのは checkin_event.js の ckEvVisitType_ だけです。*/
   let IS_RECEPTION = false;
+  let HELD_ROWS = [];          // ★お持ちのチケットの内わけ（券を使う枠が使い回します）
+  let HELD_BD_READY = false;   // ★内わけが届いているか
 
   async function loadCupSection_(){
     if (!$("cupsec")) return;
@@ -673,12 +679,17 @@
     /*★この画面で受け取れた方は、台帳に書かれる前でも1杯 多く数えます（★後戻りさせない）。*/
     if (FREE_GRANTED_HERE && CHECKIN_BAL > total){ free = free + (CHECKIN_BAL - total); total = CHECKIN_BAL; }
     HELD_TOTAL = total;
+    HELD_BD_READY = true;
     if (total <= 0){ el.innerHTML = ""; return; }
 
     const rows = [];
     if (free   > 0) rows.push("無料のチケット " + free   + "枚");
-    if (bought > 0) rows.push("買ったチケット "   + bought + "枚");
+    if (bought > 0) rows.push("購入チケット "   + bought + "枚");
     if (other  > 0) rows.push("その他のチケット " + other  + "枚");
+    /*★★2026-11-19：この内わけを覚えておきます。
+     *  ★券を使う枠（ticketBoxHtml_）が、同じ中身を もう一度 出すためです。
+     *  ★同じ数を2つの枠が別々に出していたのが、「1」が4回 並んだ原因でした。*/
+    HELD_ROWS = rows.slice();
 
     el.innerHTML =
       '<div class="tksec">' +
@@ -934,19 +945,28 @@
    *    2か所に書くと、片方だけ直したときに食い違います。
    *  ★中身は、もともとこの画面に在ったものをそのまま移しました。*/
   function ticketBoxHtml_(bal){
+    /*★★2026-11-19 オーナーさまご指示：枠を1つにまとめました。
+     *  🛑 前は【試飲チケットの枠】と【お持ちのチケットの枠】が、同じ1枚を別々に出していて、
+     *    画面に「1」が4回 並んでいました（オーナーさま 2026-11-19 23:36 ご指摘）。
+     *  ★いまは、持っている枚数・内わけ・交換の案内・使うボタンを、この1つの枠に入れます。
+     *  ★チケットが1枚のときは、−＋の選び口を出しません（選びようがないため）。
+     *  ★「ロースターのブースで、一杯と交換できます」は、押す所のすぐ上に置きます。*/
+    const hd = HELD_BD_READY
+      ? ('<div class="tkhead">お持ちのチケット ' + bal + '枚</div>' +
+         (HELD_ROWS.length ? '<div class="tkbreak">' + HELD_ROWS.join("\u3000／\u3000") + '</div>' : ''))
+      : ('<div class="tkhead">お持ちのチケット ' + bal + '枚</div>');
+    const stepper = (bal >= 2)
+      ? ('<div class="stepper">' +
+           '<button id="minus">−</button>' +
+           '<div class="cnt"><div class="n"><span id="cnt">1</span>枚</div></div>' +
+           '<button id="plus">＋</button>' +
+         '</div>')
+      : '';
     return '<div class="tsec">' +
-        // ★2026-09-26：絵文字を外しました（オーナー指示「チケットとカップの絵文字もいらない」）。
-        //   ★戻すときは「試飲チケット」の前に 🎫 と半角スペースを入れるだけです。
-        /*★★ 2026-11-19：見出しから（残N枚）を外しました。
-         *  ★理由＝すぐ上の【お持ちの一杯】の枠に、同じ数が内わけつきで出るためです。
-         *  ★同じことを言う数を2か所に出すと、片方だけが古くなったときに食い違います。*/
-        '<div class="thd">試飲チケット</div>' +
-        '<div class="stepper">' +
-          '<button id="minus">−</button>' +
-          '<div class="cnt"><div class="n"><span id="cnt">1</span>枚</div></div>' +
-          '<button id="plus">＋</button>' +
-        '</div>' +
-        '<button id="use" class="use">使う</button>' +
+        hd +
+        '<div class="tkuse">ロースターのブースで、一杯と交換できます</div>' +
+        stepper +
+        '<button id="use" class="use">チケットを使う</button>' +
         '<div id="tmsg"></div>' +
       '</div>';
   }
@@ -984,6 +1004,9 @@
     }
     /*★★2026-11-19：あとから券の枠が出たときも、記録のまとまりを引っ込めます。*/
     try { const rb = document.getElementById("ciRecordBlk"); if (rb) rb.style.display = "none"; } catch (eRb) { }
+    /*★★2026-11-19：持っている枚数は、この枠の中に出しました。
+     *  ★だから、もう一方の【お持ちのチケット】の枠は消します（同じ数を2か所に出さない）。*/
+    try { const tk = document.getElementById("tksec"); if (tk) tk.innerHTML = ""; } catch (eTk) { }
     wireTicket(bal);                                   // ★押したときの仕掛けを付け直します
   }
 
@@ -994,9 +1017,17 @@
     //   ★合言葉が無いと、当日の「預かる」受け方で断られます（＝スタッフを呼ぶしかなくなります）。
     let useOpIdCk = "";
     let opCount = 0;
-    const render = ()=>{ $("cnt").textContent = count; $("minus").disabled = busy || count<=1; $("plus").disabled = busy || count>=Math.min(bal,10); $("use").textContent = busy ? "処理中…" : (count+"枚を使う"); };
-    $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
-    $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
+    /*★★2026-11-19 オーナーさまご指示：ボタンの文は「チケットを使う」。
+     *  ★1枚のときは −＋ の選び口が無いので、その3つが無くても落ちないようにします。*/
+    const render = ()=>{
+      const c = $("cnt"), m = $("minus"), p = $("plus");
+      if (c) c.textContent = count;
+      if (m) m.disabled = busy || count<=1;
+      if (p) p.disabled = busy || count>=Math.min(bal,10);
+      $("use").textContent = busy ? "処理中…" : "チケットを使う";
+    };
+    if ($("minus")) $("minus").onclick = ()=>{ if(busy) return; if(count>1){count--; render();} };
+    if ($("plus"))  $("plus").onclick  = ()=>{ if(busy) return; if(count<Math.min(bal,10)){count++; render();} };
     $("use").onclick = async ()=>{
       if(busy) return; busy = true; render();
       /*★★2026-10-10 直し。★ここは【押すたびに作り直して】いました。
