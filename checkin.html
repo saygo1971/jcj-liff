@@ -367,7 +367,8 @@
     const beansProgHtml = "";
 
     // ★2026-11-05：この店で券を使えるか。★会場のQRのときは false になります（上の説明）。
-    TICKET_ENABLED = !!r.ticketEnabled && !isVenueDeskSpot_();
+    IS_RECEPTION = (String(r.visitType || "").trim() === "イベント受付");
+    TICKET_ENABLED = !!r.ticketEnabled && !IS_RECEPTION;
     let ticketHtml = "";
     if (TICKET_ENABLED && Number(r.ticketBalance) > 0){
       const bal = Number(r.ticketBalance);
@@ -408,7 +409,7 @@
     // ★2026-10-07 オーナー指示：JCJの受付ではコーヒーをお出ししないので、
     //   ★受付のときだけ「この一杯を記録する」を出しません。
     //   ★ブース（イベント）とふつうのお店では、いままでどおり出ます。
-    const isReception = String(r.visitType || "") === "イベント受付";
+    const isReception = IS_RECEPTION;
     // ☕ ★★2026-10-29 案1（審査会 2026-10-28・86.9点／オーナーさま決定の文）。
     //   ★チェックインした時点で、コーヒー日記に1杯 立ちます。それを黙って増やさず、ここでお伝えします。
     //   ★「残りました」ではなく「残ります」＝オーナーさまのご指摘（2026-10-28）
@@ -560,11 +561,12 @@
    *  ★受付でコーヒーはお出ししません（2026-10-22 オーナーさまご指示で、受付では
    *    「今日の一杯は？」も出していません）。だから受付で券をお使いになる場面はありません。
    *  ★受付では、お持ちの枚数は「チケット ○枚」の枠に いままでどおり出ます。
-   *  ★戻すときは、下の && !isVenueDeskSpot_() を消すだけです。*/
-  const VENUE_DESK_SPOT_ID = "AIC_FS_AICHI";   // ★FIELDSTYLE会場そのものの お店の番号
-  function isVenueDeskSpot_(){
-    return String(SPOT || "").trim().toUpperCase() === VENUE_DESK_SPOT_ID;
-  }
+   *  ★戻すときは、renderDone の中の && !IS_RECEPTION を消すだけです。*/
+  /*★★ 2026-11-19：会場の番号を、この画面に直接 書くのをやめました。
+   *  🛑 これまでは "AIC_FS_AICHI" と書いてあり、次のイベントでは当たりませんでした。
+   *  ★代わりに、サーバーが返す「区分」（店舗／イベント／イベント受付）を使います。
+   *  ★区分を決めているのは checkin_event.js の ckEvVisitType_ だけです。*/
+  let IS_RECEPTION = false;
 
   async function loadCupSection_(){
     if (!$("cupsec")) return;
@@ -606,43 +608,38 @@
   }
 
   /* ========================================================================
-     ★2026-10-07 持っている券（買った券＋無料の1杯）
-     ・★受付の画面でだけ出します。★見せるだけで、ここでは使いません。
-     ・★0枚の方には、枠ごと出しません。
-     ・🔴★この枚数には【無料の1杯】も入っています（数え方はサーバー側の1か所）。
-       ★だから「無料の1杯を含みます」と、画面にそのまま書きます。
+     ★お持ちの券（合計＋内わけ）・★見せるだけ。ここでは使いません
+     ・★受付・ブース・ふだんのお店、どの画面でも同じ形で出します（2026-11-19）
+     ・★内わけは【０でない行だけ】出します
+       ⇒ 無料の一杯をもう受け取った方には、その行が1文字も出ません
+     ・★０杯の方には、枠ごと出しません
+     ・🔴★数えているのはサーバー（cup_state の breakdown）だけです。
+       ★画面では数えません（★同じことを2か所で数えない）。
+     ★戻すときは、この関数を 2026-11-16 の形に戻すだけです。
      ======================================================================== */
   function renderTicketSection_(s){
     const el = $("tksec");
     if (!el) return;
-    /*★2026-11-16：受け取れたあとは、この画面が知っている枚数を下回らせません。
-     *  ★理由＝台帳に書かれる前は、サーバーが0枚と答えることがあるためです。*/
-    let n = Number(s.tickets) || 0;
-    if (FREE_GRANTED_HERE && CHECKIN_BAL > n) n = CHECKIN_BAL;
-    if (n <= 0){ el.innerHTML = ""; return; }
-    /*★★2026-11-16：ロースターのブースでも、お持ちの枚数を出します。
-     *  🔴★なぜ＝これまでは受付の画面でしか出ていませんでした（s.reception !== true で消していた）。
-     *    ★ブースでは、お客さまご自身が「まだ1枚 持っている」ことを見られませんでした。
-     *  ★ただし「使う」枠が出ているときは、出しません。
-     *    ★理由＝「使う」枠の見出しに（残○枚）と同じことが書いてあります。
-     *      ★同じことを言う枠を2つ並べると、片方だけ古くなったときに食い違います。
-     *  ★会場のQR（ev= が付いている）から開いたときだけです
-     *    ＝ふだんのお店のチェックインは、1文字も変わりません。
-     *  ★戻すときは、下の2行を if (s.reception !== true){ el.innerHTML = ""; return; } に戻すだけです。*/
-    const useBoxShown_ = !!document.querySelector(".tsec");
-    if (s.reception !== true && (!EV || useBoxShown_)){ el.innerHTML = ""; return; }
+    const bd = s.breakdown || null;
+    let total    = bd ? (Number(bd.total)  || 0) : (Number(s.tickets) || 0);
+    let free     = bd ? (Number(bd.free)   || 0) : 0;
+    const bought = bd ? (Number(bd.bought) || 0) : 0;
+    const other  = bd ? (Number(bd.other)  || 0) : 0;
+    /*★この画面で受け取れた方は、台帳に書かれる前でも1杯 多く数えます（★後戻りさせない）。*/
+    if (FREE_GRANTED_HERE && CHECKIN_BAL > total){ free = free + (CHECKIN_BAL - total); total = CHECKIN_BAL; }
+    if (total <= 0){ el.innerHTML = ""; return; }
+
+    const rows = [];
+    if (free   > 0) rows.push("無料の一杯 " + free   + "杯");
+    if (bought > 0) rows.push("買った券 "       + bought + "杯");
+    if (other  > 0) rows.push("その他の券 " + other  + "杯");
+
     el.innerHTML =
       '<div class="tksec">' +
-        // ★2026-10-08 オーナー指示：「チケット3枚」と、ひとつづきで出します。
-        //   ★小さい見出しはやめました（カップが「カップ／カップ3つ」と二重に出ていたため）。
         '<div class="tkbox">' +
-          '<div class="big">チケット ' + n + '枚</div>' +
-          /*★2026-11-16：「（無料の1杯を含みます）」は、本当に含むときだけ出します。
-           *  ★これまでは条件が無く、無料の1杯をお持ちでない方にも出ていました。
-           *  ★この枠をブースでも出すようにしたので、間違った文が出る場所を増やさないために直します。*/
-          '<div class="sub">ロースターのブースで、一杯と交換できます' +
-            (((s.free && s.free.has === true) || FREE_GRANTED_HERE) ? '<br>（無料の1杯を含みます）' : '') +
-          '</div>' +
+          '<div class="big">お持ちの一杯 ' + total + '杯</div>' +
+          (rows.length ? '<div class="sub">' + rows.join("\u3000／\u3000") + '</div>' : '') +
+          '<div class="sub">ロースターのブースで、一杯と交換できます</div>' +
         '</div>' +
       '</div>';
   }
@@ -853,7 +850,10 @@
     return '<div class="tsec">' +
         // ★2026-09-26：絵文字を外しました（オーナー指示「チケットとカップの絵文字もいらない」）。
         //   ★戻すときは「試飲チケット」の前に 🎫 と半角スペースを入れるだけです。
-        '<div class="thd">試飲チケット <span style="color:#999;font-weight:600">（残'+bal+'枚）</span></div>' +
+        /*★★ 2026-11-19：見出しから（残N枚）を外しました。
+         *  ★理由＝すぐ上の【お持ちの一杯】の枠に、同じ数が内わけつきで出るためです。
+         *  ★同じことを言う数を2か所に出すと、片方だけが古くなったときに食い違います。*/
+        '<div class="thd">試飲チケット</div>' +
         '<div class="stepper">' +
           '<button id="minus">−</button>' +
           '<div class="cnt"><div class="n"><span id="cnt">1</span>枚</div></div>' +
