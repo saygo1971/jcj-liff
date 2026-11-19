@@ -442,7 +442,20 @@
       '<a id="recordBtn" class="go" style="margin-top:8px;display:flex;align-items:center;justify-content:center;text-decoration:none"' + (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>';
     // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
     //   ☕ ★2026-10-29 案1：そちらの画面にも、同じ1行を一緒に出します（同じ完了の場面のため）。
-    RECORD_HTML = cupNoteHtml + recordHtml;
+    /*★★2026-11-19 オーナーさまご指示：チケットを使ったあとの文。
+     *  ★チェックインした時点で、コーヒー日記に1件 立っています（本部が実測で確認）。
+     *    ⇒ `_handleMyHistory_` は checkin_raw と drink_log の両方から一覧を作ります。
+     *    ⇒ だから「残ります」ではなく「記録されました」。
+     *  ★「この一杯を記録する」は、そこに飲みもの・メモを書き足すためのものです。
+     *  🛑 チェックインしたばかりの画面（cupNoteHtml）は 2026-11-05 にお決まりの
+     *    「コーヒー日記に一杯が残ります。」のままです。★そちらは変えません。*/
+    RECORD_HTML = (isReception ? '' :
+      '<div style="text-align:center;font-size:15px;font-weight:700;color:#2B5D4F;margin-top:16px;line-height:2.0;letter-spacing:.04em">' +
+      'コーヒー日記に記録されました。</div>' +
+      '<div style="text-align:center;font-size:15px;margin-top:10px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A">' +
+      '飲み終わったら、日記を書いてみませんか？</div>' +
+      '<a id="recordBtn" class="go" style="margin-top:10px;display:flex;align-items:center;justify-content:center;text-decoration:none"' +
+      (recUrl ? (' href="' + esc(recUrl) + '"') : '') + '>この一杯を記録する</a>');
     /*★★2026-11-19 オーナーさまご指示：「記録ボタンはここではいらない。一杯を使ってから記録でしょう」
      *  ★券を使える画面では、はじめは出しません。券を使ったあとの画面に出ます（RECORD_HTML）。
      *  ★券を使えない画面（ふだんのお店など）では、いままでどおり はじめから出ます。
@@ -1048,7 +1061,7 @@
       '<div style="height:8px"></div>' +
       '<div style="text-align:center;font-size:16px;font-weight:800">' + esc(d.shopName || st.shopName) + '</div>' +
       '<div class="total" style="margin-top:6px">残り ' + (Number(d.balanceAfter)||0) + '枚</div>' +
-      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください<br>（二重使用は自動で防止）</div>' +
+      '<div class="fine" style="margin-top:12px;line-height:1.7">お店の人に画面を見せてください</div>' +
       /*★★2026-10-11：記録ボタンを、ここに戻します。
        *  ★順番＝【お店の人に見せる → 記録する】（★本部指示 2026-10-11）。
        *  ★受付のときは RECORD_HTML が空なので、何も出ません（★2026-10-07 オーナー指示を守ります）。*/
