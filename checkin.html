@@ -435,7 +435,7 @@
     //   ★受付（JCJの受付）では出しません。コーヒーをお出ししないためです。
     const cupNoteHtml = isReception ? '' :
       '<div style="text-align:center;font-size:13px;font-weight:700;color:#2B5D4F;margin-top:14px;line-height:1.7">' +
-      'コーヒー日記に1杯 残ります。<br>あとから書き足せます。</div>';
+      'コーヒー日記に一杯が残ります。<br>あとから書き足せます。</div>';
     const recordHtml = isReception ? '' :
       '<div style="text-align:center;font-size:15px;font-weight:700;color:var(--ink);margin-top:16px">今日の一杯は？</div>' +
       '<div class="fine" style="text-align:center;margin-top:4px">まだ香りが残っているうちに。</div>' +
@@ -443,6 +443,13 @@
     // ★2026-10-11：券を使ったあとにも出せるよう、覚えておきます
     //   ☕ ★2026-10-29 案1：そちらの画面にも、同じ1行を一緒に出します（同じ完了の場面のため）。
     RECORD_HTML = cupNoteHtml + recordHtml;
+    /*★★2026-11-19 オーナーさまご指示：「記録ボタンはここではいらない。一杯を使ってから記録でしょう」
+     *  ★券を使える画面では、はじめは出しません。券を使ったあとの画面に出ます（RECORD_HTML）。
+     *  ★券を使えない画面（ふだんのお店など）では、いままでどおり はじめから出ます。
+     *  ★戻すときは、下の1行の style を外すだけです。*/
+    const recordBlkHtml = recordHtml
+      ? ('<div id="ciRecordBlk"' + (ticketHtml ? ' style="display:none"' : '') + '>' + recordHtml + '</div>')
+      : '';
     const areaHtml = '<div id="areaProg" class="areaprog hidden"></div>';
 
     $("body").innerHTML =
@@ -456,8 +463,7 @@
       ticketHtml +
       /*★2026-10-22 オーナー指示：「1枚を使う」と「今日の一杯は？」の間が狭いので、少し空けます。
        *  ★両方が出ているときだけ空けます（★片方しか無いときは何も変わりません）。*/
-      ((ticketHtml && recordHtml) ? '<div style="height:20px"></div>' : '') +
-      recordHtml +
+      recordBlkHtml +
       areaHtml +
       beansProgHtml +
       // ★2026-10-06：受付の帯と「無料の1杯」の置き場所を足しました。
@@ -656,14 +662,14 @@
     if (total <= 0){ el.innerHTML = ""; return; }
 
     const rows = [];
-    if (free   > 0) rows.push("無料の一杯 " + free   + "杯");
-    if (bought > 0) rows.push("買った券 "       + bought + "杯");
-    if (other  > 0) rows.push("その他の券 " + other  + "杯");
+    if (free   > 0) rows.push("無料のチケット " + free   + "枚");
+    if (bought > 0) rows.push("買ったチケット "   + bought + "枚");
+    if (other  > 0) rows.push("その他のチケット " + other  + "枚");
 
     el.innerHTML =
       '<div class="tksec">' +
         '<div class="tkbox">' +
-          '<div class="big">お持ちの一杯 ' + total + '杯</div>' +
+          '<div class="big">お持ちのチケット ' + total + '枚</div>' +
           (rows.length ? '<div class="tkbreak">' + rows.join("\u3000／\u3000") + '</div>' : '') +
           '<div class="sub">ロースターのブースで、一杯と交換できます</div>' +
         '</div>' +
@@ -962,6 +968,8 @@
     } else {
       box.outerHTML = ticketBoxHtml_(bal);            // ★枚数を書き直します
     }
+    /*★★2026-11-19：あとから券の枠が出たときも、記録のまとまりを引っ込めます。*/
+    try { const rb = document.getElementById("ciRecordBlk"); if (rb) rb.style.display = "none"; } catch (eRb) { }
     wireTicket(bal);                                   // ★押したときの仕掛けを付け直します
   }
 
