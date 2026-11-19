@@ -240,7 +240,11 @@
      *  ★「着いたら、チェックイン」「許可を押すと…」の案内も出しません（★ふつうの来店の文なので）。
      *  ★会場では、お店の名前とボタンだけにします。
      *  ★ふつうのお店（イベントIDが無いQR）は、1文字も変わりません。 */
-    const atVenue = !!EV;
+    /*★★2026-11-20：会場かどうかを、QRに書いてある印（EV）ではなく
+     *  サーバーが表から返す区分で決めます。
+     *  🛑 ここが !!EV のままだったため、ブースのQRで開いてもお店の写真と
+     *    「着いたら、チェックイン。」が出ていました（2026-11-19 23:06 の実機）。*/
+    const atVenue = evp_();
     $("hero").src = atVenue ? "" : (st.shopImage || "");
     $("hero").classList.toggle("hidden", atVenue || !st.shopImage);
     $("body").classList.remove("hidden");
@@ -251,8 +255,37 @@
       (atVenue ? ''
                : '<div class="ask"><b>着いたら、チェックイン。</b><br>' +
                  '<span class="asknote">「許可」を押すと、いまいる場所で記録できます。押さなくてもチェックインはできます。</span></div>') +
-      '<button id="go" class="go">チェックインする</button>';
+      '<button id="go" class="go">' + (ONE_TAP ? "このお店で 1杯 もらう" : "チェックインする") + '</button>';
     $("go").onclick = doCheckin;
+  }
+
+  /*★★2026-11-20 ブースでは、押す回数を1回にします（設計 A-4）。
+   *  🔴 なぜ要るか＝11月のFIELDSTYLEで、無料の一杯をお持ちでブースまで行かれたのに
+   *    「使う」を押しておられない方が【709名】いらっしゃいました（本部が本番の記録で実測）。
+   *    ★押す回数が2回（チェックインする → チケットを使う）だったためです。
+   *  ★出す条件＝①いまいる所がイベントの【ブース】 ②このお店が試飲チケット対応
+   *             ③お持ちの枚数が1枚以上。この3つが揃ったときだけです。
+   *  ★受付では出しません（受付でコーヒーはお出ししないため）。
+   *  ★ふだんのお店でも出しません。
+   *  ★うまくいかなかったときは、いままでの完了画面に落ちて、
+   *    「チケットを使う」から押し直せます（★一杯が消えることはありません）。
+   *  ★戻すときは、下の return false; だけにしてください。*/
+  function oneTapReady_(){
+    try {
+      if (String(EV_PLACE || "").trim() !== "ブース") return false;
+      if (!(st && st.ticketEnabled === true)) return false;
+      return (Number(st && st.ticketBalance) || 0) > 0;
+    } catch (eOne) { return false; }
+  }
+
+  /*★内部：1杯だけ使います。返すのはサーバーの返事そのままです。*/
+  async function useOneTicket_(){
+    const opId = "one_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+    return await api("use_do", {
+      spotId: st.shopId, count: 1, opId: opId,
+      seenBalance: (Number(st && st.ticketBalance) || 0),
+      shopName: (st && st.shopName) || "", ev: EV || ""
+    });
   }
 
   // 現在地を取得（取れたら {ok:true,lat,lng,acc} / 取れない・断られたら {ok:false,reason}）
@@ -298,6 +331,25 @@
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
         b.disabled = false; b.textContent = "チェックインする";
         showMsgInline("チェックインに失敗しました。時間をおいて再度お試しください。", false); return;
+      }
+      /*★★2026-11-20：ブースで1回にしたときは、ここで続けて1杯 使います。
+       *  ★うまくいかなければ、いままでの完了画面に落とします（押し直せます）。*/
+      if (ONE_TAP) {
+        try {
+          b.textContent = "一杯をご用意しています…";
+          const d = await useOneTicket_();
+          if (d && d.ok) { renderDone(r); renderTicketUsed(d); return; }
+          renderDone(r);
+          showMsgInline(
+            (d && d.error === "insufficient") ? "お持ちのチケットが足りませんでした。"
+            : (d && d.error === "event_only") ? "このチケットは、イベント会場のブースでのみお使いいただけます。"
+            : "一杯のお渡しができませんでした。下の「チケットを使う」からもう一度 お試しください。", false);
+          return;
+        } catch (eOneUse) {
+          renderDone(r);
+          showMsgInline("一杯のお渡しができませんでした。下の「チケットを使う」からもう一度 お試しください。", false);
+          return;
+        }
       }
       renderDone(r);
     }catch(e){
@@ -616,6 +668,7 @@
    *  ★代わりに、サーバーが返す「区分」（店舗／イベント／イベント受付）を使います。
    *  ★区分を決めているのは checkin_event.js の ckEvVisitType_ だけです。*/
   let IS_RECEPTION = false;
+  let ONE_TAP = false;     // ★ブースで、押す回数を1回にするか
   let HELD_ROWS = [];          // ★お持ちのチケットの内わけ（券を使う枠が使い回します）
   let HELD_BD_READY = false;   // ★内わけが届いているか
 
@@ -1247,6 +1300,7 @@
     showLoading("お店を確認しています…");
     st = await api("checkin_state", { spot: SPOT });
     EV_PLACE = String((st && st.eventPlace) || "").trim();
+    ONE_TAP = oneTapReady_();
     if(!st || !st.ok){
       if (st && st.error === "shop_not_found"){ showStatusText("お店が見つかりませんでした。プレートのリンクをご確認ください。"); return; }
       showStatusText("読み込みに失敗しました：" + (st && st.error || "unknown")); return;
