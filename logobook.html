@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>ロゴ帳</title>
+<title>ロゴスタンプ</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
@@ -78,7 +78,7 @@
 </style>
 </head>
 <body>
-<div class="bar"><span>ロゴ帳</span></div>
+<div class="bar"><span>ロゴスタンプ</span></div>
 <div id="status"><div class="spin"></div>読み込んでいます…</div>
 
 <div id="main" class="wrap hidden">
@@ -87,11 +87,11 @@
     <div class="big"><span id="nGot">0</span> <span class="sub">/ <span id="nTot">0</span></span></div>
     <div class="lab">集めたロースター</div>
   </div>
-  <div class="hint" id="hint">丸をタップすると、お店を知る画面が開きます</div>
+  <div class="hint" id="hint">お店のロゴスタンプです。タップすると、お店を知る画面が開きます</div>
   <div id="areas"></div>
   <!-- ロースター紹介の入口（ロゴ帳の最後）＝推薦フォーム(テスト)へ -->
   <div class="jointo" id="jointo">
-    <div class="ji-h">まだこの帳面にいない、あのお店。</div>
+    <div class="ji-h">まだ、この一覧にない あのお店。</div>
     <div class="ji-s">あなたの好きなお店を教えてください。<br>一店ずつ、ご案内をお送りさせていただきます。</div>
     <a class="ji-b" id="recBtn">お店を教える</a>
   </div>
@@ -209,7 +209,20 @@
     $("shCopy").textContent = r.intro||"";
     $("shCopy").style.display = r.intro ? "" : "none";
     const st = $("shStat"); st.className="sstat "+(got?"got":"mada");
-    st.textContent = got ? ("✓ "+cnt+"回 行きました") : "行くと、ロゴ帳に印が灯ります";
+    /* ★2026-11-19 審査会：ロゴ画像の無いお店に「押されます」と書くと、約束が外れます。
+       ⇒ まず安全なほう（加わります）を出し、ロゴが読めたら「押されます」に上げます。 */
+    if (got) {
+      st.textContent = "✓ " + cnt + "回 行きました";
+    } else {
+      st.textContent = "行くと、ロゴスタンプに加わります";
+      (function (cands, el) {
+        let i = 0;
+        const probe = new Image();
+        probe.onload  = function () { el.textContent = "行くと、ロゴスタンプが押されます"; };
+        probe.onerror = function () { i++; if (i < cands.length) probe.src = cands[i]; };
+        if (cands.length) probe.src = cands[0];
+      })(logoCands(r), st);
+    }
     // 未訪問だけ「保存」を出す（既に行った店は保存不要）
     $("btnSave").style.display = got ? "none" : "";
     $("btnSave").className="btnO"; $("btnSave").textContent="行きたいに保存する"; $("referBox").className="refer";
