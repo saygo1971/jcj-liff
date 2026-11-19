@@ -36,6 +36,8 @@
   .kicker{font-size:12px;color:var(--ink-sub);font-weight:700;letter-spacing:.06em}
   h1{font-size:22px;margin:4px 0 6px;font-weight:800;line-height:1.35}
   .lead{font-size:13px;color:var(--ink-sub);line-height:1.7;margin:0 0 16px}
+  /* ★★ 2026-11-19 イベントの名前（見出しのすぐ下・小さく） */
+  .evname{font-size:13px;color:var(--ink-sub);letter-spacing:.04em;margin:-6px 0 14px}
   .card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .q{display:block;font-size:14px;font-weight:700;margin:0 0 8px}
   .qnote{font-size:11px;color:var(--ink-sub);margin:-4px 0 10px;line-height:1.6}
@@ -105,6 +107,7 @@
   <div id="formView" class="hidden">
     <div class="kicker">JOURNEY PASSPORT</div>
     <h1 id="formTitle">コーヒー旅を始めましょう</h1>
+    <div class="evname" id="formEvName" style="display:none"></div>
     <p class="lead" id="formLead">最初に、旅の出発点だけ教えてください。</p>
 
     <div class="card">
@@ -391,8 +394,22 @@
     SRC_SPOT = qs("src");           // チェックイン経由なら起点店IDが入る
     const preShop = qs("shop");     // 店名（見出し表示用・任意）
 
-    // 入口で見出しを出し分け（チェックイン経由＝店名を添える）
-    if(SRC_SPOT){
+    /*★★ 2026-11-19：イベントの会場からいらした方には、
+     *  ★見出しを「ご来場ありがとうございます」にし、その下にイベントの名前を小さく出します。
+     *  ★イベントかどうかを決めているのはサーバー（register_card.js の evtFindSpot_）だけです。
+     *  ★名前が来ないときは、これまでどおりの見出しになります。*/
+    const EV_NAME = qs("evname");
+    if(EV_NAME){
+      $("formTitle").textContent = "ご来場ありがとうございます";
+      $("formEvName").textContent = EV_NAME;
+      $("formEvName").style.display = "";
+      $("formLead").textContent = "最初に、旅の出発点だけ教えてください。";
+      /*★ボタンの字も、無料の一杯があるかどうかで変えます（2026-11-19 のご決定①）。*/
+      $("startBtn").textContent = (qs("evfree") === "1")
+        ? "登録して 無料の一杯を受け取る"
+        : "登録して コーヒーの旅を始める";
+    } else if(SRC_SPOT){
+      // 入口で見出しを出し分け（チェックイン経由＝店名を添える）
       $("formTitle").innerHTML = "はじめまして。<br>コーヒーで日本を旅しよう。";
       $("formLead").textContent = (preShop ? (preShop + " にチェックインしました。") : "チェックインしました。") + "登録に、あなたの居住地を教えてください。";
     }

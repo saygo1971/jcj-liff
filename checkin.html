@@ -119,6 +119,9 @@
     .tkbox{margin-top:10px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:14px 13px;text-align:center}
     .tkbox .big{font-size:20px;font-weight:800;color:var(--ink2)}
     .tkbox .sub{font-size:12.5px;color:var(--sub2);margin-top:6px;line-height:1.75}
+    /* ★★ 2026-11-19 内わけの行。★読んでいただきたい数なので、
+       ★ 15px・行の高さ2.0・字の間 0.04em・黒（2026-11-19 の決まり）にします。 */
+    .tkbox .tkbreak{font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;font-weight:600;margin-top:4px}
     /* ★2026-10-06 無料の1杯（★押すのは お客さまご自身です。受付の人は触りません）。 */
     .freesec{border-top:1px solid var(--line);margin-top:16px;padding-top:14px}
     .freehd{font-size:14px;color:var(--ink2);font-weight:700}
@@ -134,6 +137,13 @@
     .buybtn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:8px;height:52px;border-radius:12px;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F;text-decoration:none}
     /* ★2026-11-16：.freedone（無料の1杯 受け取り済みの枠）は出すのをやめたので、見た目の指定も外しました。 */
     .freenote{font-size:12px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.75}
+    /* ★★ 2026-11-19 ブースのQRを読むボタン。
+       ★説明の文は 15px・行の高さ2.0・字の間 0.04em・黒（2026-11-19 の決まり）。 */
+    .camsec{margin-top:18px}
+    .camlead{font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;text-align:center;font-weight:600}
+    .cambtn{width:100%;margin-top:10px;height:52px;border-radius:12px;border:none;font-size:16px;font-weight:700;color:#fff;background:#2B5D4F;display:flex;align-items:center;justify-content:center;gap:8px}
+    .cambtn svg{width:20px;height:20px;flex:0 0 auto}
+    .camnote{font-size:13px;line-height:1.9;color:#6E6E6E;margin-top:8px;text-align:center}
   </style>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -447,6 +457,9 @@
       '<div id="recsec"></div>' +
       '<div id="freesec"></div>' +
       '<div id="tksec"></div>' +
+      // ★★ 2026-11-19：ブースのQRを読むボタンの置き場所。
+      //   ★受付の画面で、券を1杯以上 お持ちの方にだけ出ます。
+      '<div id="camsec"></div>' +
       // ☕ カップ（2026-09-26）。★最初は空の入れ物だけ。★あとから別の小さな問い合わせで埋めます。
       //   ★理由＝受付の画面を重くしないため。★カップが無い方には、何も出ません。
       '<div id="cupsec"></div>' +
@@ -518,6 +531,7 @@
     CHECKIN_BAL = Number(r.ticketBalance) || 0;
     if (r.free) renderFreeSection_({ free: r.free });
     if (CHECKIN_BAL > 0) renderTicketSection_({ tickets: CHECKIN_BAL, free: r.free });
+    renderCameraSection_();
 
     // ☕ カップ（2026-09-26）。★この画面の他の部分が出そろってから、あとで埋めます。
     loadCupSection_();
@@ -540,6 +554,8 @@
   /*★2026-11-05：この店が試飲チケット対応かどうかを覚えておきます。
    *  ★無料の1杯を受け取ったあとに「券を使う枠」を出し直すのに要ります。*/
   let TICKET_ENABLED = false;
+  /*★いまお持ちの券の合計。★数えているのは renderTicketSection_ の1か所だけです。*/
+  let HELD_TOTAL = 0;
   /*★2026-11-16：チェックインの【1回目の返事】が言っていた券の枚数を覚えておきます。
    *  ★使い道＝あとの返事が0枚でも、いちど出した「使う」枠を消さないため（syncTicketBox_）。*/
   let CHECKIN_BAL = 0;
@@ -582,6 +598,7 @@
     renderReceptionBand_(s);
     renderFreeSection_(s);
     renderTicketSection_(s);
+    renderCameraSection_();
     if (s.cup) renderCupSection_(s);
     renderEventBuySection_(s);   // ★2026-11-05 足した1行（★戻すときはこの1行を消すだけです）
     syncTicketBox_(s.tickets);   // ★2026-11-05 足した1行（★戻すときはこの1行を消すだけです）
@@ -627,6 +644,7 @@
     const other  = bd ? (Number(bd.other)  || 0) : 0;
     /*★この画面で受け取れた方は、台帳に書かれる前でも1杯 多く数えます（★後戻りさせない）。*/
     if (FREE_GRANTED_HERE && CHECKIN_BAL > total){ free = free + (CHECKIN_BAL - total); total = CHECKIN_BAL; }
+    HELD_TOTAL = total;
     if (total <= 0){ el.innerHTML = ""; return; }
 
     const rows = [];
@@ -638,10 +656,50 @@
       '<div class="tksec">' +
         '<div class="tkbox">' +
           '<div class="big">お持ちの一杯 ' + total + '杯</div>' +
-          (rows.length ? '<div class="sub">' + rows.join("\u3000／\u3000") + '</div>' : '') +
+          (rows.length ? '<div class="tkbreak">' + rows.join("\u3000／\u3000") + '</div>' : '') +
           '<div class="sub">ロースターのブースで、一杯と交換できます</div>' +
         '</div>' +
       '</div>';
+  }
+
+  /* ========================================================================
+     ★★ 2026-11-19 ブースのQRを読むボタン
+     ・★受付の画面で、券を1杯以上 お持ちの方にだけ出します
+     ・★押すと、LINEの中でカメラが開きます（liff.scanCodeV2）
+     ・🛑 LINE Developers の［Scan QR］が「オフ」のあいだは、カメラが開きません。
+       ★そのときは、下に「スマートフォンのカメラで読み取ってください」と出します。
+     ・★戻すときは、この関数の中を el.innerHTML = ""; の1行にするだけです。
+     ======================================================================== */
+  function renderCameraSection_(){
+    const el = $("camsec");
+    if (!el) return;
+    if (!IS_RECEPTION || HELD_TOTAL <= 0){ el.innerHTML = ""; return; }
+    el.innerHTML =
+      '<div class="camsec">' +
+        '<div class="camlead">各ブースにあるQRを読んで<br>チケットをお使いください</div>' +
+        '<button id="camBtn" class="cambtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>カメラでQRを読む</button>' +
+        '<div id="cammsg" class="camnote"></div>' +
+      '</div>';
+    const b = $("camBtn");
+    if (b) b.onclick = doScanQr_;
+  }
+
+  async function doScanQr_(){
+    const msg = $("cammsg");
+    if (msg) msg.textContent = "";
+    try {
+      if (!liff || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
+      const r = await liff.scanCodeV2();
+      const v = (r && r.value) ? String(r.value).trim() : "";
+      if (!v){ if (msg) msg.textContent = "読み取れませんでした。もう一度 お試しください。"; return; }
+      if (/^https?:\/\//i.test(v)) {
+        try { liff.openWindow({ url: v, external: false }); } catch (e) { location.href = v; }
+        return;
+      }
+      if (msg) msg.textContent = "このQRは、ブースのQRではないようです。";
+    } catch (e) {
+      if (msg) msg.textContent = "この端末では、アプリの中でQRを読めませんでした。スマートフォンのカメラで読み取ってください。";
+    }
   }
 
   /* ========================================================================
@@ -729,6 +787,7 @@
     renderFreeSection_({ free: { has: true, grantable: false, readable: true } });
     syncTicketBox_(CHECKIN_BAL);
     renderTicketSection_({ tickets: CHECKIN_BAL, free: { has: true } });
+    renderCameraSection_();
 
     // ★そのあと、サーバーの答えで もう一度 書き直します（★画面の数字を自分で作らない）。
     loadCupSection_();
