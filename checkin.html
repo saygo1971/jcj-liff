@@ -1098,6 +1098,17 @@
     }catch(e){}
   }
 
+  /*★★ 2026-11-19 のご決定①：登録のボタンの字。
+   *  ★無料の一杯があるイベント … 「登録して 無料の一杯を受け取る」
+   *  ★無いイベント     … 「登録して コーヒーの旅を始める」
+   *  ★ふだんのお店       … 「はじめる」（いままでどおり）*/
+  function regBtnLabel_(){
+    if (!evp_()) return "はじめる";
+    return (st && st.eventFreeCup === true)
+      ? "登録して 無料の一杯を受け取る"
+      : "登録して コーヒーの旅を始める";
+  }
+
   function renderNeedRegister(){
     $("hero").classList.add("hidden");
     $("body").innerHTML =
@@ -1105,11 +1116,21 @@
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div style="text-align:center;margin:12px 0 4px;font-size:15px;font-weight:700;color:var(--ink)">まず登録して、コーヒー旅を始めましょう</div>' +
       '<div class="fine" style="text-align:center;margin:0 0 4px;line-height:1.8;color:var(--muted);font-size:12px">登録すると、このお店に自動でチェックインされます。</div>' +
-      '<button id="reg" class="go">はじめる</button>';
+      '<button id="reg" class="go">' + regBtnLabel_() + '</button>';
     $("reg").onclick = ()=>{
-      const oa = "https://line.me/R/ti/p/@957zdear";
-      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: oa, external: false });
-      else location.href = oa;
+      /*★★ 2026-11-19：ここで行き止まっていました。
+       *  🛑 これまでは公式アカウントの画面を開くだけでした。
+       *    ★すでに友だちの方は、「追加」が起きないので
+       *      登録のご案内が1通も届かず、トーク画面で終わっていました
+       *      （2026-11-19 オーナーさまの実機で発見）。
+       *  ★直し＝【「◯◯ に来ました」を入れた状態で】トークを開きます。
+       *    ★お客さまは送るボタンを押すだけで、登録のご案内が返ってきます。
+       *  ★戻すときは、下の oa を "https://line.me/R/ti/p/@" + LINE_OA_ID に戻すだけです。*/
+      const nm = String((st && st.shopName) || "").trim();
+      const oa = nm
+        ? ("https://line.me/R/oaMessage/@" + LINE_OA_ID + "/?" + encodeURIComponent(nm + " に来ました"))
+        : ("https://line.me/R/ti/p/@" + LINE_OA_ID);
+      location.href = oa;
     };
   }
 
