@@ -1285,7 +1285,17 @@
       '<div class="brand">JOURNEY PASSPORT</div>' +
       '<div class="shop">' + esc(st.shopName) + '</div>' +
       '<div style="text-align:center;margin:12px 0 4px;font-size:15px;font-weight:700;color:var(--ink)">まず登録して、コーヒー旅を始めましょう</div>' +
-      '<div class="fine" style="text-align:center;margin:0 0 4px;line-height:1.8;color:var(--muted);font-size:12px">登録すると、このお店に自動でチェックインされます。</div>' +
+      /*★★2026-11-20 オーナーさまご指示（B案）：
+       *  🛑 ここは「このお店」と書いてありましたが、イベントの受付は
+       *    ロースターさまのお店ではありません（2026-11-20 オーナーさまご指摘）。
+       *  ★イベントのときは、表の「お客さまに出す名前」を入れて出します。
+       *    ⇒ 次のイベントでは、自動でその名前になります。
+       *  ★ふだんのお店のときは、いままでどおり「このお店」のままです。*/
+      '<div class="fine" style="text-align:center;margin:0 0 4px;line-height:1.8;color:var(--muted);font-size:12px">' +
+        (String((st && st.eventName) || "").trim()
+          ? ('登録すると、' + esc(String(st.eventName).trim()) + ' に来たことが記録されます。')
+          : '登録すると、このお店に自動でチェックインされます。') +
+      '</div>' +
       '<button id="reg" class="go">' + regBtnLabel_() + '</button>';
     $("reg").onclick = ()=>{
       /*★★ 2026-11-19：ここで行き止まっていました。
