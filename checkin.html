@@ -245,8 +245,14 @@
      *  🛑 ここが !!EV のままだったため、ブースのQRで開いてもお店の写真と
      *    「着いたら、チェックイン。」が出ていました（2026-11-19 23:06 の実機）。*/
     const atVenue = evp_();
-    $("hero").src = atVenue ? "" : (st.shopImage || "");
-    $("hero").classList.toggle("hidden", atVenue || !st.shopImage);
+    /*★★2026-11-20 オーナーさまご指示：会場でも、お店の写真を出します。
+     *  ★2026-10-08 の「会場では写真を出さない」を、オーナーさまご自身が取り消されました。
+     *  ★測った結果＝写真は140〜187KB・受け取りに約0.1秒。画面とは別に後から読み込まれるので、
+     *    押せるまでの時間は変わりません（高さ170pxが先に取ってあるので、ずれも起きません）。
+     *  ★「着いたら、チェックイン。」の案内は、いままでどおり会場では出しません
+     *    （ふつうの来店の文なので）。*/
+    $("hero").src = (st.shopImage || "");
+    $("hero").classList.toggle("hidden", !st.shopImage);
     $("body").classList.remove("hidden");
     $("body").innerHTML =
       '<div class="brand">JOURNEY PASSPORT</div>' +
@@ -758,7 +764,7 @@
       '<div class="tksec">' +
         '<div class="tkbox">' +
           '<div class="big">' + HELD_TITLE + '</div>' +
-          (oneKind ? '' : '<div class="tkbreak">' + rows.join("\u3000／\u3000") + '</div>') +
+          (oneKind ? '' : '<div class="tkbreak">' + rows.join("<br>") + '</div>') +
           '<div class="sub">ロースターのブースで、一杯と交換できます</div>' +
         '</div>' +
       '</div>';
@@ -1036,7 +1042,7 @@
      *  ★「ロースターのブースで、一杯と交換できます」は、押す所のすぐ上に置きます。*/
     const ttl = (HELD_BD_READY && HELD_TITLE) ? HELD_TITLE : ("お持ちのチケット " + bal + "枚");
     const hd = '<div class="tkhead">' + ttl + '</div>' +
-      (HELD_ROWS.length ? '<div class="tkbreak">' + HELD_ROWS.join("\u3000／\u3000") + '</div>' : '');
+      (HELD_ROWS.length ? '<div class="tkbreak">' + HELD_ROWS.join("<br>") + '</div>' : '');
     const stepper = (bal >= 2)
       ? ('<div class="stepper">' +
            '<button id="minus">−</button>' +
