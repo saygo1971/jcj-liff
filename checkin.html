@@ -264,8 +264,20 @@
       (atVenue ? ''
                : '<div class="ask"><b>着いたら、チェックイン。</b><br>' +
                  '<span class="asknote">「許可」を押すと、いまいる場所で記録できます。押さなくてもチェックインはできます。</span></div>') +
-      '<button id="go" class="go">' + (ONE_TAP ? "このお店で 1杯 もらう" : "チェックインする") + '</button>';
+      '<button id="go" class="go">' + goLabel_() + '</button>';
     $("go").onclick = doCheckin;
+  }
+
+  /*★★2026-11-20 オーナーさまご決定（審査会 条件1）＝ブースで1回押しのときの
+   *  ボタンの文は【チケット1枚で 一杯 もらう】です。
+   *  🛑 前の文「このお店で 1杯 もらう」は、★チケットを1枚 使うと言っていませんでした。
+   *    ⇒ 押した瞬間に1枚 減り、取り消せません。
+   *    ⇒ お客さまが「もらえる」と読んで押し、あとで減っていることに気づかれます
+   *      （2026-11-20 審査会・顧客視点 84点／ノーマン＝迷いは人でなく設計の責任）。
+   *  ★文はここ1か所で決めます。★押し直しのときも、この文に戻します
+   *    （前は「チェックインする」に化けていました）。*/
+  function goLabel_(){
+    return ONE_TAP ? "チケット1枚で 一杯 もらう" : "チェックインする";
   }
 
   /*★★2026-11-20 ブースでは、押す回数を1回にします（設計 A-4）。
@@ -343,7 +355,7 @@
       busy = false;
       if(!r || !r.ok){
         if (r && r.error === "not_registered"){ renderNeedRegister(); return; }
-        b.disabled = false; b.textContent = "チェックインする";
+        b.disabled = false; b.textContent = goLabel_();
         showMsgInline("チェックインに失敗しました。時間をおいて再度お試しください。", false); return;
       }
       /*★★2026-11-20：ブースで1回にしたときは、ここで続けて1杯 使います。
@@ -367,7 +379,7 @@
       }
       renderDone(r);
     }catch(e){
-      busy = false; b.disabled = false; b.textContent = "チェックインする";
+      busy = false; b.disabled = false; b.textContent = goLabel_();
       showMsgInline("通信に失敗しました。電波の良い場所でもう一度お試しください。", false);
     }
   }
