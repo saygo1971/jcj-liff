@@ -134,7 +134,11 @@
     <div class="card">
       <label class="q" for="regNick">お名前（ニックネーム）</label>
       <div class="qnote">ここで決めたお名前（ニックネーム）は、公開されたあなたの一杯に表示されます。いつでも変更可能です。</div>
-      <input id="regNick" class="nkin" type="text" maxlength="12" placeholder="例：まめ太郎" autocomplete="off">
+      <!--★2026-11-20 オーナーさまご指示（押す回数を減らす）：
+           enterkeyhint="done" … キーボードの右下が「改行」ではなく「完了」になります。
+           ★聞くことは1つも変えていません。閉じる手間だけ減らします。-->
+      <input id="regNick" class="nkin" type="text" maxlength="12" placeholder="例：まめ太郎"
+             autocomplete="off" enterkeyhint="done">
       <div class="qnote">本名やご連絡先は入れないでください。</div>
     </div>
 
@@ -513,13 +517,57 @@
     if(pre && CITY_DATA[pre]){ $("pref").value = pre; fillCities(pre); }
 
     $("pref").addEventListener("change", function(){ fillCities(this.value); refreshBtn(); });
-    $("city").addEventListener("change", refreshBtn);
+    /*★★2026-11-20 オーナーさまご指示（押す回数を減らす・聞くことは変えません）
+     *  ① 市区町村を選び終えたら、お名前の欄へ自動で移ります。
+     *     ⇒ ご自分で欄を押す1回が要らなくなります。キーボードも一緒に出ます。
+     *  ② キーボードの「完了」で、そのまま登録へ進みます。
+     *     ⇒ キーボードを閉じる・ボタンを探して押す の2回が要らなくなります。
+     *  🛑 お名前を聞くことも、打っていただくことも、1文字も変えていません。
+     *  ★戻すときは、下の2つの addEventListener を消すだけです。*/
+    $("city").addEventListener("change", function(){
+      refreshBtn();
+      try {
+        const nk = document.getElementById("regNick");
+        if (nk && this.value.trim() && !nk.value.trim()) nk.focus();
+      } catch (eFocus) { }
+    });
+    $("regNick").addEventListener("keydown", function(ev){
+      if (ev.key !== "Enter") return;
+      ev.preventDefault();
+      this.blur();                                   // ★キーボードを閉じます
+      const b = $("startBtn");
+      if (b && !b.disabled) b.click();               // ★押せる状態のときだけ進みます
+    });
     $("startBtn").addEventListener("click", startRegister);
 
     await liff.init({ liffId: LIFF_ID });
     if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
     const profile = await liff.getProfile();
     USER_ID = profile.userId || "";
+
+    /*★★2026-11-20 オーナーさまご決定（案B）：受付のQRから直接この画面が開きます。
+     *  ★開いた時点で一度だけ「はじめての方かどうか」をサーバーに聞きます。
+     *    ・はじめての方      ⇒ いままでどおり お住まいとお名前を聞く画面を出します
+     *    ・すでにご登録の方  ⇒ ★すでに会場のチェックインまで済んでいるので、
+     *                          そのまま「ようこそ」の形でお見せします（押していただきません）
+     *  ★src（受付のお店の番号）が無いときは聞きません＝いままでどおり。
+     *  ★聞けなかったときも、いままでどおり お住まいを聞く画面を出します（止まりません）。
+     *  ★戻すときは、この try のまとまりを消して show("formView") の2行に戻すだけです。*/
+    if (SRC_SPOT) {
+      show("statusView");
+      try {
+        const pq = new URLSearchParams({
+          action: "register_card", probe: "1",
+          userId: USER_ID, src: SRC_SPOT, _: Date.now()
+        });
+        const pres = await fetch(GAS_URL + "?" + pq.toString(), { method: "GET" });
+        const pdata = await pres.json();
+        if (pdata && pdata.ok && pdata.needForm === false) {
+          renderResult(pdata, "", "");
+          return;
+        }
+      } catch (eProbe) { /* 聞けなければ、いままでどおり お住まいを聞きます */ }
+    }
 
     show("formView");
     refreshBtn();
