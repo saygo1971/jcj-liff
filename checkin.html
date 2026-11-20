@@ -69,7 +69,10 @@
     .tsec .tkuse{text-align:center;font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;margin-top:12px}
     .thd{font-size:14px;color:#444;font-weight:700;display:flex;align-items:center;gap:6px}
     .stepper{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
-    .stepper button{width:46px;height:46px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px}
+    /*★★2026-11-20 オーナーさまご指示：− と ＋ の字を【緑】にします。
+     *  ★前は color を決めていなかったので、iPhone が自分で青を選んでいました。
+     *  ★アプリの色は緑1色（2026-09-28 確定）なので、そこだけ青が混ざっていました。*/
+    .stepper button{width:46px;height:46px;border-radius:12px;border:1px solid #ddd;background:#fff;font-size:22px;color:var(--brand);font-weight:700}
     .stepper button:disabled{opacity:.35}
     .cnt{text-align:center}
     .cnt .n{font-size:26px;font-weight:800}
