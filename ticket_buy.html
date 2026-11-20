@@ -639,11 +639,26 @@
     $("payBtn").disabled = true;
     setStatus("");
     try {
+      /*★★2026-11-21 足しました＝【どのイベントの券か】を一緒に送ります。
+       *  🛑 なぜ要るか＝いままでサーバーは、設定の1行（current_event_id）だけを見て
+       *    「この券は◯◯のイベントの券」と刻んでいました。
+       *    ⇒ 新しいイベントのたびに、その1行を手で書き替える必要がありました。
+       *    ⇒ 書き替え忘れると【前のイベントの券】として売られ、
+       *       新しい会場では「このイベントの券ではありません」で使えません。
+       *       ★お金は受け取っているのに飲めない、が起きます。
+       *  ★送るのは2つ。どちらも無ければ、サーバーは いままでどおり設定を読みます。
+       *     ev   … QRに付いているイベントの番号
+       *     spot … QRに付いている場所の番号（サーバーが表からイベントを引きます）
+       *  ★getParam は、LINEが包んだ形（liff.state）も読めます（266行）。*/
+      const buyEv   = getParam("ev")   || "";
+      const buySpot = getParam("spot") || "";
       const data = await fetchJson(
         "?action=buy_checkout" +
         "&userId=" + encodeURIComponent(currentUserId) +
         "&userName=" + encodeURIComponent(currentUserName) +
         "&terms=" + encodeURIComponent(termsVersion) +
+        (buyEv   ? "&ev="   + encodeURIComponent(buyEv)   : "") +
+        (buySpot ? "&spot=" + encodeURIComponent(buySpot) : "") +
         "&product=" + encodeURIComponent(selectedKey));
       if (data && data.ok && data.url) {
         window.location.href = data.url;   // Stripeの決済ページへ
