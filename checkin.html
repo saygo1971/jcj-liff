@@ -669,6 +669,7 @@
    *  ★区分を決めているのは checkin_event.js の ckEvVisitType_ だけです。*/
   let IS_RECEPTION = false;
   let ONE_TAP = false;     // ★ブースで、押す回数を1回にするか
+  let HELD_TITLE = "";        // ★枠の見出し（1種類なら その1行、2種類以上なら合計）
   let HELD_ROWS = [];          // ★お持ちのチケットの内わけ（券を使う枠が使い回します）
   let HELD_BD_READY = false;   // ★内わけが届いているか
 
@@ -740,16 +741,24 @@
     if (free   > 0) rows.push("無料のチケット " + free   + "枚");
     if (bought > 0) rows.push("購入チケット "   + bought + "枚");
     if (other  > 0) rows.push("その他のチケット " + other  + "枚");
+    /*★★2026-11-20 オーナーさまご指摘：
+     *  「お持ちのチケット 1枚」と「無料のチケット 1枚」は同じ1枚なのに
+     *  2行 並んでいて、2枚あると勘違いされる。
+     *  ⇒ ★中身が1種類だけのときは、その1行だけにします（合計を出しません）。
+     *  ⇒ ★2種類以上のときだけ「お持ちのチケット ○枚」を見出しにして、
+     *     その下に内わけを出します（そこで初めて合計に意味が出ます）。*/
+    const oneKind = (rows.length === 1);
+    HELD_TITLE = oneKind ? rows[0] : ("お持ちのチケット " + total + "枚");
     /*★★2026-11-19：この内わけを覚えておきます。
      *  ★券を使う枠（ticketBoxHtml_）が、同じ中身を もう一度 出すためです。
      *  ★同じ数を2つの枠が別々に出していたのが、「1」が4回 並んだ原因でした。*/
-    HELD_ROWS = rows.slice();
+    HELD_ROWS = oneKind ? [] : rows.slice();
 
     el.innerHTML =
       '<div class="tksec">' +
         '<div class="tkbox">' +
-          '<div class="big">お持ちのチケット ' + total + '枚</div>' +
-          (rows.length ? '<div class="tkbreak">' + rows.join("\u3000／\u3000") + '</div>' : '') +
+          '<div class="big">' + HELD_TITLE + '</div>' +
+          (oneKind ? '' : '<div class="tkbreak">' + rows.join("\u3000／\u3000") + '</div>') +
           '<div class="sub">ロースターのブースで、一杯と交換できます</div>' +
         '</div>' +
       '</div>';
@@ -1025,10 +1034,9 @@
      *  ★いまは、持っている枚数・内わけ・交換の案内・使うボタンを、この1つの枠に入れます。
      *  ★チケットが1枚のときは、−＋の選び口を出しません（選びようがないため）。
      *  ★「ロースターのブースで、一杯と交換できます」は、押す所のすぐ上に置きます。*/
-    const hd = HELD_BD_READY
-      ? ('<div class="tkhead">お持ちのチケット ' + bal + '枚</div>' +
-         (HELD_ROWS.length ? '<div class="tkbreak">' + HELD_ROWS.join("\u3000／\u3000") + '</div>' : ''))
-      : ('<div class="tkhead">お持ちのチケット ' + bal + '枚</div>');
+    const ttl = (HELD_BD_READY && HELD_TITLE) ? HELD_TITLE : ("お持ちのチケット " + bal + "枚");
+    const hd = '<div class="tkhead">' + ttl + '</div>' +
+      (HELD_ROWS.length ? '<div class="tkbreak">' + HELD_ROWS.join("\u3000／\u3000") + '</div>' : '');
     const stepper = (bal >= 2)
       ? ('<div class="stepper">' +
            '<button id="minus">−</button>' +

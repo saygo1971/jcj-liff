@@ -360,11 +360,17 @@
     if (bought > 0) rows.push("\u8cfc\u5165\u30c1\u30b1\u30c3\u30c8 "   + bought + "\u679a");
     if (other  > 0) rows.push("\u305d\u306e\u4ed6\u306e\u30c1\u30b1\u30c3\u30c8 " + other  + "\u679a");
 
+    /*\u2605\u26052026-11-20 \u30aa\u30fc\u30ca\u30fc\u3055\u307e\u3054\u6307\u6458\uff1a
+     *  \u540c\u30581\u679a\u304c2\u884c \u4e26\u3093\u3067\u30012\u679a\u3042\u308b\u3068\u52d8\u9055\u3044\u3055\u308c\u308b\u3002
+     *  \u21d2 1\u7a2e\u985e\u3060\u3051\u306a\u3089 \u305d\u306e1\u884c\u3060\u3051\u30022\u7a2e\u985e\u4ee5\u4e0a\u306e\u3068\u304d\u3060\u3051\u5408\u8a08\uff0b\u5185\u308f\u3051\u3002*/
+    var oneKind = (rows.length === 1);
+    var evTitle = oneKind ? rows[0] : ("\u304a\u6301\u3061\u306e\u30c1\u30b1\u30c3\u30c8 " + total + "\u679a");
+
     var html = "";
     if (total > 0) {
       html += '<div class="evbox">'
-           +    '<div class="big">\u304a\u6301\u3061\u306e\u30c1\u30b1\u30c3\u30c8 ' + total + '\u679a</div>'
-           +    (rows.length ? '<div class="brk">' + rows.join("\u3000\uFF0F\u3000") + '</div>' : '')
+           +    '<div class="big">' + evTitle + '</div>'
+           +    (oneKind ? '' : '<div class="brk">' + rows.join("\u3000\uFF0F\u3000") + '</div>')
            +    '<div class="sub">\u30ed\u30fc\u30b9\u30bf\u30fc\u306e\u30d6\u30fc\u30b9\u3067\u3001\u4e00\u676f\u3068\u4ea4\u63db\u3067\u304d\u307e\u3059</div>'
            +  '</div>'
            +  '<div class="evlead">\u30c1\u30b1\u30c3\u30c8\u3092\u4f7f\u3046\u30d6\u30fc\u30b9\u3067<br>QR\u3092\u8aad\u3093\u3067\u30c1\u30a7\u30c3\u30af\u30a4\u30f3\u3057\u307e\u3059</div>'
