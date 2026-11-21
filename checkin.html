@@ -716,6 +716,17 @@
    *    ＝お客さまには「受け取れたのに、取り消された」ように見えます。
    *  ★いちど通ったら、この画面では二度と受け取るボタンを出しません。*/
   let FREE_GRANTED_HERE = false;
+  /*★★2026-11-22 オーナーさまご決定＝無料の一杯が【置き場に在る】あいだの画面。
+   *  ★置き場に在るのは実測6.1〜44.7秒（中央33.7秒）です。
+   *  ★10秒ごとに1回、サーバーに聞き直します。★最大6回（＝60秒）で止めて、2つ目の文に変えます。
+   *  🛑 1秒ごとに聞き直しません（★スプレッドシートを1分に60回の上限が在ります）。
+   *  🛑 画面が自分で数字を作りません（★聞き直した返事だけを出します）。*/
+  let FC_PEND_TRIES = 0;
+  let FC_PEND_TIMER = null;
+  const FC_PEND_MAX = 6;
+  const FC_PEND_WAIT = 10000;
+  /** ★説明の文の形（オーナーさまの決まり＝15px・行の高さ2.0・字の間0.04em・黒） */
+  const FC_PEND_TXT = "font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A";
   /*🛑★2026-11-05 オーナーさまご判断：会場のQR（お店の番号が AIC_FS_AICHI）で開いたときは、
    *  券を使う枠を出しません。★受付の合言葉つきQRも【同じ会場の番号】です＝どちらも出しません。
    *  ★理由＝券を1枚 お使いになると、コーヒーをお出ししたロースターさまへ300円 お支払いします。
@@ -933,7 +944,48 @@
      *    いまは会期をイベントの表で見ているので、会期が終われば自動で出なくなります。
      *    ★枠ではなく、文字1行です（うすい灰色の枠には戻していません）。
      *  ★戻すときは、下のまとまりを el.innerHTML = ""; return; の1行に戻すだけです。*/
+    /*★★2026-11-22：置き場に在るあいだ（pending）の文。★f.has の手前に置きます。
+     *  ★サーバーは pending のとき has も true で返しますが、ここで先に受けます。
+     *  ★文は オーナーさまが決めてくださったものです。★足しません・縮めません。*/
+    if (f.pending === true){
+      const fcOver = (FC_PEND_TRIES >= FC_PEND_MAX);
+      if (FC_PEND_TIMER){ clearTimeout(FC_PEND_TIMER); FC_PEND_TIMER = null; }
+      if (!fcOver){
+        el.innerHTML =
+          '<div class="freesec">' +
+            '<div class="freebox">' +
+              '<div class="big">無料の1杯 受け取りました</div>' +
+              '<div style="' + FC_PEND_TXT + ';margin-top:8px">いま お支度しています。この画面を開いたまま、少しお待ちください。</div>' +
+            '</div>' +
+          '</div>';
+        FC_PEND_TIMER = setTimeout(function(){
+          FC_PEND_TRIES = FC_PEND_TRIES + 1;
+          loadCupSection_();
+        }, FC_PEND_WAIT);
+      } else {
+        el.innerHTML =
+          '<div class="freesec">' +
+            '<div class="freebox">' +
+              '<div class="big">無料の1杯 受け取りました</div>' +
+              '<div style="' + FC_PEND_TXT + ';margin-top:8px">お支度に時間がかかっています。下を押して、もう一度 確かめてください。</div>' +
+              '<button id="fcRecheck" class="freebtn">もう一度 確かめる</button>' +
+            '</div>' +
+            '<div style="' + FC_PEND_TXT + ';text-align:center;margin-top:10px">それでも出てこないときは、受付のQRをもう一度 読んでください。</div>' +
+          '</div>';
+        const rb = $("fcRecheck");
+        /*★ボタンは【1回 聞き直すだけ】です。★数は戻しません
+         *  ⇒ ★入っていなければ、この2つ目の文のまま残ります（★勝手に聞き続けません）。*/
+        if (rb) rb.onclick = function(){
+          rb.disabled = true;
+          rb.textContent = "確かめています…";
+          loadCupSection_();
+        };
+      }
+      return;
+    }
+
     if (f.has === true){
+      if (FC_PEND_TIMER){ clearTimeout(FC_PEND_TIMER); FC_PEND_TIMER = null; }
       if (String(EV_PLACE || "").trim() === "受付") {
         el.innerHTML =
           '<div style="text-align:center;font-size:15px;line-height:2.0;letter-spacing:.04em;' +
@@ -976,6 +1028,18 @@
     }
     freeBusy = false;
     if (!r || r.ok !== true){
+      /*★★2026-11-22：置き場に在る（pending）は【失敗ではありません】。
+       *  🛑 「いま券をお渡しできませんでした。」を出しません。
+       *  🛑 ボタンを押せる状態で残しません ⇒ ★先に1つ目の文へ変えます（ボタンごと消えます）。
+       *    ★なぜ＝聞き直す cup_state は実測5.6〜7.0秒です。そのあいだボタンを戻すと、
+       *      ★お客さまがもう一度 押せてしまいます。
+       *  ★そのあと聞き直して、入っていれば ふだんの画面に書き直されます。*/
+      if (r && r.reason === "pending"){
+        FC_PEND_TRIES = 0;
+        renderFreeSection_({ free: { has: true, pending: true, grantable: false, readable: true } });
+        loadCupSection_();
+        return;
+      }
       if (b){ b.disabled = false; b.textContent = "1杯ぶんの券を受け取る"; }
       showMsgInline((r && r.message) ? r.message : "いま券をお渡しできませんでした。", false);
       // ★「もう受け取り済み」と言われたときは、画面を最新にし直します。
