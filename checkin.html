@@ -176,6 +176,45 @@
   // 紹介の「送る側」LIFF＝share(テスト)（"送る相手を選ぶ"）。?shopId=<チェックインした店ID> を付けて開く。友だち初来店で紹介者に+100マイル。
   // ※referralは"受け取る側"でshareId必須＝送る本人がそこへ飛ぶと「紹介情報が見つかりません」になるため share へ。
   const SHARE_URL = "https://liff.line.me/2008851980-V8WaCaZw";
+
+  /*🛑★2026-11-21 直しました＝【買う所の行き先】を、この画面が居る所に合わせて選びます。
+   *  🛑 なぜ要るか＝1044行に【本番の番号】が直接 書いてありました。
+   *    ⇒ ★テストの画面から押すと、本番の買う画面が開き、
+   *      そこで買うと【本当のお金が動きます】（2026-11-21 に見つけました）。
+   *  ★番号を「テストの番号」に書き替えるだけにはしません。
+   *    ⇒ それだと、このファイルが本番へ上がったとき、
+   *      ★本番の画面からテストの買う所が開く、という逆のことが起きます。
+   *  ★この画面が自分で持っている LIFF_ID の頭を見て、どちらに居るかを決めます。
+   *     テストのログインチャネル ＝ 2008851980-
+   *     本番のログインチャネル   ＝ 2010671952-
+   *    （LIFF/dept_claim.html 87・89行と同じ見分け方です）
+   *  ★番号は、どちらも現物で確かめました（2026-11-21）
+   *     テストの買う画面 ＝ テスト環境の billing.js 1309行 BUY_LIFF_ID
+   *     本番の買う画面   ＝ いま1044行に書いてあったもの
+   *                        （LIFF/discover.html 2401行にも同じものが在ります）*/
+  const BUY_LIFF_TEST = "2008851980-trDQgLA1";
+  const BUY_LIFF_PROD = "2010671952-7skS1QBT";
+  function buyLiffId_(){
+    try {
+      return (String(LIFF_ID || "").indexOf("2010671952-") === 0) ? BUY_LIFF_PROD : BUY_LIFF_TEST;
+    } catch (eBuyId) { return BUY_LIFF_TEST; }   // ★分からないときは、テスト側へ（★お金が動かない方）
+  }
+
+  /*★★2026-11-21 足しました＝買う所へ【どのイベントか】を一緒に渡します。
+   *  🛑 なぜ要るか＝買う画面は、どのイベントの券かを設定の1行から読んでいました。
+   *    ⇒ 新しいイベントのたびに その1行を手で書き替える必要があり、
+   *      忘れると【前のイベントの券】として売られ、新しい会場で使えません。
+   *  ★ここはブースや受付でQRを読んだ直後なので、どのイベントかが手元に在ります。
+   *  ★無いときは何も付けません＝いままでどおり設定を読みます。*/
+  function buyUrl_(){
+    var u = "https://liff.line.me/" + buyLiffId_();
+    var q = [];
+    try {
+      if (EV)   q.push("ev="   + encodeURIComponent(EV));
+      if (SPOT) q.push("spot=" + encodeURIComponent(SPOT));
+    } catch (eBuyQ) { q = []; }
+    return q.length ? (u + "?" + q.join("&")) : u;
+  }
   // 完了カード画像の置き場（店ごと checkin.jpg。無い店は緑帯にフォールバック）
   const CHECKIN_CARD_BASE = "https://japancoffeejourney.com/jcj_passport_img/shop/";
   // 記録（今日の一杯）への遷移用LIFF。空のあいだは枠だけ（遷移なし）。2026-09-06 テストIDを設定＝遷移が有効になった。
@@ -1041,7 +1080,7 @@
     el.innerHTML =
       '<div class="buysec">' +
         '<div class="buytitle">ロースターの一杯を飲むには<br>試飲チケットが要ります</div>' +
-        '<a class="buybtn" href="https://liff.line.me/2010671952-7skS1QBT">3杯ぶん 1,500円 を買う</a>' +
+        '<a class="buybtn" href="' + buyUrl_() + '">3杯ぶん 1,500円 を買う</a>' +
       '</div>';
   }
 
