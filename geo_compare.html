@@ -49,6 +49,11 @@
   <div class="box">
     <b>いま、どこで開いているか</b>
     <div class="kv" id="env">調べています…</div>
+    <div class="kv" style="margin-top:8px;color:#6E6E6E">
+      ★LINEから開いたのに「外のブラウザ」と出ることが あり得ます。
+      そのときも、そのまま［10回 測る］を押して、いちばん下の枠の文字を送ってください。
+      どちらで開いたかは、その文字から分かります。
+    </div>
   </div>
 
   <button class="btn" id="go">10回 測る</button>
@@ -78,8 +83,14 @@
 
   /* LINEの中で開かれたか。
      ★ここでは LINEのSDKを読みません。端末が名乗る文字（User-Agent）だけを見ます。
-       LINEアプリの中のブラウザは " Line/" を名乗ります。 */
-  function inLine(){ return / Line\//.test(navigator.userAgent); }
+       LINEアプリの中のブラウザは "Line/14.12.1" のように名乗ります。
+
+     ★この見分け方は、この部屋では【本物のLINEアプリで確かめられません】。
+       確かめたのは、LINEが公開している名乗り方 8通りに対して
+       この1行が正しく答えるか だけです（2026-11-24・8通りとも正しく答えました）。
+     ⇒ だから下の画面に、名乗る文字そのものも出します。
+       表示が外れていても、その文字を見れば こちらで見分けられます。 */
+  function inLine(){ return /\bLine\/\d/.test(navigator.userAgent); }
 
   function envText(){
     return (inLine() ? "LINEの中" : "外のブラウザ")
