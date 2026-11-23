@@ -6,7 +6,7 @@
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>掲示板</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン） */
   *{box-sizing:border-box}
@@ -81,7 +81,7 @@
   }
   function openExt(url){
     if(!url) return;
-    try{ if(liff&&liff.isInClient&&liff.isInClient()){ liff.openWindow({url:url,external:true}); return; } }catch(e){}
+    try{ if(JCJ.isInClient()){ JCJ.openWindow(url, true); return; } }catch(e){}
     window.open(url,"_blank");
   }
   // 記録（投げっぱなし。返事は使わない＝表示を止めない）
@@ -197,8 +197,8 @@
     const qUser = (params.get("userId")||"").trim();
     if(qUser){ USER_ID = qUser; load(); return; }
     try{
-      liff.init({ liffId: LIFF_ID })
-        .then(()=> liff.isLoggedIn() ? liff.getProfile() : null)
+      JCJ.init(LIFF_ID)
+        .then(()=> JCJ.isLoggedIn() ? JCJ.profile() : null)
         .then(pf=>{ if(pf && pf.userId) USER_ID = pf.userId; })
         .catch(()=>{})
         .then(()=> load());

@@ -70,7 +70,7 @@
 <div id="status"><div class="spin"></div>受け取りの手続きをしています…</div>
 <div id="main" class="wrap hidden"></div>
 
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <script>
   // GASの受け口（テスト環境）。★本番へ運ぶときは本番のURLに差し替えます。
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
@@ -273,21 +273,21 @@
     }
 
     try {
-      await liff.init({ liffId: DEPT_CLAIM_LIFF_ID });
+      await JCJ.init(DEPT_CLAIM_LIFF_ID);
     } catch (e) {
       setStatus("LINEの準備ができませんでした。\nこの画面を閉じて、もう一度 QRを読み取ってください。");
       return;
     }
 
-    if (liff.isInClient && !liff.isInClient()) {
+    if (liff.isInClient && !JCJ.isInClient()) {
       setStatus("LINEアプリの中で開いてください。");
       return;
     }
-    if (!liff.isLoggedIn()) { liff.login(); return; }
+    if (!JCJ.isLoggedIn()) { JCJ.login(); return; }
 
     let profile;
     try {
-      profile = await liff.getProfile();
+      profile = await JCJ.profile();
     } catch (e) {
       setStatus("お客さまの情報が取れませんでした。\nこの画面を閉じて、もう一度 QRを読み取ってください。");
       return;

@@ -191,7 +191,7 @@
 </div>
 
 <!-- LINE SDKは本文の“後”に置く＝画面(枠/くるくる)を先に描いてから読み込む（真っ白を防ぐ） -->
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <script>
   // ===== 設定ここだけ（テスト環境）=====
   // LIFF_ID：この距離メーター用に LINE Developers で作成するLIFFアプリID（テストのログインチャネル 2008851980 配下）。
@@ -343,10 +343,10 @@
   }
 
   async function main(){
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
-    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
+    if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
     await load();   // 枠はprepaintで先出し済み＝ここでは数字の取得・差し替えだけ

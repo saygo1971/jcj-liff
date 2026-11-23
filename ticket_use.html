@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>試飲チケットを使う</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #FBF7EF; margin: 0; padding: 20px 16px 40px; color: #5a4632; }
     .wrap { max-width: 420px; margin: 0 auto; }
@@ -132,11 +132,11 @@
   // 可能ならトークへ「パスポートを見る」を送って更新後の残枚数を確認できるようにし、最後に必ず閉じる。
   async function backToTalk() {
     try {
-      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
-        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
+      if (JCJ.isApiAvailable("sendMessages")) {
+        await JCJ.sendMessages([{ type: "text", text: "パスポートを見る" }]);
       }
     } catch (e) {}
-    try { liff.closeWindow(); } catch (e) {}
+    try { JCJ.closeWindow(); } catch (e) {}
   }
   window.backToTalk = backToTalk;
 
@@ -301,8 +301,8 @@
   // 補助機能なので、送れない環境（トーク外・許可未設定など）でも黙って諦める＝使用中画面は必ず出す。
   async function sendReceiptToTalk(data) {
     try {
-      if (!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
-      await liff.sendMessages([ buildReceiptFlex(data) ]);
+      if (!(JCJ.isApiAvailable("sendMessages"))) return;
+      await JCJ.sendMessages([ buildReceiptFlex(data) ]);
     } catch (e) {
       // 控えはあくまで記録用の補助。失敗しても使用中画面が主役なので致命ではない。
     }
@@ -310,11 +310,11 @@
 
   async function main() {
     setStatus("LINEを起動しています…", true);
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
-    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!JCJ.isLoggedIn()) { JCJ.login({ redirectUri: location.href }); return; }
 
-    const profile = await liff.getProfile();
+    const profile = await JCJ.profile();
     currentUserId = profile.userId || "";
     if (!currentUserId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
 

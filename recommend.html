@@ -60,7 +60,7 @@
   .done .t{font-size:20px;font-weight:800;margin-top:14px;line-height:1.5}
   .done .msg{font-size:14px;color:#5c4d3d;margin-top:16px;line-height:1.9;background:#faf6ef;border-radius:14px;padding:16px;text-align:left}
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -237,10 +237,10 @@
 
   async function main(){
     showStatus("LINEを起動しています…", true);
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()){ showStatus("LINEアプリの中で開いてください。", false); return; }
-    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isInClient()){ showStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
     if (!USER_ID){ showStatus("ユーザー情報を取得できませんでした。", false); return; }
 

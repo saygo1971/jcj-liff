@@ -8,7 +8,7 @@
   <meta property="og:description" content="友だちがおすすめするコーヒーロースターをチェックしよう。JCJ Passportは、全国のロースターを旅するように巡るアプリです。">
   <meta property="og:image" content="https://cdn.shopify.com/s/files/1/0582/1746/3893/files/jcj_passport_hero.jpg?v=1783085366&width=1200&height=630&crop=center">
   <meta property="og:type" content="website">
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
   <style>
     body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:20px;line-height:1.6}
     .card{border:1px solid #e6e6e6;border-radius:14px;padding:14px}
@@ -74,15 +74,15 @@
       return;
     }
 
-    await liff.init({ liffId: LIFF_ID });
+    await JCJ.init(LIFF_ID);
 
-    if (!liff.isInClient()) {
+    if (!JCJ.isInClient()) {
       setStatus("LINE内で開いてください。", false);
       return;
     }
 
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
+    if (!JCJ.isLoggedIn()) {
+      JCJ.login({ redirectUri: location.href });
       return;
     }
 
@@ -90,8 +90,8 @@
 
     // 依存関係のない2つは同時に取得（体感速度を上げる）
     const [profile, friendship] = await Promise.all([
-      liff.getProfile(),
-      liff.getFriendship()
+      JCJ.profile(),
+      JCJ.getFriendship()
     ]);
 
     const viewerUserId = profile.userId;
@@ -139,7 +139,7 @@
         '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
       el("closeBtn").addEventListener("click", () => {
-        liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
+        JCJ.openWindow("https://line.me/R/ti/p/@957zdear", true);
       });
 
       return;
@@ -173,7 +173,7 @@
           console.error("start_registration failed", e);
         }
 
-        liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
+        JCJ.openWindow("https://line.me/R/ti/p/@957zdear", true);
       });
 
       return;
@@ -211,7 +211,7 @@
         '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
       el("addFriendBtn").addEventListener("click", () => {
-        liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
+        JCJ.openWindow("https://line.me/R/ti/p/@957zdear", true);
       });
 
       return;
@@ -232,7 +232,7 @@
       '<div style="margin-top:6px;font-size:11px;color:#999;">タップ後、LINEで開く確認が出たら「開く」を選んでください</div>';
 
     el("openTalkBtn").addEventListener("click", () => {
-      liff.openWindow({ url: "https://line.me/R/ti/p/@957zdear", external: true });
+      JCJ.openWindow("https://line.me/R/ti/p/@957zdear", true);
     });
   }
 

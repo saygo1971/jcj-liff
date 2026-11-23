@@ -101,7 +101,7 @@
   .recs{text-align:center;font-size:12px;color:var(--ink-sub);margin-top:4px}
   .card .nkin{width:100%;box-sizing:border-box;font-family:inherit;font-size:16px;padding:12px;border-radius:10px;border:1.5px solid #DDD6CE;background:#fff}
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -479,11 +479,11 @@
       var msg = $("evCamMsg");
       if (msg) msg.textContent = "";
       try {
-        if (!liff || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
-        liff.scanCodeV2().then(function(r){
+        if (!JCJ.sdkLoaded() || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
+        JCJ.scanCodeV2().then(function(r){
           var v = (r && r.value) ? String(r.value).trim() : "";
           if (!v) { if (msg) msg.textContent = "\u8aad\u307f\u53d6\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u3082\u3046\u4e00\u5ea6 \u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002"; return; }
-          if (/^https?:\/\//i.test(v)) { try { liff.openWindow({ url: v, external:false }); } catch(e){ location.href = v; } return; }
+          if (/^https?:\/\//i.test(v)) { try { JCJ.openWindow(v, false); } catch(e){ location.href = v; } return; }
           if (msg) msg.textContent = "\u3053\u306eQR\u306f\u3001\u30d6\u30fc\u30b9\u306eQR\u3067\u306f\u306a\u3044\u3088\u3046\u3067\u3059\u3002";
         }).catch(function(){
           if (msg) msg.textContent = "\u3053\u306e\u7aef\u672b\u3067\u306f\u3001\u30a2\u30d7\u30ea\u306e\u4e2d\u3067QR\u3092\u8aad\u3081\u307e\u305b\u3093\u3067\u3057\u305f\u3002\u30b9\u30de\u30fc\u30c8\u30d5\u30a9\u30f3\u306e\u30ab\u30e1\u30e9\u3067\u8aad\u307f\u53d6\u3063\u3066\u304f\u3060\u3055\u3044\u3002";
@@ -496,7 +496,7 @@
     var buy = $("evBuyBtn");
     if (buy) buy.addEventListener("click", function(){
       var url = "https://saygo1971.github.io/jcj-liff/ticket_buy.html";
-      try { liff.openWindow({ url: url, external:false }); } catch(e){ location.href = url; }
+      try { JCJ.openWindow(url, false); } catch(e){ location.href = url; }
     });
   }
 
@@ -529,7 +529,7 @@
       $("ciRecordBtn").addEventListener("click", function(){
         // 記録画面へ（飲んだものを残す）。店IDを渡す。
         const url = "https://saygo1971.github.io/jcj-liff/log_drink.html" + (ci.spotId ? ("?spot=" + encodeURIComponent(ci.spotId)) : "");
-        try{ liff.openWindow({ url: url, external:false }); }catch(e){ location.href = url; }
+        try{ JCJ.openWindow(url, false); }catch(e){ location.href = url; }
       });
       renderEventAfterRegister_(data, ci);
       show("checkinView");
@@ -558,7 +558,7 @@
       if(n.logo){ $("nearLogo").style.backgroundImage = "url('" + n.logo + "')"; $("nearLogo").textContent = ""; }
       $("nearRouteBtn").addEventListener("click", function(){
         const url = n.mapUrl || ("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((n.shopName||"") + " " + (n.pref||"") + (n.city||"")));
-        try{ liff.openWindow({ url: url, external:true }); }catch(e){ location.href = url; }
+        try{ JCJ.openWindow(url, true); }catch(e){ location.href = url; }
       });
     }else{
       // 近くに掲載店が無い（空白県など）：地図へ誘う
@@ -567,7 +567,7 @@
     }
     $("nearMapBtn").addEventListener("click", function(){
       const url = "https://saygo1971.github.io/jcj-liff/discover.html";
-      try{ liff.openWindow({ url: url, external:false }); }catch(e){ location.href = url; }
+      try{ JCJ.openWindow(url, false); }catch(e){ location.href = url; }
     });
     show("nearView");
   }
@@ -637,9 +637,9 @@
     });
     $("startBtn").addEventListener("click", startRegister);
 
-    await liff.init({ liffId: LIFF_ID });
-    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if(!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
 
     /*★★2026-11-20 オーナーさまご決定（案B）：受付のQRから直接この画面が開きます。

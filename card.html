@@ -67,7 +67,7 @@
   </div>
 </div>
 
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <script>
 /* ===================================================================
    🔴 ここだけ、はじめに1回 入れてください
@@ -179,7 +179,7 @@ function showShop(shopName, photo, already, spotId){
     //   LINEは ?spot= を liff.state という形に置き換えて渡すことがあり、
     //   liff.init がそれを元の形に戻すため。先に読むと見つかりません。
     try {
-      await liff.init({ liffId: LIFF_ID });
+      await JCJ.init(LIFF_ID);
     } catch (initErr) {
       showError("LINEアプリで開いてください",
         "このページはLINEの中で開くものです。<br>" +
@@ -197,9 +197,9 @@ function showShop(shopName, photo, already, spotId){
       return;
     }
 
-    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    if (!JCJ.isLoggedIn()) { JCJ.login({ redirectUri: location.href }); return; }
 
-    const profile = await liff.getProfile();
+    const profile = await JCJ.profile();
     const userId  = profile && profile.userId;
     if (!userId) {
       showError("うまく読み取れませんでした", "もう一度 開き直してみてください。");

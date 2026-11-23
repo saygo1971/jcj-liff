@@ -152,7 +152,7 @@
     .cambtn svg{width:20px;height:20px;flex:0 0 auto}
     .camnote{font-size:13px;line-height:1.9;color:#6E6E6E;margin-top:8px;text-align:center}
   </style>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -655,7 +655,7 @@
     if (bl) bl.onclick = function(ev){
       const url = bl.getAttribute("href");
       if (!url) { ev.preventDefault(); return; }
-      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+      if (JCJ.isInClient()) { ev.preventDefault(); JCJ.openWindow(url, false); }
     };
 
     // 紹介ボタン：紹介ランディングLIFFを開く（LINE内はアプリ内ウィンドウ）。
@@ -663,7 +663,7 @@
     if (rb) rb.onclick = function(){
       // 送る側ページへ「いまチェックインした店ID」を渡す（share は shopId 必須）。
       const url = SHARE_URL + "?shopId=" + encodeURIComponent(st.shopId || SPOT || "");
-      if (liff.isInClient && liff.isInClient()) liff.openWindow({ url: url, external: false });
+      if (JCJ.isInClient()) JCJ.openWindow(url, false);
       else location.href = url;
     };
 
@@ -890,12 +890,12 @@
     const msg = $("cammsg");
     if (msg) msg.textContent = "";
     try {
-      if (!liff || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
-      const r = await liff.scanCodeV2();
+      if (!JCJ.sdkLoaded() || typeof liff.scanCodeV2 !== "function") throw new Error("no_scan");
+      const r = await JCJ.scanCodeV2();
       const v = (r && r.value) ? String(r.value).trim() : "";
       if (!v){ if (msg) msg.textContent = "読み取れませんでした。もう一度 お試しください。"; return; }
       if (/^https?:\/\//i.test(v)) {
-        try { liff.openWindow({ url: v, external: false }); } catch (e) { location.href = v; }
+        try { JCJ.openWindow(v, false); } catch (e) { location.href = v; }
         return;
       }
       if (msg) msg.textContent = "このQRは、ブースのQRではないようです。";
@@ -1314,7 +1314,7 @@
     if (rec) rec.onclick = function(ev){
       const url = rec.getAttribute("href");
       if (!url) { ev.preventDefault(); return; }
-      if (liff.isInClient && liff.isInClient()) { ev.preventDefault(); liff.openWindow({ url: url, external: false }); }
+      if (JCJ.isInClient()) { ev.preventDefault(); JCJ.openWindow(url, false); }
     };
   }
 
@@ -1390,8 +1390,8 @@
   // 控えカードをトークへ"置く"。送れない環境（トーク外・許可未設定）でも黙って諦める＝画面表示は主役。
   async function sendReceiptToTalk(d){
     try{
-      if(!(liff.isApiAvailable && liff.isApiAvailable("sendMessages"))) return;
-      await liff.sendMessages([ buildReceiptFlex(d) ]);
+      if(!(JCJ.isApiAvailable("sendMessages"))) return;
+      await JCJ.sendMessages([ buildReceiptFlex(d) ]);
     }catch(e){}
   }
 
@@ -1452,9 +1452,9 @@
 
   async function main(){
     showLoading("LINEを起動しています…");
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
     SPOT = params.get("spot") || params.get("spotId") || "";
     WANT_SCAN = (String(params.get("scan") || "") === "1");
@@ -1510,7 +1510,7 @@
       } catch (eTripHere) { /* ★取れなくても、ここで止めません */ }
     }
 
-    if (BRIDGE_TO_MESSAGE && !evp_() && liff.isInClient && liff.isInClient()) {
+    if (BRIDGE_TO_MESSAGE && !evp_() && JCJ.isInClient()) {
       const nm = String((st && st.shopName) || "").trim();
       if (nm) {
         showLoading("チェックインの画面をひらいています…");

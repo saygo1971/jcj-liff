@@ -71,7 +71,7 @@
   <a id="toDiscover">発見地図をひらく</a>
 </div>
 
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
   const SAVED_LIFF_ID = "2008851980-XXXXXXXX";  // ★本番アップ時に専用LIFF ID発行→差替（未発行中は ?userId= で確認）
@@ -209,9 +209,9 @@
       return;
     }
     try{
-      await liff.init({ liffId: SAVED_LIFF_ID });
-      if(!liff.isLoggedIn()){ liff.login(); return; }
-      const prof = await liff.getProfile();
+      await JCJ.init(SAVED_LIFF_ID);
+      if(!JCJ.isLoggedIn()){ JCJ.login(); return; }
+      const prof = await JCJ.profile();
       if(prof && prof.userId && prof.userId!==cachedUid){ _started=""; start(prof.userId); }
     }catch(e){
       if($("main").classList.contains("hidden") && $("empty").classList.contains("hidden"))

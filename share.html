@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JCJ Share</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
   <style>
     body{font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;margin:16px;line-height:1.6;color:#332822}
     .card{border:1px solid #e6e6e6;border-radius:14px;padding:16px}
@@ -177,7 +177,7 @@
 
     try {
       const message = buildFlexMessage(data, comment);
-      const result = await liff.shareTargetPicker([message]);
+      const result = await JCJ.shareTargetPicker([message]);
 
       if (result) {
         setStatus("送信しました。", true);
@@ -198,19 +198,19 @@
       return;
     }
 
-    await liff.init({ liffId: LIFF_ID });
+    await JCJ.init(LIFF_ID);
 
-    if (!liff.isInClient()) {
+    if (!JCJ.isInClient()) {
       setStatus("LINE内で開いてください。", false);
       return;
     }
 
-    if (!liff.isLoggedIn()) {
-      liff.login({ redirectUri: location.href });
+    if (!JCJ.isLoggedIn()) {
+      JCJ.login({ redirectUri: location.href });
       return;
     }
 
-    if (!liff.isApiAvailable("shareTargetPicker")) {
+    if (!JCJ.isApiAvailable("shareTargetPicker")) {
       const safe = async (fn) => {
         try { return JSON.stringify(await fn()); }
         catch (e) { return "(エラー: " + (e?.message || String(e)) + ")"; }
@@ -219,14 +219,14 @@
       console.log("share unavailable:", {
         os: await safe(() => liff.getOS()),
         sdk: await safe(() => liff.getVersion()),
-        lineVer: await safe(() => liff.getLineVersion()),
-        isInClient: await safe(() => liff.isInClient()),
-        isLoggedIn: await safe(() => liff.isLoggedIn()),
+        lineVer: await safe(() => JCJ.lineVersion()),
+        isInClient: await safe(() => JCJ.isInClient()),
+        isLoggedIn: await safe(() => JCJ.isLoggedIn()),
         granted: await safe(() => liff.permission.getGrantedAll()),
         context: await safe(() => liff.getContext()),
-        friendship: await safe(() => liff.getFriendship()),
-        canSend: await safe(() => liff.isApiAvailable("sendMessages")),
-        canShake: await safe(() => liff.isApiAvailable("shakeSendMessage")),
+        friendship: await safe(() => JCJ.getFriendship()),
+        canSend: await safe(() => JCJ.isApiAvailable("sendMessages")),
+        canShake: await safe(() => JCJ.isApiAvailable("shakeSendMessage")),
       });
 
       setStatus("この端末では共有できません。LINEアプリを最新にして、もう一度お試しください。", false);
@@ -235,7 +235,7 @@
 
     setLoading("紹介リンクを準備しています…");
 
-    const profile = await liff.getProfile();
+    const profile = await JCJ.profile();
 
     const source = (getParam("source") || "saved_card").trim();
 

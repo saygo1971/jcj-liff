@@ -5,7 +5,7 @@
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>ロゴスタンプ</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
   *{box-sizing:border-box}
@@ -135,7 +135,7 @@
 
   function openExt(url){
     if(!url) return;
-    try{ if(liff&&liff.isInClient&&liff.isInClient()){ liff.openWindow({url:url,external:true}); return; } }catch(e){}
+    try{ if(JCJ.isInClient()){ JCJ.openWindow(url, true); return; } }catch(e){}
     window.open(url,"_blank");
   }
   function logClick(spotId,type){
@@ -263,9 +263,9 @@
     const previewUid = String(params.get("uid")||"").trim();
     const liffReady = /^\d+-/.test(LIFF_ID) && LIFF_ID.indexOf("XXXXXXXX")<0;
     if(!liffReady){ USER_ID = previewUid; return load(); }
-    await liff.init({ liffId: LIFF_ID });
-    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if(!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || previewUid;
     if(!USER_ID){ $("status").textContent="ユーザー情報を取得できませんでした。"; return; }
     try{ if(USER_ID) localStorage.setItem("jcj_uid", USER_ID); }catch(e){} // shop.htmlの保存で使う（同一オリジン・URLに載せない）

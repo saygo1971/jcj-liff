@@ -13,7 +13,7 @@
           ★変えるには規約の作り直しとプログラムを本番へ届ける作業が要ります）。 -->
   <title>SHOP</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
 
   <style>
     /* ★★2026-10-06：色を「緑1色トンマナ 確定仕様」（2026-09-28 オーナー決定）に入れ替えました。
@@ -410,19 +410,19 @@
       //   ★そのうえで、あきらめる仕掛けを外します。★理由＝本番で実際に動いている画面
       //     （チェックイン・パスポート・ticket_history）は、どれも あきらめずに待つ作りで、
       //     ★あきらめる作りのものは、1つも動いた実績がありませんでした（2026-10-06 に22個 全数 確認）。
-      await liff.init({ liffId: LIFF_ID });
-      trace("init_ok", "isLoggedIn=" + liff.isLoggedIn() + " inClient=" + (liff.isInClient && liff.isInClient()));
+      await JCJ.init(LIFF_ID);
+      trace("init_ok", "isLoggedIn=" + JCJ.isLoggedIn() + " inClient=" + (liff.isInClient && JCJ.isInClient()));
       // ★2026-10-06 追加：LINEの外（パソコンのブラウザ等）で開かれたときは、買えません。
       //   ★ticket_history.html と同じ止め方にそろえます。
-      if (liff.isInClient && !liff.isInClient()) {
+      if (liff.isInClient && !JCJ.isInClient()) {
         setStatus("LINEアプリの中で開いてください。");
         return;
       }
-      if (!liff.isLoggedIn()) { liff.login(); return; }
+      if (!JCJ.isLoggedIn()) { JCJ.login(); return; }
 
       let profile;
       try {
-        profile = await liff.getProfile();
+        profile = await JCJ.profile();
       } catch (e) {
         trace("profile_err", e.message || e);
         setStatus("プロフィール取得に失敗しました。\n" + String(e.message || e));

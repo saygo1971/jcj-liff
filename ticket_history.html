@@ -7,7 +7,7 @@
        ★理由＝カップも買えるようになり、これから券以外の商品も売っていくためです。
        ★あわせて、買ったものの一覧（カップを含む）を出すようにしました。 -->
   <title>購入履歴</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="jcj_liff.js"></script>
   <style>
     /* ★★2026-10-06：色を「緑1色トンマナ 確定仕様」（2026-09-28 オーナー決定）に入れ替えました。
        ★この画面は【記録の面】です（人が「振り返る」画面）。
@@ -139,11 +139,11 @@
 
   async function backToTalk() {
     try {
-      if (liff.isApiAvailable && liff.isApiAvailable("sendMessages")) {
-        await liff.sendMessages([{ type: "text", text: "パスポートを見る" }]);
+      if (JCJ.isApiAvailable("sendMessages")) {
+        await JCJ.sendMessages([{ type: "text", text: "パスポートを見る" }]);
       }
     } catch (e) {}
-    try { liff.closeWindow(); } catch (e) {}
+    try { JCJ.closeWindow(); } catch (e) {}
   }
   window.backToTalk = backToTalk;
 
@@ -249,11 +249,11 @@
       return;
     }
     setStatus("LINEを起動しています…", true);
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
-    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
+    if (!JCJ.isLoggedIn()) { JCJ.login({ redirectUri: location.href }); return; }
 
-    const profile = await liff.getProfile();
+    const profile = await JCJ.profile();
     const userId = profile.userId || "";
     if (!userId) { setStatus("ユーザー情報を取得できませんでした。", false); return; }
 

@@ -5,7 +5,7 @@
 <script>/* cache-buster-jcj: LINE/webviewのキャッシュ対策 */if(location.search.indexOf("t=")<0){location.replace(location.pathname+(location.search?location.search+"&":"?")+"t="+Date.now());}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>コーヒー日記</title>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 <style>
   /* JCJ 新トンマナ8色（2026-08-31・全社トークン。ピンク=これから起こす／グリーン=終わったこと） */
   *{box-sizing:border-box}
@@ -699,7 +699,7 @@
     $("nkBox").classList.remove("hidden");
   }
 
-  function closeApp(){ try{ if(liff && liff.isInClient && liff.isInClient()){ liff.closeWindow(); return; } }catch(e){} history.length>1?history.back():window.close(); }
+  function closeApp(){ try{ if(JCJ.isInClient()){ JCJ.closeWindow(); return; } }catch(e){} history.length>1?history.back():window.close(); }
 
   function wire(){
     // ★2026-10-10：場所の値は paintPlace() が入れる（下で paintFields→paintPlace の順に走る）。
@@ -778,9 +778,9 @@
       USER_ID = previewUid; // プレビューは uid 無しでもUIは動く（送信は失敗しうる）
       wire(); return;
     }
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || previewUid;
     if (!USER_ID){ showStatus("ユーザー情報を取得できませんでした。"); return; }
     wire();

@@ -66,7 +66,7 @@
   .msg{font-size:12.5px;font-weight:700;margin-top:12px;text-align:center;min-height:18px;white-space:pre-line;line-height:1.6}
   .msg.err{color:var(--coralBtn)}
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -287,7 +287,7 @@
     $("doneSub").textContent = "これから、" + [pref, city].filter(Boolean).join(" ")
       + " から数えます。ここまでの距離は、そのままです。";
     $("doneView").classList.remove("hidden");
-    setTimeout(function(){ try{ liff.closeWindow(); }catch(e){} }, 2600);
+    setTimeout(function(){ try{ JCJ.closeWindow(); }catch(e){} }, 2600);
   }
 
   // ★審査会 A-3 の条件3：場所が確かめられなかったことを、お客さまに分かる形で伝える。
@@ -354,11 +354,11 @@
     $("pref").addEventListener("change", function(){ fillCities(this.value); refreshBtn(); });
     $("city").addEventListener("change", refreshBtn);
     $("submitBtn").addEventListener("click", submitPicker);
-    $("skipBtn").addEventListener("click", function(){ try{ liff.closeWindow(); }catch(e){} });
+    $("skipBtn").addEventListener("click", function(){ try{ JCJ.closeWindow(); }catch(e){} });
 
-    await liff.init({ liffId: LIFF_ID });
-    if(!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if(!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
 
     $("status").classList.add("hidden");

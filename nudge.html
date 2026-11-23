@@ -57,7 +57,7 @@
   .empty .em2{font-size:13px;color:var(--sub);margin-top:8px;line-height:1.7}
   .empty .btn{margin-top:16px;max-width:280px;margin-left:auto;margin-right:auto}
 </style>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="jcj_liff.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -186,10 +186,10 @@
 
   async function main(){
     showLoading("LINEを起動しています…");
-    await liff.init({ liffId: LIFF_ID });
-    if (!liff.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
-    if (!liff.isLoggedIn()){ liff.login({ redirectUri: location.href }); return; }
-    const profile = await liff.getProfile();
+    await JCJ.init(LIFF_ID);
+    if (!JCJ.isInClient()){ showStatusText("LINEアプリの中で開いてください。"); return; }
+    if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
+    const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
     if(!USER_ID){ showStatusText("ユーザー情報を取得できませんでした。"); return; }
     await load();
