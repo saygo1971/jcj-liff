@@ -60,6 +60,45 @@
        いままで そこに出ていたのは「liff is not defined」でした。 */
   var NOSDK_TEXT = "いまこの画面を開けませんでした。通信の状態をご確認のうえ、もう一度お試しください。";
 
+  /* ★2026-11-24 オーナーさまのご決定②＝SDKの返事が返らないとき、
+     5秒 過ぎたら「読み込んでいます…」等の【下に1行】出します。
+     20秒たつと その画面の catch が NOSDK_TEXT を出すので、この1行は消します。 */
+  var SLOW_MS   = 5000;
+  var SLOW_TEXT = "通信に時間がかかっています。そのままお待ちください。";
+  var SLOW_ID   = "__jcj_slow__";
+
+  /* その画面の「読み込んでいます…」を出している所の すぐ下に1行 入れます。
+     どの所かは、画面が JCJ.init(LIFF_ID, { slowAnchor: "status" }) で渡します。
+     渡されていない画面には、1行も出しません（＝いままでと同じ）。 */
+  function showSlow(anchorId) {
+    try {
+      if (document.getElementById(SLOW_ID)) return;
+      var d = document.createElement("div");
+      d.id = SLOW_ID;
+      d.textContent = SLOW_TEXT;
+      d.setAttribute("style",
+        "margin-top:8px;font-size:15px;line-height:2.0;letter-spacing:.04em;color:#1A1A1A;");
+      var a = anchorId ? document.getElementById(anchorId) : null;
+      if (a && a.parentNode) a.parentNode.insertBefore(d, a.nextSibling);
+      else if (document.body) document.body.appendChild(d);
+    } catch (e) {}
+  }
+  function hideSlow() {
+    try {
+      var d = document.getElementById(SLOW_ID);
+      if (d && d.parentNode) d.parentNode.removeChild(d);
+    } catch (e) {}
+  }
+
+  /* ★2026-11-24 オーナーさまのご決定①＝SDKの置き場に届かなかったときだけ
+     「エラー: 」の3文字を付けません。ほかの原因のエラーでは いままでどおり付けます。
+     使う所＝その画面の main().catch(...)。 */
+  function errText(err) {
+    var m = (err && err.message) || String(err);
+    if (err && err._jcjNoSdk) return m;
+    return "エラー: " + m;
+  }
+
   var _mode = "";          // "line" / "web" / "nosdk"
   var _profile = null;     // { userId, displayName, pictureUrl, statusMessage }
   var _sdkLoaded = false;  // SDKが読めたか
@@ -171,9 +210,14 @@
        JCJ.login    … 行き先が在りません。何もしません
        JCJ.profile  … userId が空の中身を返します（throw しません）
      --------------------------------------------------------------- */
-  function init(liffId) {
+  function init(liffId, opts) {
     if (_initDone) return _initDone;
+    var slowT = setTimeout(function () {
+      if (!isRealSdk()) showSlow(opts && opts.slowAnchor);
+    }, SLOW_MS);
     _initDone = loadSdk().then(function (ok) {
+      clearTimeout(slowT);
+      hideSlow();
       if (!ok) {
         _mode = "nosdk";
         installFallbackLiff();
@@ -184,10 +228,15 @@
            投げずに先へ進ませると、その画面の「読み込んでいます…」が
            回り続けたままになり、別の間違った文（例「はじめに登録が必要です」）が
            出ることが在ります。 */
-        throw new Error(NOSDK_TEXT);
+        var e = new Error(NOSDK_TEXT);
+        e._jcjNoSdk = true;   /* ★この印が付いたエラーだけ「エラー: 」を付けません */
+        throw e;
       }
       return window.liff.init({ liffId: liffId }).then(function () {
         _mode = inClient() ? "line" : "web";
+      }, function (e) {
+        hideSlow();
+        throw e;
       });
       /* ★liff.init が失敗したときは、いままでと同じように throw します。
          画面ごとの catch が、いままでと同じ文を出せるようにするためです。 */
@@ -365,7 +414,10 @@
     isApiAvailable: isApiAvailable,
     scanCodeV2: scanCodeV2,
     getFriendship: getFriendship,
+    errText: errText,
     SDK_URL: SDK_URL,
-    NOSDK_TEXT: NOSDK_TEXT
+    NOSDK_TEXT: NOSDK_TEXT,
+    SLOW_TEXT: SLOW_TEXT,
+    SLOW_MS: SLOW_MS
   };
 })();

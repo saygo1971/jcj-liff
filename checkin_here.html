@@ -190,7 +190,7 @@
       if(!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
       USER_ID=(await JCJ.profile()).userId||"";
     }catch(e){
-      ng("LINEの中で開いてください","このページは、LINEの下のメニューから開くとご利用いただけます。","");
+      ng("いまこの画面を開けませんでした","通信の状態をご確認のうえ、LINEの下のメニューから もう一度お試しください。","");
       return;
     }
     // ① まず「いまどのお店にいるか」だけ聞く（★この時点では1行も記録されない）

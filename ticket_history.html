@@ -249,7 +249,7 @@
       return;
     }
     setStatus("LINEを起動しています…", true);
-    await JCJ.init(LIFF_ID);
+    await JCJ.init(LIFF_ID, { slowAnchor: "status" });
     if (!JCJ.isInClient()) { setStatus("LINEアプリの中で開いてください。", false); return; }
     if (!JCJ.isLoggedIn()) { JCJ.login({ redirectUri: location.href }); return; }
 
@@ -272,7 +272,7 @@
     $("history").classList.remove("hidden");
   }
 
-  main().catch((err) => { setStatus("エラー: " + (err && err.message || String(err)), false); });
+  main().catch((err) => { setStatus(JCJ.errText(err), false); });
 </script>
 </body>
 </html>

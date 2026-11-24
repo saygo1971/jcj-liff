@@ -778,14 +778,14 @@
       USER_ID = previewUid; // プレビューは uid 無しでもUIは動く（送信は失敗しうる）
       wire(); return;
     }
-    await JCJ.init(LIFF_ID);
+    await JCJ.init(LIFF_ID, { slowAnchor: "status" });
     if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
     const profile = await JCJ.profile();
     USER_ID = profile.userId || previewUid;
     if (!USER_ID){ showStatus("ユーザー情報を取得できませんでした。"); return; }
     wire();
   }
-  main().catch(err => showStatus("エラー: " + (err && err.message || String(err))));
+  main().catch(err => showStatus(JCJ.errText(err)));
 </script>
 </body>
 </html>

@@ -198,7 +198,7 @@
       return;
     }
 
-    await JCJ.init(LIFF_ID);
+    await JCJ.init(LIFF_ID, { slowAnchor: "status" });
 
     if (!JCJ.isInClient()) {
       setStatus("LINE内で開いてください。", false);
@@ -258,7 +258,7 @@
   }
 
   main().catch(e => {
-    setStatus("エラー: " + (e?.message || String(e)), false);
+    setStatus(JCJ.errText(e), false);
   });
 </script>
 </body>

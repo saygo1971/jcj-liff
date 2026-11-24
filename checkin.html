@@ -1452,7 +1452,7 @@
 
   async function main(){
     showLoading("LINEを起動しています…");
-    await JCJ.init(LIFF_ID);
+    await JCJ.init(LIFF_ID, { slowAnchor: "statusText" });
     if (!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
     const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
@@ -1523,7 +1523,7 @@
     renderPrompt();
   }
 
-  main().catch(err=>{ showStatusText("エラー: " + (err && err.message || String(err))); });
+  main().catch(err=>{ showStatusText(JCJ.errText(err)); });
 </script>
 </body>
 </html>

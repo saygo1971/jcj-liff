@@ -356,7 +356,7 @@
     $("submitBtn").addEventListener("click", submitPicker);
     $("skipBtn").addEventListener("click", function(){ try{ JCJ.closeWindow(); }catch(e){} });
 
-    await JCJ.init(LIFF_ID);
+    await JCJ.init(LIFF_ID, { slowAnchor: "statusText" });
     if(!JCJ.isLoggedIn()){ JCJ.login({ redirectUri: location.href }); return; }
     const profile = await JCJ.profile();
     USER_ID = profile.userId || "";
@@ -368,7 +368,7 @@
   }
 
   main().catch(function(err){
-    $("statusText").textContent = "エラー: " + (err && err.message ? err.message : String(err));
+    $("statusText").textContent = JCJ.errText(err);
   });
 </script>
 </body>
