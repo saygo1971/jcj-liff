@@ -77,19 +77,20 @@
 <script>
 /* ───────── 決めてある番号とアドレス（★テスト環境のものです） ───────── */
 
-/* 🛑★この画面のためのLINEの番号（LIFF ID）は、まだ作られていません。
-      いまは【テスト環境の別の画面の番号】を借りて、LINEの中で動くかを見ます。
-      ★本番へ上げる前に、必ず この画面だけの番号に差し替えます
-        （作るのはオーナーさま。段取り＝docs/2026-11-25_抽選のQRを刷る段取り.md）。 */
-const LIFF_ID = "2008851980-9MKW9F8W";
+/* この画面だけのLINEの番号（LIFF ID・テスト環境）。
+   ★2026-11-25 オーナーさまが作ってくださいました（借り物ではありません）。
+   ★本番用は 2010671952-jPPSaEmi です（lottery_prod.html で使います）。 */
+const LIFF_ID = "2008851980-Lvp1coFu";
 
 /* 本体の受け口（テスト）。★受付の番号をもらう所です。 */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
 
 /* 抽選のプログラム（★写し＝テスト）。引く所です。 */
-const LOTTERY_URL = "https://script.google.com/macros/s/AKfycbzJr8AnJ2ATbSOvn9agVkoviJ5bLsn2iQHG4oSOSJrT7pvkbWrkx_QnlmytGn08EiiT/exec";
+const LOTTERY_URL = "https://script.google.com/macros/s/AKfycbx5ZW150nDqKa8dAYYrMNGdgLfUQDPC_-3XHzX8u755Os0zuAXPhKHZLL-MhSf9hawX/exec";
 
-/* はずれではなく【JCJステッカー】のときに出す「お店を探す」の行き先（テスト）。 */
+/* JCJステッカーのときに出す「お店を探す」の行き先（テスト）。
+   ★これは【ロースターを探す画面そのもの】の番号です。借り物ではありません
+     （本番の board_prod.html 66行と同じ考え。本番は 2010671952-guui9dT5）。 */
 const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W";
 
 /* ───────── ここから中身 ───────── */
