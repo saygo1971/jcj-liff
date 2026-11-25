@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>抽選｜JOURNEY PASSPORT</title>
+<!-- REL lottery.html test v1 | 2026-11-25 | 小田急町田2027年2月の抽選（アプリの中の画面）
+     設計 = JCJ事業部/docs/2026-11-25_抽選をアプリの中の画面にする_設計.md
+     審査会 = JCJ事業部/審査会/2026-11-25_抽選をアプリの中の画面にする_審査結果.md（合格・条件6件）
+     ★画面に出る文は、オーナーさまがご覧になった絵のとおりです。
+       1字でも変えるときは、先に本部へ。 -->
+<style>
+  :root { --primary: #4e342e; --bg: #fdfaf7; --accent: #d4a373; }
+  body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background: var(--bg); margin: 0;
+         display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center;
+         color: var(--primary); transition: background-color 0.6s; }
+  .container { width: 85%; max-width: 400px; background: #fff; padding: 40px 25px; border-radius: 30px;
+               box-shadow: 0 15px 35px rgba(0,0,0,0.08); }
+  .title { white-space: nowrap; font-size: 22px; letter-spacing: .5px; font-weight: 700; margin-bottom: 25px; }
+  .lead { font-size: 14px; line-height: 1.8; color: #666; }
+  .btn-start { background: var(--primary); color: #fff; border: none; padding: 20px; border-radius: 50px;
+               font-size: 20px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 25px;
+               letter-spacing: 2px; box-shadow: 0 4px 10px rgba(78,52,46,.3); }
+  .btn-start:disabled { background: #ccc; box-shadow: none; }
+  .btn-sub { display: inline-block; margin-top: 18px; padding: 10px 22px; border: 1px solid #ddd;
+             border-radius: 999px; font-size: 14px; color: #333; text-decoration: none; background: #fff; cursor: pointer; }
+  .congrats { color: var(--accent); font-weight: bold; font-size: 14px; margin-bottom: 5px; letter-spacing: 1px; }
+  .prize-tag { font-size: 60px; color: var(--accent); margin: 0; font-weight: 900; line-height: 1.1; }
+  #prize-img { width: 100%; max-width: 280px; height: auto; margin: 20px auto; border-radius: 15px;
+               display: none; box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+  .prize-name { font-weight: bold; font-size: 17px; margin: 25px 0; line-height: 1.6; }
+  .sub-text { font-size: 12px; color: #888; margin-top: 15px; }
+  .ask { font-size: 17px; font-weight: bold; line-height: 1.8; margin: 0 0 10px; }
+  .hidden { display: none; }
+</style>
+<script src="jcj_liff.js"></script>
+</head>
+<body>
+<div class="container">
+  <div class="title">Japan Coffee Journey</div>
+
+  <!-- ① 確かめている間 -->
+  <div id="loading">
+    <p class="lead" id="loadingText">ご登録を確かめています…</p>
+  </div>
+
+  <!-- ② 抽選の画面 -->
+  <div id="ready" class="hidden">
+    <p class="lead">旅の記憶を彩る、<br>素敵な一杯やアイテムが当たる。</p>
+    <button class="btn-start" id="btnDraw">START</button>
+  </div>
+
+  <!-- ③ ご登録がまだの方 -->
+  <div id="needReg" class="hidden">
+    <p class="ask">旅のパスポートを、<br>お持ちですか？</p>
+    <p class="lead">JOURNEY PASSPORT にご登録いただくと、<br>この抽選にご参加いただけます。</p>
+    <button class="btn-start" id="btnReg">登録して抽選に進む</button>
+    <p class="sub-text">ご登録が終わったら、<br>もう一度 QRコードを読み取ってください。</p>
+  </div>
+
+  <!-- ④ 結果 -->
+  <div id="result" class="hidden">
+    <div id="congrats" class="congrats">CONGRATULATIONS!</div>
+    <h1 id="resTag" class="prize-tag"></h1>
+    <img id="prize-img" src="" alt="景品" onerror="this.style.display='none'">
+    <div id="resName" class="prize-name hidden"></div>
+    <p id="subMsg" class="sub-text">スタッフにこの画面を提示してください</p>
+    <a id="findShop" class="btn-sub hidden">お店を探す</a>
+  </div>
+
+  <!-- ⑤ 引けないとき（会期の外・時間の外・本日お済み など） -->
+  <div id="closed" class="hidden">
+    <p class="ask" id="closedText"></p>
+  </div>
+</div>
+
+<script>
+/* ───────── 決めてある番号とアドレス（★テスト環境のものです） ───────── */
+
+/* 🛑★この画面のためのLINEの番号（LIFF ID）は、まだ作られていません。
+      いまは【テスト環境の別の画面の番号】を借りて、LINEの中で動くかを見ます。
+      ★本番へ上げる前に、必ず この画面だけの番号に差し替えます
+        （作るのはオーナーさま。段取り＝docs/2026-11-25_抽選のQRを刷る段取り.md）。 */
+const LIFF_ID = "2008851980-9MKW9F8W";
+
+/* 本体の受け口（テスト）。★受付の番号をもらう所です。 */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+
+/* 抽選のプログラム（★写し＝テスト）。引く所です。 */
+const LOTTERY_URL = "https://script.google.com/macros/s/AKfycbzJr8AnJ2ATbSOvn9agVkoviJ5bLsn2iQHG4oSOSJrT7pvkbWrkx_QnlmytGn08EiiT/exec";
+
+/* はずれではなく【JCJステッカー】のときに出す「お店を探す」の行き先（テスト）。 */
+const DISCOVER_LIFF_ID = "2008851980-9MKW9F8W";
+
+/* ───────── ここから中身 ───────── */
+const $ = (id) => document.getElementById(id);
+const show = (id) => $(id).classList.remove("hidden");
+const hide = (id) => $(id).classList.add("hidden");
+
+let USER_ID = "";
+let PASS    = "";
+let EV      = "";
+
+/* LINEは ?ev=… を ?liff.state=%3Fev%3D… の形で渡すことがあります。
+   ★liff.init のあとに読むと、元に戻っています（記憶 liff-read-query-after-init-not-before）。 */
+function readEv() {
+  const p = new URLSearchParams(location.search);
+  return (p.get("ev") || "").trim();
+}
+
+function closedWith(msg) {
+  hide("loading"); hide("ready"); hide("needReg"); hide("result");
+  $("closedText").textContent = msg;
+  show("closed");
+}
+
+async function postJson(url, body) {
+  /* 🛑 お客さまの番号をアドレス（URL）に載せないため、POSTの中身で送ります。
+     ★GASは text/plain で受けると、前の問い合わせ（preflight）が起きません。 */
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(body)
+  });
+  return await res.json();
+}
+
+async function getPass() {
+  const d = await postJson(GAS_URL + "?action=lottery_pass", { userId: USER_ID, ev: EV });
+  return d || {};
+}
+
+async function draw() {
+  const btn = $("btnDraw");
+  btn.disabled = true;
+  $("loadingText").textContent = "抽選中…";
+  hide("ready"); show("loading");
+
+  let d = {};
+  try { d = await postJson(LOTTERY_URL, { pass: PASS }); }
+  catch (e) { d = { success: false, message: "通信状況の良い場所でお試しください。" }; }
+
+  hide("loading");
+  if (!d || !d.success) {
+    closedWith((d && d.message) ? d.message : "ただいま抽選を受け付けておりません。係の者にお声がけください。");
+    return;
+  }
+
+  /* ★景品の出し方は、いまの抽選の画面と同じです。
+     ★違うのは、JCJステッカーのときに「◯賞」を出さず、「お店を探す」を出すことだけです。 */
+  const colors = { '特賞':'#fffde7', 'A':'#fff8e1', 'B':'#f3e5f5', 'C':'#e8f5e9', 'D':'#e3f2fd', 'E':'#ffffff' };
+  document.body.style.backgroundColor = colors[d.prizeTag] || '#ffffff';
+
+  if (d.prizeImg) { $("prize-img").src = d.prizeImg; $("prize-img").style.display = "block"; }
+
+  if (d.prizeTag === 'E') {
+    $("resTag").style.display = "none";
+    $("resName").textContent = d.prizeName || "JCJステッカー";
+    show("resName");
+    $("findShop").href = "https://liff.line.me/" + DISCOVER_LIFF_ID;
+    show("findShop");
+  } else {
+    $("resTag").textContent = String(d.prizeTag || "") + "賞";
+    $("resTag").style.display = "block";
+    hide("resName");
+    hide("findShop");
+  }
+  show("result");
+}
+
+async function main() {
+  try {
+    await JCJ.init(LIFF_ID, { slowAnchor: "loadingText" });
+    if (!JCJ.isLoggedIn()) { JCJ.login({ redirectUri: location.href }); return; }
+    const p = await JCJ.profile();
+    USER_ID = (p && p.userId) || "";
+  } catch (e) {
+    closedWith("いまこの画面を開けませんでした。通信の状態をご確認のうえ、もう一度お試しください。");
+    return;
+  }
+  EV = readEv();
+
+  if (!USER_ID) { closedWith("ただいま抽選を受け付けておりません。係の者にお声がけください。"); return; }
+
+  let d = {};
+  try { d = await getPass(); }
+  catch (e) { closedWith("通信状況の良い場所でお試しください。"); return; }
+
+  if (d.ok === true && d.pass) {
+    PASS = d.pass;
+    hide("loading"); show("ready");
+    $("btnDraw").onclick = draw;
+    return;
+  }
+  if (d.error === "not_registered") {
+    hide("loading"); show("needReg");
+    $("btnReg").onclick = function () {
+      const u = String(d.registerUrl || "").trim();
+      if (u) { location.href = u; return; }
+      closedWith("ご登録の画面を開けませんでした。係の者にお声がけください。");
+    };
+    return;
+  }
+  closedWith("ただいま抽選を受け付けておりません。係の者にお声がけください。");
+}
+main();
+</script>
+</body>
+</html>
