@@ -82,8 +82,14 @@
    ★本番用は 2010671952-jPPSaEmi です（lottery_prod.html で使います）。 */
 const LIFF_ID = "2008851980-Lvp1coFu";
 
-/* 本体の受け口（テスト）。★受付の番号をもらう所です。 */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx4ZUF9vdBoIz34-NgD927HpzQTjbD8xdK3XZ7hD1_X_5ZAHgTvmK08uB6bzB_MQByV/exec";
+/* 本体の受け口（テスト）。★受付の番号をもらう所です。
+   🛑★2026-11-25 ここが原因で、LINEで引けませんでした。
+     ★前は コード.js 19行の口（いつもの口）を入れていました。
+     ★その口は【版が固定】で、受付の番号を出す所（lottery_pass）が入っていない古い版です。
+     ⇒ 文字の "error" が返り、画面は「通信状況の良い場所で…」と出していました（電波ではありません）。
+   ★いまは、受付の番号の口が入っている版を指しています。
+   ★いつもの口が新しい版に替わったら、そちらへ戻して構いません。 */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxGsOvSxr_K6u-9y0o6Bmq1KAK_8n5Ll2xzllmIgG4rnSaM5YoqNZyJR4Wyj_lEb3W4/exec";
 
 /* 抽選のプログラム（★写し＝テスト）。引く所です。 */
 const LOTTERY_URL = "https://script.google.com/macros/s/AKfycbzPOo90kSzV5Yh_HrV_m_FEHt0jpZkLFm1t7q_WJ5X8rlnrqRdrmFZl0glrOvBEVZUW/exec";
@@ -115,20 +121,36 @@ function closedWith(msg) {
   show("closed");
 }
 
+/* 🛑★2026-11-25 直しました＝【返事が返らない】のと【返ったが中身が違う】を分けます。
+ *   前は、どちらでも「通信状況の良い場所でお試しください。」と出していました。
+ *   ⇒ 電波のせいにしてしまい、★こちらの作りの誤りが隠れました（実際に隠れました）。
+ *   返すもの ＝ { ok:true, data } ／ { ok:false, why:"todokanai" } ／ { ok:false, why:"henji_ga_chigau" }
+ * 🛑 お客さまの番号をアドレス（URL）に載せないため、POSTの中身で送ります。
+ *   ★GASは text/plain で受けると、前の問い合わせ（preflight）が起きません。 */
 async function postJson(url, body) {
-  /* 🛑 お客さまの番号をアドレス（URL）に載せないため、POSTの中身で送ります。
-     ★GASは text/plain で受けると、前の問い合わせ（preflight）が起きません。 */
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(body)
-  });
-  return await res.json();
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body)
+    });
+  } catch (e) {
+    return { ok: false, why: "todokanai" };          // 返事が1つも返らない＝電波
+  }
+  try {
+    return { ok: true, data: await res.json() };
+  } catch (e) {
+    return { ok: false, why: "henji_ga_chigau" };    // 返事は返ったが、中身が違う＝こちらの作り
+  }
 }
 
+/* 分けた文（★オーナーさまのご決定事項。いまは案のまま入れています） */
+const MSG_TODOKANAI = "通信が届きませんでした。電波の良い場所で、もう一度お試しください。";
+const MSG_CHIGAU    = "ただいま抽選を受け付けておりません。係の者にお声がけください。";
+
 async function getPass() {
-  const d = await postJson(GAS_URL + "?action=lottery_pass", { userId: USER_ID, ev: EV });
-  return d || {};
+  return await postJson(GAS_URL + "?action=lottery_pass", { userId: USER_ID, ev: EV });
 }
 
 async function draw() {
@@ -137,13 +159,15 @@ async function draw() {
   $("loadingText").textContent = "抽選中…";
   hide("ready"); show("loading");
 
-  let d = {};
-  try { d = await postJson(LOTTERY_URL, { pass: PASS }); }
-  catch (e) { d = { success: false, message: "通信状況の良い場所でお試しください。" }; }
-
+  const got = await postJson(LOTTERY_URL, { pass: PASS });
   hide("loading");
-  if (!d || !d.success) {
-    closedWith((d && d.message) ? d.message : "ただいま抽選を受け付けておりません。係の者にお声がけください。");
+  if (!got.ok) {
+    closedWith(got.why === "todokanai" ? MSG_TODOKANAI : MSG_CHIGAU);
+    return;
+  }
+  const d = got.data || {};
+  if (!d.success) {
+    closedWith(d.message ? d.message : MSG_CHIGAU);
     return;
   }
 
@@ -183,9 +207,12 @@ async function main() {
 
   if (!USER_ID) { closedWith("ただいま抽選を受け付けておりません。係の者にお声がけください。"); return; }
 
-  let d = {};
-  try { d = await getPass(); }
-  catch (e) { closedWith("通信状況の良い場所でお試しください。"); return; }
+  const got = await getPass();
+  if (!got.ok) {
+    closedWith(got.why === "todokanai" ? MSG_TODOKANAI : MSG_CHIGAU);
+    return;
+  }
+  const d = got.data || {};
 
   if (d.ok === true && d.pass) {
     PASS = d.pass;
